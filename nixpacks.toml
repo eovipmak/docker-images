@@ -1,0 +1,14 @@
+providers = ["node"]
+
+[phases.setup]
+aptPkgs = ['openssl']
+
+[phases.install]
+build.cmd = "npm install"
+
+
+[phases.start]
+cmd = "npm start"
+
+[ports]
+expose = [8000]
