@@ -31,4 +31,4 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:custom-${{ env.DATE_STAMP }}
-            ${{ env.IMAGE_NAME }}:awesome-latest
+            ${{ env.IMAGE_NAME }}:latest
