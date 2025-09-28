@@ -1,5 +1,5 @@
 [variables]
-NIXPACKS_NODE_VERSION = '22'
+# NIXPACKS_NODE_VERSION = '22'
 NODE_ENV = 'production'
 
 [start]
@@ -7,7 +7,7 @@ NODE_ENV = 'production'
   cmd = './entrypoint.sh'
 
 [phases.setup]
-nixPkgs = ['caddy', 'nodejs_20']
+nixPkgs = ['caddy', 'nodejs-slim']
 
 [phases.install]
 build.cmd = 'npm install npm@latest -g'
