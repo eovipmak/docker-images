@@ -9,7 +9,5 @@ NODE_ENV = 'production'
 [phases.setup]
 nixPkgs = ['caddy', 'nodejs']
 
-[phases.install]
-
 [phases.build]
 cmd = ['chmod +x ./entrypoint.sh']
