@@ -7,7 +7,7 @@ NODE_ENV = 'production'
   cmd = './entrypoint.sh'
 
 [phases.setup]
-nixPkgs = ['caddy']
+nixPkgs = ['caddy', 'nodejs_20']
 
 [phases.install]
 build.cmd = 'npm install npm@latest -g'
