@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
 echo "[entrypoint] starting"
 
 if command -v node >/dev/null 2>&1; then
