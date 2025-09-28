@@ -4,7 +4,7 @@ NODE_ENV = 'production'
 
 [start]
   providers = ['node']
-  cmd = 'chmod +x ./entrypoint.sh && ./entrypoint.sh'
+  cmd = '/bin/bash'
 
 [phases.setup]
 nixPkgs = ['caddy', 'nodejs']
