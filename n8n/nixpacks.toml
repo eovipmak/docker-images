@@ -10,7 +10,6 @@ NODE_ENV = 'production'
 nixPkgs = ['caddy', 'nodejs-slim']
 
 [phases.install]
-build.cmd = 'npm install npm@latest -g'
 
 [phases.build]
 cmd = ['chmod +x ./entrypoint.sh']
