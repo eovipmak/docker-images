@@ -1,0 +1,16 @@
+[variables]
+NIXPACKS_NODE_VERSION = '22'
+NODE_ENV = 'production'
+
+[start]
+  runImage = 'debian:bullseye-slim'
+  providers = ["node"]
+
+[phases.setup]
+nixPkgs = ['caddy']
+
+[phases.install]
+build.cmd = "npm install npm@latest -g"
+
+[phases.build]
+cmd = ["chmod +x ./entrypoint.sh"]

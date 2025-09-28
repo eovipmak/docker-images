@@ -20,7 +20,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GB_TOKEN }}
 
-      # create a unique tag for each build for debugging
       - name: Set Docker tag
         id: date
         run: echo "DATE_STAMP=$(date +%s)" > "$GITHUB_ENV"
@@ -28,7 +27,12 @@ jobs:
       - name: Build and push Docker images
         uses: iloveitaly/github-action-nixpacks@main
         with:
+          context: ./n8n
+          labels: |
+            maintainer=tintn@vinahost.vn
+            service=n8n_caddy
+            env=production
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:custom-${{ env.DATE_STAMP }}
+            ${{ env.IMAGE_NAME }}:build_at-${{ env.DATE_STAMP }}
             ${{ env.IMAGE_NAME }}:latest
