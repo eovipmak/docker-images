@@ -3,7 +3,6 @@ NIXPACKS_NODE_VERSION = '22'
 NODE_ENV = 'production'
 
 [start]
-  runImage = "debian:bullseye-slim"
   providers = ['node']
   cmd = './entrypoint.sh'
 
