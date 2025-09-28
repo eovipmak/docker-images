@@ -8,11 +8,10 @@ NODE_ENV = 'production'
 
 [phases.setup]
 nixPkgs = ['caddy']
-aptPkgs = ['caddy']
 
 [phases.install]
 build.cmd = "npm install npm@latest -g"
 
-[phases.start]
-cmd = ["chmod +x ./entrypoint.sh"]
+[phases.build]
+cmds = ['chmod +x ./entrypoint.sh', './entrypoint.sh']
 
