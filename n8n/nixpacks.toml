@@ -7,7 +7,7 @@ NODE_ENV = 'production'
   cmd = './entrypoint.sh'
 
 [phases.setup]
-nixPkgs = ['caddy', 'nodejs-slim']
+nixPkgs = ['caddy', 'nodejs']
 
 [phases.install]
 
