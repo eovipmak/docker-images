@@ -5,6 +5,7 @@ NODE_ENV = 'production'
 [start]
   runImage = 'debian:bullseye-slim'
   providers = ["node"]
+  cmd = ["./entrypoint.sh"]
 
 [phases.setup]
 nixPkgs = ['caddy']
@@ -13,5 +14,8 @@ nixPkgs = ['caddy']
 build.cmd = "npm install npm@latest -g"
 
 [phases.build]
-cmds = ['chmod +x ./entrypoint.sh', './entrypoint.sh']
+cmds = ['chmod +x ./entrypoint.sh']
+
+
+
 
