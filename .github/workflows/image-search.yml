@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/eovipmak/n8n_caddy
+  IMAGE_NAME: ghcr.io/eovipmak/image-search
 
 jobs:
   build:
