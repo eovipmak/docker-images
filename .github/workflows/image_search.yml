@@ -3,7 +3,7 @@ name: Build and push Image Search docker
 on:
   push:
     branches:
-      - main
+      - '**'
   workflow_dispatch:
 
 env:
