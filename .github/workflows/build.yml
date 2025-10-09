@@ -1,4 +1,4 @@
-name: Build and push Image Search docker
+name: Build and push ImageSearch docker
 
 on:
   workflow_dispatch:
