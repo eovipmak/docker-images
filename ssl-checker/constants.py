@@ -1,4 +1,9 @@
-"""Constants for SSL Checker application."""
+"""
+Constants for SSL Checker application.
+
+This module contains all configuration constants, threshold values,
+alert messages, and error types used throughout the SSL checker.
+"""
 
 # SSL/TLS Configuration
 DEFAULT_SSL_PORT = 443

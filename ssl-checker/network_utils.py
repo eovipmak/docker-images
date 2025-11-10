@@ -155,8 +155,11 @@ def create_ssl_connection(
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
     
+    # Use domain for hostname verification if provided, otherwise use IP
+    hostname = domain if domain else ip
+    
     sock = socket.create_connection((ip, port))
-    ssock = context.wrap_socket(sock, server_hostname=domain or ip)
+    ssock = context.wrap_socket(sock, server_hostname=hostname)
     cert = ssock.getpeercert()
     
     return ssock, cert
