@@ -1,5 +1,6 @@
 """Network utility functions for DNS resolution and SSL connections."""
 
+import logging
 import socket
 import ssl
 import re
@@ -7,6 +8,8 @@ from typing import Optional, Tuple, List, Dict, Any
 
 import dns.resolver
 import requests
+
+logger = logging.getLogger(__name__)
 
 from constants import (
     DEFAULT_SSL_PORT,
@@ -85,7 +88,7 @@ def _normalize_ip_api_com_response(data: Dict[str, Any]) -> Dict[str, Any]:
         data: Raw response from ip-api.com API
         
     Returns:
-        Normalized dictionary in standard format
+        Normalized dictionary in standard format with lat/lon as Optional[float]
     """
     # ip-api.com already returns in the desired format
     # Just ensure all expected fields are present
@@ -101,8 +104,8 @@ def _normalize_ip_api_com_response(data: Dict[str, Any]) -> Dict[str, Any]:
         "city": data.get("city", ""),
         "district": data.get("district", ""),
         "zip": data.get("zip", ""),
-        "lat": data.get("lat", 0.0),
-        "lon": data.get("lon", 0.0),
+        "lat": data.get("lat"),  # None if not provided
+        "lon": data.get("lon"),  # None if not provided
         "isp": data.get("isp", ""),
         "org": data.get("org", ""),
         "as": data.get("as", ""),
@@ -126,10 +129,10 @@ def _normalize_ipinfo_response(data: Dict[str, Any]) -> Dict[str, Any]:
         data: Raw response from ipinfo.io API
         
     Returns:
-        Normalized dictionary in standard format
+        Normalized dictionary in standard format with lat/lon as Optional[float]
     """
     # Parse location coordinates if available
-    lat, lon = 0.0, 0.0
+    lat, lon = None, None
     if "loc" in data and data["loc"]:
         try:
             parts = data["loc"].split(",")
@@ -153,8 +156,8 @@ def _normalize_ipinfo_response(data: Dict[str, Any]) -> Dict[str, Any]:
         "city": data.get("city", ""),
         "district": "",  # Not provided by ipinfo.io
         "zip": data.get("postal", ""),
-        "lat": lat,
-        "lon": lon,
+        "lat": lat,  # None if not available
+        "lon": lon,  # None if not available
         "isp": "",  # Not provided by ipinfo.io in free tier
         "org": data.get("org", ""),
         "as": data.get("org", ""),  # ipinfo.io combines AS info in org field
@@ -179,8 +182,14 @@ def get_ip_geolocation(ip: str) -> Optional[Dict[str, Any]]:
         ip: IP address to lookup
         
     Returns:
-        Dictionary with IP information in standardized format or None on error
+        Dictionary with IP information in standardized format or None on error.
+        Note: lat/lon fields may be None if coordinates are not available.
     """
+    # Validate IP address before making API calls
+    if not is_valid_ip(ip):
+        logger.warning(f"Invalid IP address provided: {ip}")
+        return None
+    
     # Try ip-api.com first (primary source)
     try:
         url = IP_API_COM_URL.format(ip=ip)
@@ -192,9 +201,10 @@ def get_ip_geolocation(ip: str) -> Optional[Dict[str, Any]]:
         if data.get('status') == 'success':
             return _normalize_ip_api_com_response(data)
         # If status is not success (e.g., 'fail'), fall through to ipinfo.io
-    except Exception:
+    except Exception as e:
+        # Log the error with details for debugging
+        logger.error(f"Failed to fetch IP info from ip-api.com for {ip}: {e}", exc_info=True)
         # Fall through to ipinfo.io on any error
-        pass
     
     # Fallback to ipinfo.io
     try:
@@ -208,7 +218,9 @@ def get_ip_geolocation(ip: str) -> Optional[Dict[str, Any]]:
             return None
         
         return _normalize_ipinfo_response(data)
-    except Exception:
+    except Exception as e:
+        # Log the error with details for debugging
+        logger.error(f"Failed to fetch IP info from ipinfo.io for {ip}: {e}", exc_info=True)
         return None
 
 
