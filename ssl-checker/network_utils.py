@@ -200,8 +200,9 @@ def create_ssl_connection(
     # Use domain for hostname verification if provided, otherwise use IP
     hostname = domain if domain else ip
     
-    sock = socket.create_connection((ip, port))
+    sock = socket.create_connection((ip, port), timeout=CONNECTION_TIMEOUT)
     ssock = context.wrap_socket(sock, server_hostname=hostname)
+    ssock.settimeout(CONNECTION_TIMEOUT)
     cert = ssock.getpeercert()
     
     return ssock, cert

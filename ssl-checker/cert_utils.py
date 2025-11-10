@@ -32,26 +32,6 @@ def get_days_until_expiration(cert: Dict[str, Any]) -> int:
     return int((exp_seconds - now_seconds) / 86400)
 
 
-def evaluate_cipher_strength(cipher: Optional[str]) -> str:
-    """
-    Evaluate the strength of a cipher suite.
-    
-    Args:
-        cipher: Cipher suite name
-        
-    Returns:
-        'strong', 'weak', or 'unknown'
-    """
-    if not cipher:
-        return 'unknown'
-    
-    cipher_upper = cipher.upper()
-    if any(weak in cipher_upper for weak in WEAK_CIPHER_COMPONENTS):
-        return 'weak'
-    
-    return 'strong'
-
-
 def parse_certificate(
     cert: Dict[str, Any],
     ssock: ssl.SSLSocket
