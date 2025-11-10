@@ -2,6 +2,7 @@
 
 import socket
 import ssl
+import re
 from typing import Optional, Tuple, List, Dict, Any
 
 import dns.resolver
@@ -15,6 +16,39 @@ from constants import (
     IPINFO_API_URL,
     UNKNOWN_SERVER,
 )
+
+
+def is_valid_domain(domain: str) -> bool:
+    """
+    Validate domain name format.
+    
+    Args:
+        domain: Domain name to validate
+        
+    Returns:
+        True if domain format is valid, False otherwise
+    """
+    # Basic domain validation: alphanumeric, dots, hyphens
+    # No scheme (http://, etc.) or special chars
+    pattern = r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$|^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$'
+    return bool(re.match(pattern, domain))
+
+
+def is_valid_ip(ip: str) -> bool:
+    """
+    Validate IP address format.
+    
+    Args:
+        ip: IP address to validate
+        
+    Returns:
+        True if IP format is valid, False otherwise
+    """
+    try:
+        socket.inet_aton(ip)
+        return True
+    except socket.error:
+        return False
 
 
 def resolve_domain_to_ip(domain: str) -> str:
@@ -84,6 +118,12 @@ def get_server_header(domain: Optional[str], ip: str, port: int = DEFAULT_SSL_PO
     Returns:
         Server header value or 'Unknown' if not found
     """
+    # Validate inputs to prevent SSRF attacks
+    if domain and not is_valid_domain(domain):
+        return UNKNOWN_SERVER
+    if not is_valid_ip(ip):
+        return UNKNOWN_SERVER
+    
     # Try HTTPS first for domain
     if domain:
         try:
@@ -150,6 +190,8 @@ def create_ssl_connection(
         Various SSL and socket exceptions on connection failure
     """
     context = ssl.create_default_context()
+    # Explicitly set minimum TLS version to 1.2 for security
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     
     if not verify:
         context.check_hostname = False

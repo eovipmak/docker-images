@@ -103,11 +103,19 @@ def check_single_target(
             }
         }
         
-    except Exception as e:
+    except ValueError as e:
+        # Handle validation errors with user-friendly messages
         return {
             "status": STATUS_ERROR,
             "timestamp": checked_at,
             "error": str(e)
+        }
+    except Exception as e:
+        # Generic error - don't expose internal details
+        return {
+            "status": STATUS_ERROR,
+            "timestamp": checked_at,
+            "error": "An error occurred while checking SSL certificate. Please verify the domain/IP and try again."
         }
 
 
