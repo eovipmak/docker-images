@@ -14,6 +14,7 @@ from constants import (
     CONNECTION_TIMEOUT,
     SOCKET_TIMEOUT,
     IPINFO_API_URL,
+    IP_API_COM_URL,
     UNKNOWN_SERVER,
 )
 
@@ -76,16 +77,126 @@ def resolve_domain_to_ip(domain: str) -> str:
             raise ValueError(f"Cannot resolve domain: {domain}")
 
 
+def _normalize_ip_api_com_response(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize ip-api.com response to standard format.
+    
+    Args:
+        data: Raw response from ip-api.com API
+        
+    Returns:
+        Normalized dictionary in standard format
+    """
+    # ip-api.com already returns in the desired format
+    # Just ensure all expected fields are present
+    normalized = {
+        "query": data.get("query", ""),
+        "status": data.get("status", ""),
+        "continent": data.get("continent", ""),
+        "continentCode": data.get("continentCode", ""),
+        "country": data.get("country", ""),
+        "countryCode": data.get("countryCode", ""),
+        "region": data.get("region", ""),
+        "regionName": data.get("regionName", ""),
+        "city": data.get("city", ""),
+        "district": data.get("district", ""),
+        "zip": data.get("zip", ""),
+        "lat": data.get("lat", 0.0),
+        "lon": data.get("lon", 0.0),
+        "isp": data.get("isp", ""),
+        "org": data.get("org", ""),
+        "as": data.get("as", ""),
+        "asname": data.get("asname", ""),
+        "reverse": data.get("reverse", ""),
+        "mobile": data.get("mobile", False),
+        "proxy": data.get("proxy", False),
+        "hosting": data.get("hosting", False),
+    }
+    return normalized
+
+
+def _normalize_ipinfo_response(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize ipinfo.io response to standard format.
+    
+    The ipinfo.io response has a different structure, so we map it to match
+    the ip-api.com format as closely as possible.
+    
+    Args:
+        data: Raw response from ipinfo.io API
+        
+    Returns:
+        Normalized dictionary in standard format
+    """
+    # Parse location coordinates if available
+    lat, lon = 0.0, 0.0
+    if "loc" in data and data["loc"]:
+        try:
+            parts = data["loc"].split(",")
+            if len(parts) == 2:
+                lat = float(parts[0])
+                lon = float(parts[1])
+        except (ValueError, AttributeError):
+            pass
+    
+    # ipinfo.io doesn't provide continent info, we'll leave it empty
+    # Map fields from ipinfo.io to standard format
+    normalized = {
+        "query": data.get("ip", ""),
+        "status": "success",  # ipinfo.io doesn't have status field, assume success if we got data
+        "continent": "",  # Not provided by ipinfo.io
+        "continentCode": "",  # Not provided by ipinfo.io
+        "country": data.get("country", ""),
+        "countryCode": data.get("country", ""),  # ipinfo.io uses 2-letter code in "country" field
+        "region": data.get("region", ""),
+        "regionName": data.get("region", ""),  # ipinfo.io doesn't separate region code and name
+        "city": data.get("city", ""),
+        "district": "",  # Not provided by ipinfo.io
+        "zip": data.get("postal", ""),
+        "lat": lat,
+        "lon": lon,
+        "isp": "",  # Not provided by ipinfo.io in free tier
+        "org": data.get("org", ""),
+        "as": data.get("org", ""),  # ipinfo.io combines AS info in org field
+        "asname": "",  # Not separately provided by ipinfo.io
+        "reverse": data.get("hostname", ""),
+        "mobile": False,  # Not provided by ipinfo.io
+        "proxy": False,  # Not provided by ipinfo.io
+        "hosting": False,  # Not provided by ipinfo.io
+    }
+    return normalized
+
+
 def get_ip_geolocation(ip: str) -> Optional[Dict[str, Any]]:
     """
     Fetch geolocation and ISP information for an IP address.
+    
+    This function tries ip-api.com first (more detailed information),
+    then falls back to ipinfo.io if the first attempt fails.
+    Both responses are normalized to a standard format.
     
     Args:
         ip: IP address to lookup
         
     Returns:
-        Dictionary with IP information or None on error
+        Dictionary with IP information in standardized format or None on error
     """
+    # Try ip-api.com first (primary source)
+    try:
+        url = IP_API_COM_URL.format(ip=ip)
+        response = requests.get(url, timeout=CONNECTION_TIMEOUT)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Check if the API returned success status
+        if data.get('status') == 'success':
+            return _normalize_ip_api_com_response(data)
+        # If status is not success (e.g., 'fail'), fall through to ipinfo.io
+    except Exception:
+        # Fall through to ipinfo.io on any error
+        pass
+    
+    # Fallback to ipinfo.io
     try:
         url = IPINFO_API_URL.format(ip=ip)
         response = requests.get(url, timeout=CONNECTION_TIMEOUT)
@@ -96,7 +207,7 @@ def get_ip_geolocation(ip: str) -> Optional[Dict[str, Any]]:
         if 'error' in data:
             return None
         
-        return data
+        return _normalize_ipinfo_response(data)
     except Exception:
         return None
 
