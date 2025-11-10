@@ -32,16 +32,3 @@ jobs:
         run: |
           docker push ${{ env.IMAGE_NAME }}:build_at-${{ env.DATE_STAMP }}
           docker push ${{ env.IMAGE_NAME }}:latest
-
-      - name: SSH into server and deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SSH_PORT }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker pull ${{ env.IMAGE_NAME }}:latest
-            docker stop image-search || true
-            docker rm image-search || true
-            docker run -d --name image-search -p 8080:8080 ${{ env.IMAGE_NAME }}:latest
