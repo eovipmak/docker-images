@@ -26,55 +26,115 @@ def resolve_domain_to_ip(domain: str) -> str:
         except socket.gaierror:
             raise ValueError("Invalid domain")
 
-def get_ssl_info(domain: str, ip: str, port: int = 443) -> dict:
+def get_ssl_info(domain: str, ip: str, port: int = 443):
+    ssl_status = "success"
+    ssl_error_type = None
+    alerts = []
+    recommendations = []
+    cert_info = None
+    
+    def parse_cert(cert, ssock):
+        cipher_info = ssock.cipher()
+        tls_version = cipher_info[1] if cipher_info else None
+        cipher_suite = cipher_info[0] if cipher_info else None
+        san = cert.get('subjectAltName', [])
+        exp_seconds = ssl.cert_time_to_seconds(cert['notAfter'])
+        now_seconds = time.time()
+        days_until_expiration = int((exp_seconds - now_seconds) / 86400)
+        
+        # Validation and alerts
+        if days_until_expiration < 30:
+            alerts.append("Certificate expires soon")
+            recommendations.append("Renew certificate soon")
+        if tls_version and tls_version in ['TLSv1', 'TLSv1.1']:
+            alerts.append("Insecure TLS version")
+            recommendations.append("Upgrade to TLS 1.2 or higher")
+        sig_alg = cert.get('signatureAlgorithm')
+        if sig_alg and 'SHA1' in sig_alg.decode('utf-8', errors='ignore'):
+            alerts.append("Weak signature algorithm")
+            recommendations.append("Use stronger signature algorithm")
+        
+        def evaluate_cipher_strength(cipher):
+            if not cipher:
+                return 'unknown'
+            weak_ciphers = ['RC4', 'DES', '3DES', 'MD5', 'SHA1', 'NULL']
+            if any(weak in cipher.upper() for weak in weak_ciphers):
+                return 'weak'
+            else:
+                return 'strong'
+        
+        return {
+            "subject": dict(x[0] for x in cert.get('subject', [])),
+            "issuer": dict(x[0] for x in cert.get('issuer', [])),
+            "version": cert.get('version'),
+            "serialNumber": cert.get('serialNumber'),
+            "notBefore": cert.get('notBefore'),
+            "notAfter": cert.get('notAfter'),
+            "signatureAlgorithm": sig_alg.decode('utf-8', errors='ignore') if sig_alg else None,
+            "tlsVersion": tls_version,
+            "cipherSuite": cipher_suite,
+            "subjectAltNames": san,
+            "daysUntilExpiration": days_until_expiration,
+            "alerts": alerts
+        }
+    
     try:
         context = ssl.create_default_context()
         with socket.create_connection((ip, port)) as sock:
             with context.wrap_socket(sock, server_hostname=domain) as ssock:
                 cert = ssock.getpeercert()
-                cipher_info = ssock.cipher()
-                tls_version = cipher_info[1] if cipher_info else None
-                cipher_suite = cipher_info[0] if cipher_info else None
-                san = cert.get('subjectAltName', [])
-                exp_seconds = ssl.cert_time_to_seconds(cert['notAfter'])
-                now_seconds = time.time()
-                days_until_expiration = int((exp_seconds - now_seconds) / 86400)
-                
-                # Validation and alerts
-                alerts = []
-                if days_until_expiration < 30:
-                    alerts.append("Certificate expires soon")
-                if tls_version and tls_version in ['TLSv1', 'TLSv1.1']:
-                    alerts.append("Insecure TLS version")
-                sig_alg = cert.get('signatureAlgorithm')
-                if sig_alg and 'SHA1' in sig_alg.decode('utf-8', errors='ignore'):
-                    alerts.append("Weak signature algorithm")
-                
-                def evaluate_cipher_strength(cipher):
-                    if not cipher:
-                        return 'unknown'
-                    weak_ciphers = ['RC4', 'DES', '3DES', 'MD5', 'SHA1', 'NULL']
-                    if any(weak in cipher.upper() for weak in weak_ciphers):
-                        return 'weak'
-                    else:
-                        return 'strong'
-                
-                return {
-                    "subject": dict(x[0] for x in cert.get('subject', [])),
-                    "issuer": dict(x[0] for x in cert.get('issuer', [])),
-                    "version": cert.get('version'),
-                    "serialNumber": cert.get('serialNumber'),
-                    "notBefore": cert.get('notBefore'),
-                    "notAfter": cert.get('notAfter'),
-                    "signatureAlgorithm": sig_alg.decode('utf-8', errors='ignore') if sig_alg else None,
-                    "tlsVersion": tls_version,
-                    "cipherSuite": cipher_suite,
-                    "subjectAltNames": san,
-                    "daysUntilExpiration": days_until_expiration,
-                    "alerts": alerts
-                }
-    except Exception as e:
-        return {
+                cert_info = parse_cert(cert, ssock)
+    except ssl.CertificateError as e:
+        ssl_status = "error"
+        ssl_error_type = "CERTIFICATE_INVALID"
+        error_str = str(e).lower()
+        if "doesn't match" in error_str or "common name" in error_str or "hostname" in error_str:
+            alerts.append("Certificate CN/SAN does not match domain")
+            recommendations.append("Ensure CN/SAN matches domain")
+            ssl_error_type = "CN_MISMATCH"
+        elif "expired" in error_str or "not yet valid" in error_str:
+            alerts.append("Certificate has expired or is not yet valid")
+            recommendations.append("Renew the certificate")
+            ssl_error_type = "CERT_EXPIRED"
+        else:
+            alerts.append("Certificate is invalid")
+            recommendations.append("Check certificate configuration")
+        
+        # Try to get cert without verification
+        try:
+            context2 = ssl.create_default_context()
+            context2.check_hostname = False
+            context2.verify_mode = ssl.CERT_NONE
+            with socket.create_connection((ip, port)) as sock2:
+                with context2.wrap_socket(sock2, server_hostname=domain) as ssock2:
+                    cert = ssock2.getpeercert()
+                    cert_info = parse_cert(cert, ssock2)
+                    cert_info["alerts"] = alerts  # Override with specific alerts
+        except Exception:
+            # No cert or other error
+            ssl_error_type = "NO_CERTIFICATE"
+            alerts.append("No SSL certificate installed")
+            recommendations.append("Install SSL certificate")
+            cert_info = {
+                "subject": None,
+                "issuer": None,
+                "version": None,
+                "serialNumber": None,
+                "notBefore": None,
+                "notAfter": None,
+                "signatureAlgorithm": None,
+                "tlsVersion": None,
+                "cipherSuite": None,
+                "subjectAltNames": [],
+                "daysUntilExpiration": None,
+                "alerts": alerts
+            }
+    except ssl.SSLError as e:
+        ssl_status = "error"
+        ssl_error_type = "SSL_ERROR"
+        alerts.append("SSL handshake failed")
+        recommendations.append("Check SSL/TLS configuration")
+        cert_info = {
             "subject": None,
             "issuer": None,
             "version": None,
@@ -86,8 +146,29 @@ def get_ssl_info(domain: str, ip: str, port: int = 443) -> dict:
             "cipherSuite": None,
             "subjectAltNames": [],
             "daysUntilExpiration": None,
-            "alerts": ["No SSL certificate installed"]
+            "alerts": alerts
         }
+    except Exception as e:
+        ssl_status = "error"
+        ssl_error_type = "UNKNOWN_ERROR"
+        alerts.append("SSL check failed")
+        recommendations.append("Check server configuration")
+        cert_info = {
+            "subject": None,
+            "issuer": None,
+            "version": None,
+            "serialNumber": None,
+            "notBefore": None,
+            "notAfter": None,
+            "signatureAlgorithm": None,
+            "tlsVersion": None,
+            "cipherSuite": None,
+            "subjectAltNames": [],
+            "daysUntilExpiration": None,
+            "alerts": alerts
+        }
+    
+    return cert_info, ssl_status, ssl_error_type, recommendations
 
 def get_server_header(domain: str, ip: str, port: int = 443) -> str:
     # Try HTTPS first for domain
@@ -148,13 +229,12 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
             # Assume ip is valid
             pass
         
-        ssl_info = get_ssl_info(domain or ip, ip, port)
+        ssl_info, ssl_status, ssl_error_type, ssl_recs = get_ssl_info(domain or ip, ip, port)
         server = get_server_header(domain or ip, ip, port)
         ip_info = get_ip_info(ip)
         
         # Status
-        ssl_status = "success" if ssl_info.get('subject') is not None else "error"
-        server_status = "success" if server != 'Unknown' else "error"
+        server_status = "success" if server != 'Unknown' else ("warning" if ssl_status == "error" else "error")
         ip_status = "success" if ip_info and 'error' not in ip_info else "error"
         
         # Standardize fields
@@ -162,13 +242,13 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
             ip_info = None
         
         # Recommendations
-        recommendations = []
-        if ssl_status == "error":
-            recommendations.append("Install SSL certificate")
+        recommendations = ssl_recs
         if ssl_info and ssl_info.get('daysUntilExpiration') is not None and ssl_info.get('daysUntilExpiration') < 30:
-            recommendations.append("Renew certificate soon")
+            if "Renew certificate soon" not in recommendations:
+                recommendations.append("Renew certificate soon")
         if ssl_info and ssl_info.get('tlsVersion') in ['TLSv1', 'TLSv1.1']:
-            recommendations.append("Upgrade to TLS 1.2 or higher")
+            if "Upgrade to TLS 1.2 or higher" not in recommendations:
+                recommendations.append("Upgrade to TLS 1.2 or higher")
         
         return {
             "status": "success",
@@ -184,7 +264,8 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
                 "recommendations": recommendations,
                 "sslStatus": ssl_status,
                 "serverStatus": server_status,
-                "ipStatus": ip_status
+                "ipStatus": ip_status,
+                "sslErrorType": ssl_error_type
             }
         }
     except Exception as e:
