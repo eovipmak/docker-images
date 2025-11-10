@@ -104,11 +104,19 @@ def check_single_target(
         }
         
     except ValueError as e:
-        # Handle validation errors with user-friendly messages
+        # Handle validation errors with sanitized messages
+        error_msg = str(e)
+        # Don't expose internal details if the error contains sensitive info
+        if "Cannot resolve domain" in error_msg:
+            return {
+                "status": STATUS_ERROR,
+                "timestamp": checked_at,
+                "error": "Unable to resolve domain name"
+            }
         return {
             "status": STATUS_ERROR,
             "timestamp": checked_at,
-            "error": str(e)
+            "error": error_msg
         }
     except Exception as e:
         # Generic error - don't expose internal details
