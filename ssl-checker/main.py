@@ -111,10 +111,7 @@ def get_ssl_info(domain: str, ip: str, port: int = 443):
                     cert_info = parse_cert(cert, ssock2)
                     cert_info["alerts"] = alerts  # Override with specific alerts
         except Exception:
-            # No cert or other error
-            ssl_error_type = "NO_CERTIFICATE"
-            alerts.append("No SSL certificate installed")
-            recommendations.append("Install SSL certificate")
+            # Unable to retrieve cert details, but we know it's invalid
             cert_info = {
                 "subject": None,
                 "issuer": None,
