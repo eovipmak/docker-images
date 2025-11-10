@@ -69,25 +69,35 @@ def get_ssl_info(domain: str, ip: str, port: int = 443) -> dict:
                     "signatureAlgorithm": sig_alg.decode('utf-8', errors='ignore') if sig_alg else None,
                     "tlsVersion": tls_version,
                     "cipherSuite": cipher_suite,
-                    "cipherStrength": evaluate_cipher_strength(cipher_suite),
                     "subjectAltNames": san,
                     "daysUntilExpiration": days_until_expiration,
                     "alerts": alerts
                 }
     except Exception as e:
-        return {"error": str(e)}
+        return {
+            "subject": None,
+            "issuer": None,
+            "version": None,
+            "serialNumber": None,
+            "notBefore": None,
+            "notAfter": None,
+            "signatureAlgorithm": None,
+            "tlsVersion": None,
+            "cipherSuite": None,
+            "subjectAltNames": [],
+            "daysUntilExpiration": None,
+            "alerts": ["No SSL certificate installed"]
+        }
 
-def get_server_header(domain: str, ip: str, port: int = 443) -> tuple[str, bool]:
-    redirects_to_https = False
+def get_server_header(domain: str, ip: str, port: int = 443) -> str:
     # Try HTTPS first for domain
     if domain:
         try:
             url = f"https://{domain}:{port}" if port != 443 else f"https://{domain}"
             response = requests.get(url, timeout=10, allow_redirects=True)
             server = response.headers.get('Server')
-            redirects_to_https = len(response.history) > 0
             if server:
-                return server, redirects_to_https
+                return server
         except Exception:
             pass
     # Fallback to HTTP for domain or IP
@@ -95,10 +105,8 @@ def get_server_header(domain: str, ip: str, port: int = 443) -> tuple[str, bool]
         url = f"http://{domain or ip}:{port}" if port != 80 else f"http://{domain or ip}"
         response = requests.get(url, timeout=10, allow_redirects=True)
         server = response.headers.get('Server')
-        if response.history:
-            redirects_to_https = any('https' in str(h.url) for h in response.history)
         if server:
-            return server, redirects_to_https
+            return server
     except Exception:
         pass
     # Banner grabbing fallback
@@ -112,10 +120,10 @@ def get_server_header(domain: str, ip: str, port: int = 443) -> tuple[str, bool]
         sock.close()
         if 'Server:' in banner:
             server = banner.split('Server:')[1].split('\r\n')[0].strip()
-            return server, False
+            return server
     except Exception:
         pass
-    return 'Unknown', False
+    return 'Unknown'
 
 def get_ip_info(ip: str) -> dict:
     try:
@@ -141,28 +149,26 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
             pass
         
         ssl_info = get_ssl_info(domain or ip, ip, port)
-        server, redirects_to_https = get_server_header(domain or ip, ip, port)
+        server = get_server_header(domain or ip, ip, port)
         ip_info = get_ip_info(ip)
         
         # Status
-        ssl_status = "success" if ssl_info and 'error' not in ssl_info else "error"
+        ssl_status = "success" if ssl_info.get('subject') is not None else "error"
         server_status = "success" if server != 'Unknown' else "error"
         ip_status = "success" if ip_info and 'error' not in ip_info else "error"
         
         # Standardize fields
-        if 'error' in ssl_info:
-            ssl_info = None
         if 'error' in ip_info:
             ip_info = None
         
         # Recommendations
         recommendations = []
+        if ssl_status == "error":
+            recommendations.append("Install SSL certificate")
         if ssl_info and ssl_info.get('daysUntilExpiration', 0) < 30:
             recommendations.append("Renew certificate soon")
         if ssl_info and ssl_info.get('tlsVersion') in ['TLSv1', 'TLSv1.1']:
             recommendations.append("Upgrade to TLS 1.2 or higher")
-        if ssl_info and ssl_info.get('cipherStrength') == 'weak':
-            recommendations.append("Use stronger cipher suite")
         
         return {
             "status": "success",
@@ -174,7 +180,6 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
                 "ssl": ssl_info,
                 "server": server,
                 "ip_info": ip_info,
-                "redirectsToHttps": redirects_to_https,
                 "checkedAt": checked_at,
                 "recommendations": recommendations,
                 "sslStatus": ssl_status,
