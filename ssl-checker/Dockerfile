@@ -1,4 +1,4 @@
-LABEL org.opencontainers.image.description "SSL Checker API Service by tintn"
+LABEL org.opencontainers.image.description="SSL Checker API Service by tintn"
 
 FROM python:3.12-slim
 
