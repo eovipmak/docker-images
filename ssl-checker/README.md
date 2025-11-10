@@ -29,29 +29,47 @@ curl "http://localhost:8000/check?domain=example.com"
 
 ```json
 {
-  "domain": "example.com",
-  "ip": "93.184.216.34",
-  "ssl": {
-    "subject": {"commonName": "example.com"},
-    "issuer": {"commonName": "DigiCert SHA2 Secure Server CA"},
-    "version": 3,
-    "serialNumber": "123456789",
-    "notBefore": "2023-01-01T00:00:00Z",
-    "notAfter": "2024-01-01T00:00:00Z",
-    "signatureAlgorithm": "sha256WithRSAEncryption"
-  },
-  "server": "nginx/1.21.3",
-  "ip_info": {
+  "status": "success",
+  "timestamp": "2025-11-11T12:00:00.000000",
+  "data": {
+    "domain": "example.com",
     "ip": "93.184.216.34",
-    "hostname": "example.com",
-    "city": "Norwell",
-    "region": "Massachusetts",
-    "country": "US",
-    "loc": "42.1596,-70.8217",
-    "org": "AS15133 MCI Communications Services, Inc. d/b/a Verizon Business",
-    "postal": "02061",
-    "timezone": "America/New_York"
+    "ssl": {
+      "subject": {"commonName": "example.com"},
+      "issuer": {"commonName": "DigiCert SHA2 Secure Server CA"},
+      "version": 3,
+      "serialNumber": "123456789",
+      "notBefore": "Jan  1 00:00:00 2023 GMT",
+      "notAfter": "Jan  1 00:00:00 2024 GMT",
+      "signatureAlgorithm": "sha256WithRSAEncryption",
+      "tlsVersion": "TLSv1.3",
+      "cipherSuite": "TLS_AES_256_GCM_SHA384",
+      "subjectAltNames": [["DNS", "example.com"], ["DNS", "www.example.com"]],
+      "daysUntilExpiration": 45
+    },
+    "server": "nginx/1.21.3",
+    "ip_info": {
+      "ip": "93.184.216.34",
+      "hostname": "example.com",
+      "city": "Norwell",
+      "region": "Massachusetts",
+      "country": "US",
+      "loc": "42.1596,-70.8217",
+      "org": "AS15133 MCI Communications Services, Inc. d/b/a Verizon Business",
+      "postal": "02061",
+      "timezone": "America/New_York"
+    }
   }
+}
+```
+
+#### Error Response
+
+```json
+{
+  "status": "error",
+  "timestamp": "2025-11-11T12:00:00.000000",
+  "error": "Provide either domain or ip"
 }
 ```
 

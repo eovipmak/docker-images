@@ -4,6 +4,7 @@ import ssl
 import socket
 import dns.resolver
 from datetime import datetime
+import time
 
 app = FastAPI()
 
@@ -25,6 +26,12 @@ def get_ssl_info(domain: str, ip: str) -> dict:
         with socket.create_connection((ip, 443)) as sock:
             with context.wrap_socket(sock, server_hostname=domain) as ssock:
                 cert = ssock.getpeercert()
+                tls_version = ssock.version
+                cipher_suite = ssock.cipher()[0]
+                san = cert.get('subjectAltName', [])
+                exp_seconds = ssl.cert_time_to_seconds(cert['notAfter'])
+                now_seconds = time.time()
+                days_until_expiration = int((exp_seconds - now_seconds) / 86400)
                 return {
                     "subject": dict(x[0] for x in cert.get('subject', [])),
                     "issuer": dict(x[0] for x in cert.get('issuer', [])),
@@ -33,22 +40,30 @@ def get_ssl_info(domain: str, ip: str) -> dict:
                     "notBefore": cert.get('notBefore'),
                     "notAfter": cert.get('notAfter'),
                     "signatureAlgorithm": cert.get('signatureAlgorithm'),
+                    "tlsVersion": tls_version,
+                    "cipherSuite": cipher_suite,
+                    "subjectAltNames": san,
+                    "daysUntilExpiration": days_until_expiration,
                 }
     except Exception as e:
         return {"error": str(e)}
 
 def get_server_header(domain: str, ip: str) -> str:
-    try:
-        url = f"https://{domain}"
-        response = requests.get(url, timeout=10)
-        return response.headers.get('Server', 'Unknown')
-    except Exception:
+    # Try HTTPS first for domain
+    if domain:
         try:
-            url = f"http://{ip}"
+            url = f"https://{domain}"
             response = requests.get(url, timeout=10)
             return response.headers.get('Server', 'Unknown')
         except Exception:
-            return 'Unknown'
+            pass
+    # Fallback to HTTP for domain or IP
+    try:
+        url = f"http://{domain or ip}"
+        response = requests.get(url, timeout=10)
+        return response.headers.get('Server', 'Unknown')
+    except Exception:
+        return 'Unknown'
 
 def get_ip_info(ip: str) -> dict:
     try:
@@ -59,23 +74,40 @@ def get_ip_info(ip: str) -> dict:
 
 @app.get("/check")
 def check_ssl(domain: str = None, ip: str = None):
-    if not domain and not ip:
-        raise HTTPException(status_code=400, detail="Provide either domain or ip")
-    
-    if domain:
-        ip = resolve_domain_to_ip(domain)
-    else:
-        # Assume ip is valid, but could add validation
-        pass
-    
-    ssl_info = get_ssl_info(domain or ip, ip)
-    server = get_server_header(domain or ip, ip)
-    ip_info = get_ip_info(ip)
-    
-    return {
-        "domain": domain,
-        "ip": ip,
-        "ssl": ssl_info,
-        "server": server,
-        "ip_info": ip_info
-    }
+    timestamp = datetime.now().isoformat()
+    try:
+        if not domain and not ip:
+            return {
+                "status": "error",
+                "timestamp": timestamp,
+                "error": "Provide either domain or ip"
+            }
+        
+        if domain:
+            ip = resolve_domain_to_ip(domain)
+        else:
+            # Assume ip is valid, but could add validation
+            pass
+        
+        ssl_info = get_ssl_info(domain or ip, ip)
+        server = get_server_header(domain or ip, ip)
+        ip_info = get_ip_info(ip)
+        
+        return {
+            "status": "success",
+            "timestamp": timestamp,
+            "data": {
+                "domain": domain,
+                "ip": ip,
+                "ssl": ssl_info,
+                "server": server,
+                "ip_info": ip_info
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "timestamp": timestamp,
+            "error": str(e)
+        }
+
