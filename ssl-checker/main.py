@@ -165,7 +165,7 @@ def check_single(domain: str = None, ip: str = None, port: int = 443):
         recommendations = []
         if ssl_status == "error":
             recommendations.append("Install SSL certificate")
-        if ssl_info and ssl_info.get('daysUntilExpiration', 0) < 30:
+        if ssl_info and ssl_info.get('daysUntilExpiration') is not None and ssl_info.get('daysUntilExpiration') < 30:
             recommendations.append("Renew certificate soon")
         if ssl_info and ssl_info.get('tlsVersion') in ['TLSv1', 'TLSv1.1']:
             recommendations.append("Upgrade to TLS 1.2 or higher")
