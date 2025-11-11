@@ -1,19 +1,19 @@
 // Translation data for the SSL Checker application
 const translations = {
-    vi: {
+        vi: {
         // Header
-        title: "🔒 Công cụ Kiểm tra Chứng chỉ SSL",
-        subtitle: "Kiểm tra thông tin chứng chỉ SSL, chi tiết máy chủ và vị trí địa lý IP",
+        title: "🔒 Công cụ kiểm tra chứng chỉ SSL",
+        subtitle: "Phân tích chi tiết chứng chỉ SSL, thông tin máy chủ và vị trí địa lý của địa chỉ IP",
         
         // Form
-        formTitle: "Kiểm tra Chứng chỉ SSL",
-        targetLabel: "Tên miền hoặc Địa chỉ IP",
+        formTitle: "Kiểm tra chứng chỉ SSL",
+        targetLabel: "Tên miền hoặc địa chỉ IP",
         targetPlaceholder: "example.com:443, 93.184.216.34:8443, hoặc [::1]:443",
-        helpText: "Nhập tên miền hoặc địa chỉ IP (IPv4/IPv6). Cổng tùy chọn theo định dạng domain[:port], IP[:port], hoặc [IPv6]:port (mặc định: 443)",
-        checkButton: "Kiểm tra Chứng chỉ",
+        helpText: "Nhập tên miền hoặc địa chỉ IP (IPv4/IPv6). Cổng có thể chỉ định theo định dạng domain[:port], IP[:port] hoặc [IPv6]:port (mặc định: 443).",
+        checkButton: "Thực hiện kiểm tra",
         
         // Results
-        resultsTitle: "Kết quả",
+        resultsTitle: "Kết quả kiểm tra",
         result: "Kết quả",
         
         // Status badges
@@ -22,79 +22,79 @@ const translations = {
         statusWarning: "Cảnh báo",
         
         // Sections
-        sslCertificate: "🔒 Chứng chỉ SSL",
-        serverInformation: "🖥️ Thông tin Máy chủ",
-        ipGeolocation: "🌍 Vị trí Địa lý IP",
-        securityAlerts: "⚠️ Cảnh báo Bảo mật",
-        recommendations: "💡 Khuyến nghị",
+        sslCertificate: "🔒 Thông tin chứng chỉ SSL",
+        serverInformation: "🖥️ Thông tin máy chủ",
+        ipGeolocation: "🌍 Thông tin vị trí IP",
+        securityAlerts: "⚠️ Cảnh báo bảo mật",
+        recommendations: "💡 Gợi ý cải thiện",
         
         // SSL Certificate Fields
-        subjectCN: "Subject CN (Tên chung)",
-        subjectOrganization: "Tổ chức Subject",
-        subjectOrgUnit: "Đơn vị Tổ chức Subject",
-        subjectCountry: "Quốc gia Subject",
-        subjectState: "Tỉnh/Bang Subject",
-        subjectLocality: "Địa phương Subject",
-        issuer: "Nhà phát hành",
-        issuerOrg: "Tổ chức Nhà phát hành",
-        issuerCountry: "Quốc gia Nhà phát hành",
+        subjectCN: "Tên chung (Subject CN)",
+        subjectOrganization: "Tổ chức phát hành",
+        subjectOrgUnit: "Đơn vị tổ chức",
+        subjectCountry: "Quốc gia",
+        subjectState: "Tỉnh/Bang",
+        subjectLocality: "Thành phố/Địa phương",
+        issuer: "Nhà phát hành chứng chỉ",
+        issuerOrg: "Tổ chức phát hành",
+        issuerCountry: "Quốc gia phát hành",
         version: "Phiên bản",
-        serialNumber: "Số Serial",
-        validFrom: "Có hiệu lực từ",
-        validUntil: "Có hiệu lực đến",
-        daysUntilExpiration: "Số ngày đến khi hết hạn",
+        serialNumber: "Số serial",
+        validFrom: "Hiệu lực từ",
+        validUntil: "Hiệu lực đến",
+        daysUntilExpiration: "Số ngày còn lại đến khi hết hạn",
         tlsVersion: "Phiên bản TLS",
         cipherSuite: "Bộ mã hóa",
-        signatureAlgorithm: "Thuật toán Chữ ký",
-        subjectAltNames: "Tên thay thế Subject (SAN)",
+        signatureAlgorithm: "Thuật toán chữ ký",
+        subjectAltNames: "Tên thay thế (SAN)",
         
         // Server Information Fields
         ipAddress: "Địa chỉ IP",
-        port: "Cổng",
-        server: "Máy chủ",
+        port: "Cổng kết nối",
+        server: "Phần mềm máy chủ",
         
         // IP Geolocation Fields
         continent: "Châu lục",
         continentCode: "Mã châu lục",
         country: "Quốc gia",
         countryCode: "Mã quốc gia",
-        region: "Vùng",
-        regionName: "Tên vùng",
+        region: "Khu vực",
+        regionName: "Tên khu vực",
         city: "Thành phố",
         district: "Quận/Huyện",
         zip: "Mã bưu điện",
         coordinates: "Tọa độ (Vĩ độ, Kinh độ)",
-        isp: "Nhà cung cấp dịch vụ Internet",
+        isp: "Nhà cung cấp dịch vụ Internet (ISP)",
         org: "Tổ chức",
-        asn: "Số hệ thống tự trị (AS)",
-        asname: "Tên AS",
-        reverse: "DNS ngược",
-        mobile: "Di động",
-        proxy: "Proxy",
-        hosting: "Lưu trữ",
+        asn: "Số hệ thống tự trị (ASN)",
+        asname: "Tên hệ thống tự trị",
+        reverse: "Tên miền ngược (Reverse DNS)",
+        mobile: "Mạng di động",
+        proxy: "Máy chủ proxy",
+        hosting: "Máy chủ lưu trữ",
         
         // Status Fields
         sslStatus: "Trạng thái SSL",
-        serverStatus: "Trạng thái Máy chủ",
+        serverStatus: "Trạng thái máy chủ",
         ipStatus: "Trạng thái IP",
         errorType: "Loại lỗi",
-        checkedAt: "Kiểm tra lúc",
+        checkedAt: "Thời điểm kiểm tra",
         
         // Common
         yes: "Có",
         no: "Không",
-        unknown: "Không rõ",
-        notAvailable: "N/A",
+        unknown: "Không xác định",
+        notAvailable: "Không có dữ liệu",
         
         // Errors
-        errorOccurred: "Đã xảy ra lỗi",
-        provideDomain: "Vui lòng cung cấp tên miền hoặc địa chỉ IP",
-        invalidTarget: "Vui lòng cung cấp tên miền hoặc địa chỉ IP hợp lệ",
-        checkFailed: "Không thể kiểm tra chứng chỉ SSL. Vui lòng thử lại.",
+        errorOccurred: "Đã xảy ra lỗi trong quá trình kiểm tra.",
+        provideDomain: "Vui lòng nhập tên miền hoặc địa chỉ IP.",
+        invalidTarget: "Tên miền hoặc địa chỉ IP không hợp lệ.",
+        checkFailed: "Không thể hoàn tất kiểm tra SSL. Vui lòng thử lại sau.",
         
         // Footer
         footerText: "🔒 SSL Checker API v2.0.0",
-        builtWith: "Được xây dựng với",
+        builtWith: "Phát triển bằng",
         by: "bởi"
     },
     en: {
