@@ -5,12 +5,11 @@ function parseTarget(target) {
         return null;
     }
     
-    // Check if input contains a port (look for :port at the end)
-    const portMatch = trimmed.match(/^(.+):(\d+)$/);
-    
-    if (portMatch) {
-        const hostPart = portMatch[1];
-        const port = parseInt(portMatch[2], 10);
+    // First, check for bracketed IPv6 address with port: [IPv6]:port
+    const ipv6BracketMatch = trimmed.match(/^\[([^\]]+)\]:(\d+)$/);
+    if (ipv6BracketMatch) {
+        const host = ipv6BracketMatch[1];
+        const port = parseInt(ipv6BracketMatch[2], 10);
         
         // Validate port range
         if (port < 1 || port > 65535) {
@@ -18,23 +17,56 @@ function parseTarget(target) {
         }
         
         return {
-            host: hostPart,
+            host: host,
             port: port
         };
     }
     
-    // No port specified, use default
+    // Check for bracketed IPv6 address without port: [IPv6]
+    const ipv6BracketOnlyMatch = trimmed.match(/^\[([^\]]+)\]$/);
+    if (ipv6BracketOnlyMatch) {
+        return {
+            host: ipv6BracketOnlyMatch[1],
+            port: 443
+        };
+    }
+    
+    // Check for non-bracketed input with port: host:port (IPv4 or hostname)
+    // Use a non-greedy pattern that matches host without colons, then :port
+    const hostPortMatch = trimmed.match(/^([^:]+):(\d+)$/);
+    
+    if (hostPortMatch) {
+        const host = hostPortMatch[1];
+        const port = parseInt(hostPortMatch[2], 10);
+        
+        // Validate port range
+        if (port < 1 || port > 65535) {
+            throw new Error('Port must be between 1 and 65535');
+        }
+        
+        return {
+            host: host,
+            port: port
+        };
+    }
+    
+    // No port specified, use default (could be IPv4, IPv6, or hostname)
     return {
         host: trimmed,
         port: 443
     };
 }
 
-// Determine if a host is an IP address
+// Determine if a host is an IP address (IPv4 or IPv6)
 function isIPAddress(host) {
-    // Simple IPv4 pattern check
-    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-    return ipv4Pattern.test(host);
+    // Strict IPv4 pattern - validates each octet is 0-255
+    const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$/;
+    
+    // IPv6 pattern - supports full, compressed, and IPv4-mapped forms
+    // Matches standard IPv6, compressed (::), and mixed IPv4-in-IPv6 formats
+    const ipv6Pattern = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+    
+    return ipv4Pattern.test(host) || ipv6Pattern.test(host);
 }
 
 // Single Check Form Handler
