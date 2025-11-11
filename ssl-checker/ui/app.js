@@ -1,3 +1,74 @@
+// Parse target input to extract domain/IP and port
+function parseTarget(target) {
+    const trimmed = target.trim();
+    if (!trimmed) {
+        return null;
+    }
+    
+    // First, check for bracketed IPv6 address with port: [IPv6]:port
+    const ipv6BracketMatch = trimmed.match(/^\[([^\]]+)\]:(\d+)$/);
+    if (ipv6BracketMatch) {
+        const host = ipv6BracketMatch[1];
+        const port = parseInt(ipv6BracketMatch[2], 10);
+        
+        // Validate port range
+        if (port < 1 || port > 65535) {
+            throw new Error('Port must be between 1 and 65535');
+        }
+        
+        return {
+            host: host,
+            port: port
+        };
+    }
+    
+    // Check for bracketed IPv6 address without port: [IPv6]
+    const ipv6BracketOnlyMatch = trimmed.match(/^\[([^\]]+)\]$/);
+    if (ipv6BracketOnlyMatch) {
+        return {
+            host: ipv6BracketOnlyMatch[1],
+            port: 443
+        };
+    }
+    
+    // Check for non-bracketed input with port: host:port (IPv4 or hostname)
+    // Use a non-greedy pattern that matches host without colons, then :port
+    const hostPortMatch = trimmed.match(/^([^:]+):(\d+)$/);
+    
+    if (hostPortMatch) {
+        const host = hostPortMatch[1];
+        const port = parseInt(hostPortMatch[2], 10);
+        
+        // Validate port range
+        if (port < 1 || port > 65535) {
+            throw new Error('Port must be between 1 and 65535');
+        }
+        
+        return {
+            host: host,
+            port: port
+        };
+    }
+    
+    // No port specified, use default (could be IPv4, IPv6, or hostname)
+    return {
+        host: trimmed,
+        port: 443
+    };
+}
+
+// Determine if a host is an IP address (IPv4 or IPv6)
+function isIPAddress(host) {
+    // Strict IPv4 pattern - validates each octet is 0-255
+    const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$/;
+    
+    // IPv6 pattern - supports full, compressed, and IPv4-mapped forms
+    // Matches standard IPv6, compressed (::), and mixed IPv4-in-IPv6 formats
+    const ipv6Pattern = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+    
+    return ipv4Pattern.test(host) || ipv6Pattern.test(host);
+}
+
 // Single Check Form Handler
 document.getElementById('singleCheckForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -7,18 +78,24 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     const btnText = button.querySelector('.btn-text');
     const spinner = button.querySelector('.spinner');
     
-    const domain = form.domain.value.trim();
-    const ip = form.ip.value.trim();
-    const port = form.port.value;
+    const targetInput = form.target.value.trim();
     
     // Validation
-    if (!domain && !ip) {
-        alert('Please provide either a domain name or IP address');
+    if (!targetInput) {
+        alert('Please provide a domain name or IP address');
         return;
     }
     
-    if (domain && ip) {
-        alert('Please provide only domain OR IP, not both');
+    let parsed;
+    try {
+        parsed = parseTarget(targetInput);
+    } catch (error) {
+        alert(error.message);
+        return;
+    }
+    
+    if (!parsed) {
+        alert('Please provide a valid domain name or IP address');
         return;
     }
     
@@ -28,9 +105,14 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     spinner.style.display = 'inline-block';
     
     try {
-        const params = new URLSearchParams({ port });
-        if (domain) params.append('domain', domain);
-        if (ip) params.append('ip', ip);
+        const params = new URLSearchParams({ port: parsed.port });
+        
+        // Determine if host is IP or domain
+        if (isIPAddress(parsed.host)) {
+            params.append('ip', parsed.host);
+        } else {
+            params.append('domain', parsed.host);
+        }
         
         const response = await fetch(`/api/check?${params.toString()}`);
         const data = await response.json();
@@ -39,60 +121,6 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     } catch (error) {
         console.error('Error:', error);
         displayError('Failed to check SSL certificate. Please try again.');
-    } finally {
-        // Reset button state
-        button.disabled = false;
-        btnText.style.display = 'inline';
-        spinner.style.display = 'none';
-    }
-});
-
-// Batch Check Form Handler
-document.getElementById('batchCheckForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const form = e.target;
-    const button = form.querySelector('button[type="submit"]');
-    const btnText = button.querySelector('.btn-text');
-    const spinner = button.querySelector('.spinner');
-    
-    const domainsText = form.domains.value.trim();
-    const ipsText = form.ips.value.trim();
-    const port = parseInt(form.port.value);
-    
-    // Parse domains and IPs
-    const domains = domainsText ? domainsText.split('\n').map(d => d.trim()).filter(d => d) : [];
-    const ips = ipsText ? ipsText.split('\n').map(i => i.trim()).filter(i => i) : [];
-    
-    if (domains.length === 0 && ips.length === 0) {
-        alert('Please provide at least one domain or IP address');
-        return;
-    }
-    
-    // Show loading state
-    button.disabled = true;
-    btnText.style.display = 'none';
-    spinner.style.display = 'inline-block';
-    
-    try {
-        const response = await fetch('/api/batch_check', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ domains, ips, port })
-        });
-        
-        const data = await response.json();
-        
-        if (data.status === 'success' && data.results) {
-            displayResults(data.results);
-        } else {
-            displayError('Failed to check SSL certificates');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        displayError('Failed to check SSL certificates. Please try again.');
     } finally {
         // Reset button state
         button.disabled = false;
@@ -152,11 +180,46 @@ function createResultItem(result, index) {
         html += `
             <div class="result-section">
                 <h3>🔒 SSL Certificate</h3>
-                <div class="info-grid">
+                <div class="info-grid">`;
+        
+        // Display all subject fields
+        if (ssl.subject) {
+            // Create array of all subject properties
+            const subjectEntries = Object.entries(ssl.subject);
+            if (subjectEntries.length > 0) {
+                subjectEntries.forEach(([key, value]) => {
+                    // Format the label nicely
+                    let label = key;
+                    if (key === 'commonName') label = 'Subject CN (Common Name)';
+                    else if (key === 'organizationName') label = 'Subject Organization';
+                    else if (key === 'organizationalUnitName') label = 'Subject Organizational Unit';
+                    else if (key === 'countryName') label = 'Subject Country';
+                    else if (key === 'stateOrProvinceName') label = 'Subject State/Province';
+                    else if (key === 'localityName') label = 'Subject Locality';
+                    else label = `Subject ${key}`;
+                    
+                    html += `
+                    <div class="info-item">
+                        <div class="info-label">${escapeHtml(label)}</div>
+                        <div class="info-value">${escapeHtml(value || 'N/A')}</div>
+                    </div>`;
+                });
+            } else {
+                html += `
                     <div class="info-item">
                         <div class="info-label">Subject CN</div>
-                        <div class="info-value">${escapeHtml(ssl.subject?.commonName || 'N/A')}</div>
-                    </div>
+                        <div class="info-value">N/A</div>
+                    </div>`;
+            }
+        } else {
+            html += `
+                    <div class="info-item">
+                        <div class="info-label">Subject CN</div>
+                        <div class="info-value">N/A</div>
+                    </div>`;
+        }
+        
+        html += `
                     <div class="info-item">
                         <div class="info-label">Issuer</div>
                         <div class="info-value">${escapeHtml(ssl.issuer?.commonName || 'N/A')}</div>
