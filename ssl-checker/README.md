@@ -15,7 +15,7 @@ A FastAPI-based application that checks SSL certificate information, web server 
 
 ## Project Structure
 
-```
+```plaintext
 ssl-checker/
 ├── api/                    # Backend API
 │   ├── main.py            # FastAPI application and API endpoints

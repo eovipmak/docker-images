@@ -159,7 +159,7 @@ This update adds a complete frontend user interface and reorganizes the project 
 The project has been reorganized into a clear separation of frontend and backend:
 
 **New Structure:**
-```
+```text
 ssl-checker/
 ├── api/                    # Backend API (Python/FastAPI)
 │   ├── main.py            # API endpoints and application

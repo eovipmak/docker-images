@@ -6,6 +6,7 @@ web server technology, and IP geolocation details for domains and IP addresses.
 """
 
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
@@ -26,6 +27,10 @@ class BatchRequest(BaseModel):
     port: int = Field(default=DEFAULT_SSL_PORT, description="Port number to check")
 
 
+# Get the absolute path to the UI directory
+BASE_DIR = Path(__file__).resolve().parent
+UI_DIR = BASE_DIR.parent / "ui"
+
 app = FastAPI(
     title="SSL Checker API",
     description="Check SSL certificate information, server details, and IP geolocation",
@@ -33,7 +38,7 @@ app = FastAPI(
 )
 
 # Mount static files for the UI
-app.mount("/static", StaticFiles(directory="../ui"), name="static")
+app.mount("/static", StaticFiles(directory=str(UI_DIR)), name="static")
 
 
 def check_single_target(
@@ -140,7 +145,7 @@ def serve_ui():
     Returns:
         HTML response with the UI
     """
-    return FileResponse("../ui/index.html")
+    return FileResponse(str(UI_DIR / "index.html"))
 
 
 @app.get("/api/check", summary="Check SSL certificate for a domain or IP")
