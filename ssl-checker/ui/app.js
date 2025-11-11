@@ -1,3 +1,17 @@
+// Initialize language on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initLanguage();
+    
+    // Setup language toggle button
+    const langToggle = document.getElementById('languageToggle');
+    if (langToggle) {
+        langToggle.addEventListener('click', () => {
+            const newLang = getCurrentLanguage() === 'vi' ? 'en' : 'vi';
+            setLanguage(newLang);
+        });
+    }
+});
+
 // Parse target input to extract domain/IP and port
 function parseTarget(target) {
     const trimmed = target.trim();
@@ -82,7 +96,7 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     
     // Validation
     if (!targetInput) {
-        alert('Please provide a domain name or IP address');
+        alert(t('provideDomain'));
         return;
     }
     
@@ -95,7 +109,7 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     }
     
     if (!parsed) {
-        alert('Please provide a valid domain name or IP address');
+        alert(t('invalidTarget'));
         return;
     }
     
@@ -117,10 +131,12 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
         const response = await fetch(`/api/check?${params.toString()}`);
         const data = await response.json();
         
+        // Store results for language switching
+        window.lastResults = [data];
         displayResults([data]);
     } catch (error) {
         console.error('Error:', error);
-        displayError('Failed to check SSL certificate. Please try again.');
+        displayError(t('checkFailed'));
     } finally {
         // Reset button state
         button.disabled = false;
@@ -133,6 +149,12 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
 function displayResults(results) {
     const resultsDiv = document.getElementById('results');
     const resultsContent = document.getElementById('resultsContent');
+    
+    // Update results title
+    const resultsTitle = document.querySelector('#results .card h2');
+    if (resultsTitle) {
+        resultsTitle.textContent = t('resultsTitle');
+    }
     
     resultsContent.innerHTML = '';
     
@@ -153,11 +175,11 @@ function createResultItem(result, index) {
     if (result.status === 'error') {
         div.innerHTML = `
             <div class="result-header">
-                <div class="result-title">Result ${index + 1}</div>
-                <span class="status-badge status-error">Error</span>
+                <div class="result-title">${t('result')} ${index + 1}</div>
+                <span class="status-badge status-error">${t('statusError')}</span>
             </div>
             <div class="error-message">
-                ${escapeHtml(result.error || 'An error occurred')}
+                ${escapeHtml(result.error || t('errorOccurred'))}
             </div>
         `;
         return div;
@@ -171,7 +193,7 @@ function createResultItem(result, index) {
     let html = `
         <div class="result-header">
             <div class="result-title">${escapeHtml(data.domain || data.ip)}</div>
-            <span class="status-badge status-${data.sslStatus}">${data.sslStatus}</span>
+            <span class="status-badge status-${data.sslStatus}">${t('status' + capitalizeFirst(data.sslStatus))}</span>
         </div>
     `;
     
@@ -179,75 +201,109 @@ function createResultItem(result, index) {
     if (ssl) {
         html += `
             <div class="result-section">
-                <h3>🔒 SSL Certificate</h3>
+                <h3>${t('sslCertificate')}</h3>
                 <div class="info-grid">`;
         
         // Display all subject fields
         if (ssl.subject) {
-            // Create array of all subject properties
             const subjectEntries = Object.entries(ssl.subject);
             if (subjectEntries.length > 0) {
                 subjectEntries.forEach(([key, value]) => {
-                    // Format the label nicely
                     let label = key;
-                    if (key === 'commonName') label = 'Subject CN (Common Name)';
-                    else if (key === 'organizationName') label = 'Subject Organization';
-                    else if (key === 'organizationalUnitName') label = 'Subject Organizational Unit';
-                    else if (key === 'countryName') label = 'Subject Country';
-                    else if (key === 'stateOrProvinceName') label = 'Subject State/Province';
-                    else if (key === 'localityName') label = 'Subject Locality';
+                    if (key === 'commonName') label = t('subjectCN');
+                    else if (key === 'organizationName') label = t('subjectOrganization');
+                    else if (key === 'organizationalUnitName') label = t('subjectOrgUnit');
+                    else if (key === 'countryName') label = t('subjectCountry');
+                    else if (key === 'stateOrProvinceName') label = t('subjectState');
+                    else if (key === 'localityName') label = t('subjectLocality');
                     else label = `Subject ${key}`;
                     
                     html += `
                     <div class="info-item">
                         <div class="info-label">${escapeHtml(label)}</div>
-                        <div class="info-value">${escapeHtml(value || 'N/A')}</div>
+                        <div class="info-value">${escapeHtml(value || t('notAvailable'))}</div>
                     </div>`;
                 });
-            } else {
-                html += `
-                    <div class="info-item">
-                        <div class="info-label">Subject CN</div>
-                        <div class="info-value">N/A</div>
-                    </div>`;
             }
-        } else {
+        }
+        
+        // Issuer information
+        if (ssl.issuer) {
             html += `
+                <div class="info-item">
+                    <div class="info-label">${t('issuer')}</div>
+                    <div class="info-value">${escapeHtml(ssl.issuer.commonName || t('notAvailable'))}</div>
+                </div>`;
+            
+            if (ssl.issuer.organizationName) {
+                html += `
+                <div class="info-item">
+                    <div class="info-label">${t('issuerOrg')}</div>
+                    <div class="info-value">${escapeHtml(ssl.issuer.organizationName)}</div>
+                </div>`;
+            }
+            
+            if (ssl.issuer.countryName) {
+                html += `
+                <div class="info-item">
+                    <div class="info-label">${t('issuerCountry')}</div>
+                    <div class="info-value">${escapeHtml(ssl.issuer.countryName)}</div>
+                </div>`;
+            }
+        }
+        
+        // Certificate details
+        html += `
                     <div class="info-item">
-                        <div class="info-label">Subject CN</div>
-                        <div class="info-value">N/A</div>
+                        <div class="info-label">${t('version')}</div>
+                        <div class="info-value">${ssl.version !== null && ssl.version !== undefined ? ssl.version : t('notAvailable')}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('serialNumber')}</div>
+                        <div class="info-value">${escapeHtml(ssl.serialNumber || t('notAvailable'))}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('validFrom')}</div>
+                        <div class="info-value">${escapeHtml(ssl.notBefore || t('notAvailable'))}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('validUntil')}</div>
+                        <div class="info-value">${escapeHtml(ssl.notAfter || t('notAvailable'))}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('daysUntilExpiration')}</div>
+                        <div class="info-value">${ssl.daysUntilExpiration !== null ? ssl.daysUntilExpiration : t('notAvailable')}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('signatureAlgorithm')}</div>
+                        <div class="info-value">${escapeHtml(ssl.signatureAlgorithm || t('notAvailable'))}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('tlsVersion')}</div>
+                        <div class="info-value">${escapeHtml(ssl.tlsVersion || t('notAvailable'))}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">${t('cipherSuite')}</div>
+                        <div class="info-value">${escapeHtml(ssl.cipherSuite || t('notAvailable'))}</div>
+                    </div>`;
+        
+        // Subject Alternative Names
+        if (ssl.subjectAltNames && ssl.subjectAltNames.length > 0) {
+            const sanList = ssl.subjectAltNames.map(san => {
+                if (Array.isArray(san)) {
+                    return `${san[0]}: ${san[1]}`;
+                }
+                return san;
+            }).join(', ');
+            
+            html += `
+                    <div class="info-item" style="grid-column: 1 / -1;">
+                        <div class="info-label">${t('subjectAltNames')}</div>
+                        <div class="info-value">${escapeHtml(sanList)}</div>
                     </div>`;
         }
         
         html += `
-                    <div class="info-item">
-                        <div class="info-label">Issuer</div>
-                        <div class="info-value">${escapeHtml(ssl.issuer?.commonName || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Valid From</div>
-                        <div class="info-value">${escapeHtml(ssl.notBefore || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Valid Until</div>
-                        <div class="info-value">${escapeHtml(ssl.notAfter || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Days Until Expiration</div>
-                        <div class="info-value">${ssl.daysUntilExpiration !== null ? ssl.daysUntilExpiration : 'N/A'}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">TLS Version</div>
-                        <div class="info-value">${escapeHtml(ssl.tlsVersion || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Cipher Suite</div>
-                        <div class="info-value">${escapeHtml(ssl.cipherSuite || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Signature Algorithm</div>
-                        <div class="info-value">${escapeHtml(ssl.signatureAlgorithm || 'N/A')}</div>
-                    </div>
                 </div>
             </div>
         `;
@@ -256,7 +312,7 @@ function createResultItem(result, index) {
         if (ssl.alerts && ssl.alerts.length > 0) {
             html += `
                 <div class="alert">
-                    <div class="alert-title">⚠️ Security Alerts</div>
+                    <div class="alert-title">${t('securityAlerts')}</div>
                     <ul class="alert-list">
                         ${ssl.alerts.map(alert => `<li>${escapeHtml(alert)}</li>`).join('')}
                     </ul>
@@ -268,7 +324,7 @@ function createResultItem(result, index) {
         if (data.recommendations && data.recommendations.length > 0) {
             html += `
                 <div class="recommendation">
-                    <div class="recommendation-title">💡 Recommendations</div>
+                    <div class="recommendation-title">${t('recommendations')}</div>
                     <ul class="recommendation-list">
                         ${data.recommendations.map(rec => `<li>${escapeHtml(rec)}</li>`).join('')}
                     </ul>
@@ -280,46 +336,118 @@ function createResultItem(result, index) {
     // Server Information
     html += `
         <div class="result-section">
-            <h3>🖥️ Server Information</h3>
+            <h3>${t('serverInformation')}</h3>
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">IP Address</div>
-                    <div class="info-value">${escapeHtml(data.ip || 'N/A')}</div>
+                    <div class="info-label">${t('ipAddress')}</div>
+                    <div class="info-value">${escapeHtml(data.ip || t('notAvailable'))}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Port</div>
+                    <div class="info-label">${t('port')}</div>
                     <div class="info-value">${data.port}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Server</div>
-                    <div class="info-value">${escapeHtml(data.server || 'Unknown')}</div>
+                    <div class="info-label">${t('server')}</div>
+                    <div class="info-value">${escapeHtml(data.server || t('unknown'))}</div>
                 </div>
+                <div class="info-item">
+                    <div class="info-label">${t('sslStatus')}</div>
+                    <div class="info-value">${escapeHtml(data.sslStatus || t('notAvailable'))}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">${t('serverStatus')}</div>
+                    <div class="info-value">${escapeHtml(data.serverStatus || t('notAvailable'))}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">${t('ipStatus')}</div>
+                    <div class="info-value">${escapeHtml(data.ipStatus || t('notAvailable'))}</div>
+                </div>`;
+    
+    if (data.sslErrorType) {
+        html += `
+                <div class="info-item">
+                    <div class="info-label">${t('errorType')}</div>
+                    <div class="info-value">${escapeHtml(data.sslErrorType)}</div>
+                </div>`;
+    }
+    
+    if (data.checkedAt) {
+        html += `
+                <div class="info-item">
+                    <div class="info-label">${t('checkedAt')}</div>
+                    <div class="info-value">${escapeHtml(data.checkedAt)}</div>
+                </div>`;
+    }
+    
+    html += `
             </div>
         </div>
     `;
     
-    // IP Geolocation
+    // IP Geolocation - Display all fields from the reference sample
     if (ipInfo && ipInfo.query) {
         html += `
             <div class="result-section">
-                <h3>🌍 IP Geolocation</h3>
-                <div class="info-grid">
+                <h3>${t('ipGeolocation')}</h3>
+                <div class="info-grid">`;
+        
+        // Display all IP info fields
+        const ipInfoFields = [
+            { key: 'query', label: t('ipAddress') },
+            { key: 'continent', label: t('continent') },
+            { key: 'continentCode', label: t('continentCode') },
+            { key: 'country', label: t('country') },
+            { key: 'countryCode', label: t('countryCode') },
+            { key: 'region', label: t('region') },
+            { key: 'regionName', label: t('regionName') },
+            { key: 'city', label: t('city') },
+            { key: 'district', label: t('district') },
+            { key: 'zip', label: t('zip') },
+            { key: 'isp', label: t('isp') },
+            { key: 'org', label: t('org') },
+            { key: 'as', label: t('asn') },
+            { key: 'asname', label: t('asname') },
+            { key: 'reverse', label: t('reverse') }
+        ];
+        
+        ipInfoFields.forEach(field => {
+            const value = ipInfo[field.key];
+            if (value !== null && value !== undefined && value !== '') {
+                html += `
                     <div class="info-item">
-                        <div class="info-label">Country</div>
-                        <div class="info-value">${escapeHtml(ipInfo.country || 'N/A')}</div>
-                    </div>
+                        <div class="info-label">${field.label}</div>
+                        <div class="info-value">${escapeHtml(value)}</div>
+                    </div>`;
+            }
+        });
+        
+        // Coordinates
+        if (ipInfo.lat !== null && ipInfo.lat !== undefined && ipInfo.lon !== null && ipInfo.lon !== undefined) {
+            html += `
                     <div class="info-item">
-                        <div class="info-label">Region</div>
-                        <div class="info-value">${escapeHtml(ipInfo.regionName || ipInfo.region || 'N/A')}</div>
-                    </div>
+                        <div class="info-label">${t('coordinates')}</div>
+                        <div class="info-value">${ipInfo.lat}, ${ipInfo.lon}</div>
+                    </div>`;
+        }
+        
+        // Boolean fields
+        const boolFields = [
+            { key: 'mobile', label: t('mobile') },
+            { key: 'proxy', label: t('proxy') },
+            { key: 'hosting', label: t('hosting') }
+        ];
+        
+        boolFields.forEach(field => {
+            if (ipInfo[field.key] !== null && ipInfo[field.key] !== undefined) {
+                html += `
                     <div class="info-item">
-                        <div class="info-label">City</div>
-                        <div class="info-value">${escapeHtml(ipInfo.city || 'N/A')}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">ISP/Organization</div>
-                        <div class="info-value">${escapeHtml(ipInfo.org || ipInfo.isp || 'N/A')}</div>
-                    </div>
+                        <div class="info-label">${field.label}</div>
+                        <div class="info-value">${ipInfo[field.key] ? t('yes') : t('no')}</div>
+                    </div>`;
+            }
+        });
+        
+        html += `
                 </div>
             </div>
         `;
@@ -327,6 +455,12 @@ function createResultItem(result, index) {
     
     div.innerHTML = html;
     return div;
+}
+
+// Helper function to capitalize first letter
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Display Error
