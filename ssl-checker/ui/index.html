@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSL Checker - Check SSL Certificates</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 SSL Certificate Checker</h1>
+            <p class="subtitle">Check SSL certificate information, server details, and IP geolocation</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>Single Check</h2>
+                <form id="singleCheckForm">
+                    <div class="form-group">
+                        <label for="domain">Domain Name</label>
+                        <input type="text" id="domain" name="domain" placeholder="example.com">
+                        <span class="help-text">Enter a domain name (e.g., example.com)</span>
+                    </div>
+
+                    <div class="divider">OR</div>
+
+                    <div class="form-group">
+                        <label for="ip">IP Address</label>
+                        <input type="text" id="ip" name="ip" placeholder="93.184.216.34">
+                        <span class="help-text">Enter an IP address (e.g., 93.184.216.34)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="port">Port</label>
+                        <input type="number" id="port" name="port" value="443" min="1" max="65535">
+                        <span class="help-text">Default: 443 (HTTPS)</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Check Certificate</span>
+                        <span class="spinner" style="display: none;">⟳</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h2>Batch Check</h2>
+                <form id="batchCheckForm">
+                    <div class="form-group">
+                        <label for="domains">Domain Names</label>
+                        <textarea id="domains" name="domains" rows="4" placeholder="example.com&#10;google.com&#10;github.com"></textarea>
+                        <span class="help-text">Enter one domain per line</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ips">IP Addresses</label>
+                        <textarea id="ips" name="ips" rows="4" placeholder="8.8.8.8&#10;1.1.1.1"></textarea>
+                        <span class="help-text">Enter one IP per line</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="batchPort">Port</label>
+                        <input type="number" id="batchPort" name="port" value="443" min="1" max="65535">
+                        <span class="help-text">Default: 443 (HTTPS)</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary">
+                        <span class="btn-text">Batch Check</span>
+                        <span class="spinner" style="display: none;">⟳</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="results" style="display: none;">
+                <div class="card">
+                    <h2>Results</h2>
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>SSL Checker API v2.0.0 | Built with FastAPI</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
