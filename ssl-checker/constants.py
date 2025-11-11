@@ -54,6 +54,7 @@ STATUS_WARNING = "warning"
 
 # IP Info API
 IPINFO_API_URL = "https://ipinfo.io/{ip}/json"
+IP_API_COM_URL = "http://ip-api.com/json/{ip}?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,isp,org,as,asname,reverse,mobile,proxy,hosting,query"
 
 # Server Detection
 UNKNOWN_SERVER = "Unknown"
