@@ -6,9 +6,12 @@ web server technology, and IP geolocation details for domains and IP addresses.
 """
 
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from constants import DEFAULT_SSL_PORT, STATUS_SUCCESS, STATUS_ERROR, STATUS_WARNING, UNKNOWN_SERVER
@@ -24,11 +27,18 @@ class BatchRequest(BaseModel):
     port: int = Field(default=DEFAULT_SSL_PORT, description="Port number to check")
 
 
+# Get the absolute path to the UI directory
+BASE_DIR = Path(__file__).resolve().parent
+UI_DIR = BASE_DIR.parent / "ui"
+
 app = FastAPI(
     title="SSL Checker API",
     description="Check SSL certificate information, server details, and IP geolocation",
     version="2.0.0"
 )
+
+# Mount static files for the UI
+app.mount("/static", StaticFiles(directory=str(UI_DIR)), name="static")
 
 
 def check_single_target(
@@ -127,7 +137,18 @@ def check_single_target(
         }
 
 
-@app.get("/check", summary="Check SSL certificate for a domain or IP")
+@app.get("/", summary="Serve the frontend UI")
+def serve_ui():
+    """
+    Serve the main frontend UI page.
+    
+    Returns:
+        HTML response with the UI
+    """
+    return FileResponse(str(UI_DIR / "index.html"))
+
+
+@app.get("/api/check", summary="Check SSL certificate for a domain or IP")
 def check_ssl(
     domain: Optional[str] = None,
     ip: Optional[str] = None,
@@ -147,7 +168,7 @@ def check_ssl(
     return check_single_target(domain, ip, port)
 
 
-@app.post("/batch_check", summary="Batch check SSL certificates for multiple domains/IPs")
+@app.post("/api/batch_check", summary="Batch check SSL certificates for multiple domains/IPs")
 def batch_check(request: BatchRequest) -> dict:
     """
     Check SSL certificates for multiple domains and/or IP addresses in a single request.

@@ -42,6 +42,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker pull ${{ env.IMAGE_NAME }}:latest
-            docker stop image-search || true
-            docker rm image-search || true
-            docker run -d --name image-search -p 8000:8000 ${{ env.IMAGE_NAME }}:latest
+            docker stop ssl-checker || true
+            docker rm ssl-checker || true
+            docker run -d --name ssl-checker -p 8000:8000 ${{ env.IMAGE_NAME }}:latest

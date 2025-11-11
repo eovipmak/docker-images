@@ -4,10 +4,15 @@ LABEL org.opencontainers.image.description="SSL Checker API Service by tintn"
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy requirements and install dependencies
+COPY api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application files
+COPY api ./api
+COPY ui ./ui
+
+WORKDIR /app/api
 
 EXPOSE 8000
 

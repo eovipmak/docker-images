@@ -1,9 +1,10 @@
-# SSL Checker API
+# SSL Checker
 
-A FastAPI-based application that checks SSL certificate information, web server technology, and IP geolocation details for domains and IP addresses. The application provides REST API endpoints for easy integration with scripts, monitoring tools, or AI agents.
+A FastAPI-based application that checks SSL certificate information, web server technology, and IP geolocation details for domains and IP addresses. The application provides a web UI and REST API endpoints for easy integration with scripts, monitoring tools, or AI agents.
 
 ## Features
 
+- **Web UI**: User-friendly interface for checking SSL certificates
 - **SSL Certificate Validation**: Retrieve detailed SSL/TLS certificate information including subject, issuer, validity period, and expiration warnings
 - **Security Alerts**: Identify weak TLS versions, insecure cipher suites, and certificate issues
 - **Domain Resolution**: Automatically resolve domain names to IP addresses
@@ -12,19 +13,65 @@ A FastAPI-based application that checks SSL certificate information, web server 
 - **Batch Processing**: Check multiple domains/IPs in a single request
 - **Smart Recommendations**: Get actionable recommendations for SSL/TLS improvements
 
-## Architecture
+## Project Structure
 
-The application is structured into modular components for better maintainability:
+```plaintext
+ssl-checker/
+├── api/                    # Backend API
+│   ├── main.py            # FastAPI application and API endpoints
+│   ├── ssl_checker.py     # SSL certificate checking and validation logic
+│   ├── cert_utils.py      # Certificate parsing and utility functions
+│   ├── network_utils.py   # Network operations (DNS, HTTP, socket connections)
+│   ├── constants.py       # Application constants and configuration
+│   └── requirements.txt   # Python dependencies
+├── ui/                     # Frontend UI
+│   ├── index.html         # Main HTML page
+│   ├── styles.css         # Styles
+│   └── app.js             # JavaScript application logic
+├── Dockerfile             # Docker configuration
+└── README.md              # This file
+```
 
-- `main.py`: FastAPI application and API endpoints
-- `ssl_checker.py`: SSL certificate checking and validation logic
-- `cert_utils.py`: Certificate parsing and utility functions
-- `network_utils.py`: Network operations (DNS, HTTP, socket connections)
-- `constants.py`: Application constants and configuration
+## Quick Start
+
+### Using Docker (Recommended)
+
+```bash
+# Build the image
+docker build -t ssl-checker .
+
+# Run the container
+docker run -p 8000:8000 ssl-checker
+```
+
+The application will be available at:
+- Web UI: `http://localhost:8000`
+- API Documentation: `http://localhost:8000/docs`
+
+### Local Development
+
+1. Install dependencies:
+   ```bash
+   cd api
+   pip install -r requirements.txt
+   ```
+
+2. Run the app:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+## Web UI
+
+Access the web interface at `http://localhost:8000` to:
+- Check SSL certificates for single domains or IPs
+- Perform batch checks on multiple targets
+- View detailed certificate information, security alerts, and recommendations
+- See server and geolocation information
 
 ## API Endpoints
 
-### GET /check
+### GET /api/check
 
 Check SSL certificate information for a single domain or IP address.
 
@@ -38,7 +85,7 @@ Check SSL certificate information for a single domain or IP address.
 **Example Request:**
 
 ```bash
-curl "http://localhost:8000/check?domain=example.com"
+curl "http://localhost:8000/api/check?domain=example.com"
 ```
 
 **Example Response:**
@@ -87,7 +134,7 @@ curl "http://localhost:8000/check?domain=example.com"
 }
 ```
 
-### POST /batch_check
+### POST /api/batch_check
 
 Check SSL certificates for multiple domains and/or IP addresses in a single request.
 
@@ -109,7 +156,7 @@ Check SSL certificates for multiple domains and/or IP addresses in a single requ
 **Example Request:**
 
 ```bash
-curl -X POST "http://localhost:8000/batch_check" \
+curl -X POST "http://localhost:8000/api/batch_check" \
   -H "Content-Type: application/json" \
   -d '{
     "domains": ["example.com", "google.com"],
@@ -178,6 +225,26 @@ The API provides intelligent security alerts and recommendations:
 - Ensure CN/SAN matches domain
 - Check certificate/SSL/server configuration
 
+## Technology Stack
+
+**Frontend:**
+- Vanilla HTML5, CSS3, and JavaScript (ES6+)
+- Modern responsive design
+- No framework dependencies (lightweight and fast)
+- Fetch API for backend communication
+
+**Backend:**
+- FastAPI: High-performance web framework
+- Uvicorn: ASGI server
+- Python 3.12
+
+**Dependencies:**
+- FastAPI: Web framework
+- Uvicorn: ASGI server with WebSocket support
+- Requests: HTTP library
+- dnspython: DNS resolution
+- aiofiles: Async file operations for static file serving
+
 ## Docker Usage
 
 ### Build the Image
@@ -192,7 +259,7 @@ docker build -t ssl-checker .
 docker run -p 8000:8000 ssl-checker
 ```
 
-The API will be available at `http://localhost:8000`.
+The application will be available at `http://localhost:8000`.
 
 ## Local Development
 
@@ -200,17 +267,21 @@ If you want to run without Docker:
 
 1. Install dependencies:
    ```bash
+   cd api
    pip install -r requirements.txt
    ```
 
 2. Run the app:
    ```bash
+   cd api
    uvicorn main:app --reload
    ```
 
-## Dependencies
+## Version History
 
-- FastAPI: Web framework
-- Uvicorn: ASGI server
-- Requests: HTTP library
-- dnspython: DNS resolution
+### v2.0.0 - Frontend Integration
+- Added web UI for easier SSL certificate checking
+- Reorganized project structure (separated `api/` and `ui/` folders)
+- Updated API endpoints with `/api` prefix
+- Enhanced Docker configuration for serving both API and UI
+- Improved documentation
