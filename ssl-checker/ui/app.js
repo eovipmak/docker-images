@@ -1,3 +1,42 @@
+// Parse target input to extract domain/IP and port
+function parseTarget(target) {
+    const trimmed = target.trim();
+    if (!trimmed) {
+        return null;
+    }
+    
+    // Check if input contains a port (look for :port at the end)
+    const portMatch = trimmed.match(/^(.+):(\d+)$/);
+    
+    if (portMatch) {
+        const hostPart = portMatch[1];
+        const port = parseInt(portMatch[2], 10);
+        
+        // Validate port range
+        if (port < 1 || port > 65535) {
+            throw new Error('Port must be between 1 and 65535');
+        }
+        
+        return {
+            host: hostPart,
+            port: port
+        };
+    }
+    
+    // No port specified, use default
+    return {
+        host: trimmed,
+        port: 443
+    };
+}
+
+// Determine if a host is an IP address
+function isIPAddress(host) {
+    // Simple IPv4 pattern check
+    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    return ipv4Pattern.test(host);
+}
+
 // Single Check Form Handler
 document.getElementById('singleCheckForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -7,18 +46,24 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     const btnText = button.querySelector('.btn-text');
     const spinner = button.querySelector('.spinner');
     
-    const domain = form.domain.value.trim();
-    const ip = form.ip.value.trim();
-    const port = form.port.value;
+    const targetInput = form.target.value.trim();
     
     // Validation
-    if (!domain && !ip) {
-        alert('Please provide either a domain name or IP address');
+    if (!targetInput) {
+        alert('Please provide a domain name or IP address');
         return;
     }
     
-    if (domain && ip) {
-        alert('Please provide only domain OR IP, not both');
+    let parsed;
+    try {
+        parsed = parseTarget(targetInput);
+    } catch (error) {
+        alert(error.message);
+        return;
+    }
+    
+    if (!parsed) {
+        alert('Please provide a valid domain name or IP address');
         return;
     }
     
@@ -28,9 +73,14 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     spinner.style.display = 'inline-block';
     
     try {
-        const params = new URLSearchParams({ port });
-        if (domain) params.append('domain', domain);
-        if (ip) params.append('ip', ip);
+        const params = new URLSearchParams({ port: parsed.port });
+        
+        // Determine if host is IP or domain
+        if (isIPAddress(parsed.host)) {
+            params.append('ip', parsed.host);
+        } else {
+            params.append('domain', parsed.host);
+        }
         
         const response = await fetch(`/api/check?${params.toString()}`);
         const data = await response.json();
@@ -39,60 +89,6 @@ document.getElementById('singleCheckForm').addEventListener('submit', async (e) 
     } catch (error) {
         console.error('Error:', error);
         displayError('Failed to check SSL certificate. Please try again.');
-    } finally {
-        // Reset button state
-        button.disabled = false;
-        btnText.style.display = 'inline';
-        spinner.style.display = 'none';
-    }
-});
-
-// Batch Check Form Handler
-document.getElementById('batchCheckForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const form = e.target;
-    const button = form.querySelector('button[type="submit"]');
-    const btnText = button.querySelector('.btn-text');
-    const spinner = button.querySelector('.spinner');
-    
-    const domainsText = form.domains.value.trim();
-    const ipsText = form.ips.value.trim();
-    const port = parseInt(form.port.value);
-    
-    // Parse domains and IPs
-    const domains = domainsText ? domainsText.split('\n').map(d => d.trim()).filter(d => d) : [];
-    const ips = ipsText ? ipsText.split('\n').map(i => i.trim()).filter(i => i) : [];
-    
-    if (domains.length === 0 && ips.length === 0) {
-        alert('Please provide at least one domain or IP address');
-        return;
-    }
-    
-    // Show loading state
-    button.disabled = true;
-    btnText.style.display = 'none';
-    spinner.style.display = 'inline-block';
-    
-    try {
-        const response = await fetch('/api/batch_check', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ domains, ips, port })
-        });
-        
-        const data = await response.json();
-        
-        if (data.status === 'success' && data.results) {
-            displayResults(data.results);
-        } else {
-            displayError('Failed to check SSL certificates');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        displayError('Failed to check SSL certificates. Please try again.');
     } finally {
         // Reset button state
         button.disabled = false;
@@ -152,11 +148,46 @@ function createResultItem(result, index) {
         html += `
             <div class="result-section">
                 <h3>🔒 SSL Certificate</h3>
-                <div class="info-grid">
+                <div class="info-grid">`;
+        
+        // Display all subject fields
+        if (ssl.subject) {
+            // Create array of all subject properties
+            const subjectEntries = Object.entries(ssl.subject);
+            if (subjectEntries.length > 0) {
+                subjectEntries.forEach(([key, value]) => {
+                    // Format the label nicely
+                    let label = key;
+                    if (key === 'commonName') label = 'Subject CN (Common Name)';
+                    else if (key === 'organizationName') label = 'Subject Organization';
+                    else if (key === 'organizationalUnitName') label = 'Subject Organizational Unit';
+                    else if (key === 'countryName') label = 'Subject Country';
+                    else if (key === 'stateOrProvinceName') label = 'Subject State/Province';
+                    else if (key === 'localityName') label = 'Subject Locality';
+                    else label = `Subject ${key}`;
+                    
+                    html += `
+                    <div class="info-item">
+                        <div class="info-label">${escapeHtml(label)}</div>
+                        <div class="info-value">${escapeHtml(value || 'N/A')}</div>
+                    </div>`;
+                });
+            } else {
+                html += `
                     <div class="info-item">
                         <div class="info-label">Subject CN</div>
-                        <div class="info-value">${escapeHtml(ssl.subject?.commonName || 'N/A')}</div>
-                    </div>
+                        <div class="info-value">N/A</div>
+                    </div>`;
+            }
+        } else {
+            html += `
+                    <div class="info-item">
+                        <div class="info-label">Subject CN</div>
+                        <div class="info-value">N/A</div>
+                    </div>`;
+        }
+        
+        html += `
                     <div class="info-item">
                         <div class="info-label">Issuer</div>
                         <div class="info-value">${escapeHtml(ssl.issuer?.commonName || 'N/A')}</div>
