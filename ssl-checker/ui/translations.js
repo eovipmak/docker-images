@@ -252,6 +252,9 @@ function updatePageLanguage() {
         langToggle.textContent = currentLanguage === 'vi' ? 'English' : 'Tiếng Việt';
     }
     
+    // Update document lang attribute for accessibility (screen readers, search engines)
+    document.documentElement.lang = currentLanguage;
+    
     // Re-render results if they exist
     const resultsDiv = document.getElementById('results');
     if (resultsDiv && resultsDiv.style.display !== 'none') {
