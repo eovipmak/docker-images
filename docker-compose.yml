@@ -6,6 +6,12 @@ services:
       - "8000:8000"
     networks:
       - ssl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/check?domain=google.com&port=443')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     
   ssl-monitor:
     build: ./ssl-monitor
@@ -15,7 +21,8 @@ services:
     environment:
       - SSL_CHECKER_URL=http://ssl-checker:8000
     depends_on:
-      - ssl-checker
+      ssl-checker:
+        condition: service_healthy
     networks:
       - ssl-network
     volumes:

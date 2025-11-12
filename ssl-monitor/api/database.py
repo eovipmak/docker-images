@@ -1,12 +1,49 @@
 """
 Database models for SSL Monitor
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, create_engine
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
 Base = declarative_base()
+
+
+class User(Base):
+    """Model for storing user information"""
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, nullable=False, default="user")  # admin or user
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship to monitors
+    monitors = relationship("Monitor", back_populates="user", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<User(username={self.username}, role={self.role})>"
+
+
+class Monitor(Base):
+    """Model for storing monitor configurations"""
+    __tablename__ = "monitors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    domain = Column(String, nullable=False, index=True)
+    check_interval = Column(Integer, default=3600)  # in seconds, default 1 hour
+    webhook_url = Column(String, nullable=True)
+    last_check = Column(DateTime, nullable=True)
+    status = Column(String, default="active")  # active, paused, error
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship to user
+    user = relationship("User", back_populates="monitors")
+    
+    def __repr__(self):
+        return f"<Monitor(domain={self.domain}, user_id={self.user_id}, status={self.status})>"
 
 
 class SSLCheck(Base):
