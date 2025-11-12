@@ -1,0 +1,30 @@
+services:
+  ssl-checker:
+    build: ./ssl-checker
+    container_name: ssl-checker
+    ports:
+      - "8000:8000"
+    networks:
+      - ssl-network
+    
+  ssl-monitor:
+    build: ./ssl-monitor
+    container_name: ssl-monitor
+    ports:
+      - "8001:8001"
+    environment:
+      - SSL_CHECKER_URL=http://ssl-checker:8000
+    depends_on:
+      - ssl-checker
+    networks:
+      - ssl-network
+    volumes:
+      # Persist the database
+      - ssl-monitor-data:/app/api
+
+networks:
+  ssl-network:
+    driver: bridge
+
+volumes:
+  ssl-monitor-data:
