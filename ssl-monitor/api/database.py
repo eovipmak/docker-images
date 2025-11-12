@@ -32,7 +32,7 @@ class SSLCheck(Base):
     ip_info = Column(Text)  # JSON string
     alerts = Column(Text)  # JSON string
     recommendations = Column(Text)  # JSON string
-    checked_at = Column(DateTime, default=datetime.utcnow)
+    checked_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     error_message = Column(Text, nullable=True)
 
 
