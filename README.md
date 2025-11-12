@@ -4,6 +4,13 @@ This repository contains various Docker-based applications.
 
 ## Projects
 
+### SSL Checker Frontend
+A modern React.js frontend application for SSL certificate checking with TypeScript, Material-UI, and responsive design.
+
+**Location:** `frontend/`  
+**Port:** 3000 (dev), 80 (production)  
+**Documentation:** [frontend/README.md](frontend/README.md)
+
 ### SSL Checker
 A FastAPI-based application that checks SSL certificate information, web server technology, and IP geolocation details for domains and IP addresses.
 
