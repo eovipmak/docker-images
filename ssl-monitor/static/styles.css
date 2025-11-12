@@ -1,0 +1,99 @@
+/* Custom styles for SSL Monitor */
+
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: block;
+}
+
+.htmx-request.htmx-indicator {
+    display: block;
+}
+
+.status-badge {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.history-item {
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    transition: background-color 0.2s;
+}
+
+.history-item:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.domain-text {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.timestamp-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.alert-detail {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.recommendation-item {
+    background-color: #d1ecf1;
+    border-left: 4px solid #0dcaf0;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.ssl-info-table {
+    font-size: 0.9rem;
+}
+
+.ssl-info-table th {
+    width: 40%;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.stats-item {
+    text-align: center;
+    padding: 1rem;
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
