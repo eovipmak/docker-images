@@ -62,33 +62,61 @@ docker run -p 8001:8001 ssl-monitor
 docker run -p 8001:8001 -e SSL_CHECKER_URL=http://ssl-checker:8000 ssl-monitor
 ```
 
-### Using Docker Compose (Recommended)
+## Using Docker Compose (Recommended)
 
-For running both ssl-checker and ssl-monitor together:
+For running both ssl-checker and ssl-monitor together with proper service dependency and health checks:
 
 ```yaml
-version: '3.8'
-
 services:
   ssl-checker:
     build: ./ssl-checker
+    container_name: ssl-checker
     ports:
       - "8000:8000"
+    networks:
+      - ssl-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/check?domain=google.com&port=443')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     
   ssl-monitor:
     build: ./ssl-monitor
+    container_name: ssl-monitor
     ports:
       - "8001:8001"
     environment:
       - SSL_CHECKER_URL=http://ssl-checker:8000
     depends_on:
-      - ssl-checker
+      ssl-checker:
+        condition: service_healthy
+    networks:
+      - ssl-network
+    volumes:
+      - ssl-monitor-data:/app/api
+
+networks:
+  ssl-network:
+    driver: bridge
+
+volumes:
+  ssl-monitor-data:
 ```
+
+**Key improvements:**
+- **Health Check**: Ensures ssl-checker is ready before ssl-monitor starts
+- **Service Dependency**: ssl-monitor waits for ssl-checker to be healthy
+- **Shared Network**: Both containers communicate via bridge network
+- **Volume Persistence**: Database persists across container restarts
 
 Then run:
 ```bash
 docker-compose up
 ```
+
+This configuration resolves DNS resolution issues between containers and ensures proper startup order.
 
 ### Local Development
 
@@ -169,13 +197,130 @@ curl "http://localhost:8001/api/stats"
 
 ## Database
 
-The application uses SQLite to store check history. The database file `ssl_monitor.db` is created automatically in the `/app/api` directory inside the container.
+The application uses SQLite with SQLAlchemy ORM and Alembic for database migrations. The database includes three main tables:
 
-To persist the database across container restarts, mount a volume:
+### Database Schema
+
+#### 1. Users Table
+Stores user account information with role-based access control.
+
+| Column        | Type     | Description                |
+|---------------|----------|----------------------------|
+| id            | Integer  | Primary key                |
+| username      | String   | Unique username            |
+| password_hash | String   | Bcrypt hashed password     |
+| role          | String   | User role (admin/user)     |
+| created_at    | DateTime | Account creation timestamp |
+
+#### 2. Monitors Table
+Stores monitoring configurations for automated SSL certificate checking.
+
+| Column         | Type     | Description                      |
+|----------------|----------|----------------------------------|
+| id             | Integer  | Primary key                      |
+| user_id        | Integer  | Foreign key to users.id          |
+| domain         | String   | Domain to monitor                |
+| check_interval | Integer  | Check interval in seconds        |
+| webhook_url    | String   | Optional webhook for alerts      |
+| last_check     | DateTime | Timestamp of last check          |
+| status         | String   | Monitor status (active/paused)   |
+| created_at     | DateTime | Monitor creation timestamp       |
+
+#### 3. SSL Checks Table
+Stores history of all SSL certificate checks.
+
+| Column        | Type     | Description                    |
+|---------------|----------|--------------------------------|
+| id            | Integer  | Primary key                    |
+| domain        | String   | Domain checked                 |
+| ip            | String   | IP address                     |
+| port          | Integer  | Port number (default: 443)     |
+| status        | String   | Check status (success/error)   |
+| ssl_status    | String   | SSL validation status          |
+| server_status | String   | Server status                  |
+| ip_status     | String   | IP geolocation status          |
+| checked_at    | DateTime | Check timestamp                |
+| response_data | Text     | Full JSON response from check  |
+
+### Database Migrations
+
+This project uses **Alembic** for database migrations to ensure smooth schema updates without data loss.
+
+#### Running Migrations
+
+Migrations run automatically when the container starts via the entrypoint script.
+
+Manual migration commands (for development):
+
+```bash
+# Upgrade to the latest version
+alembic upgrade head
+
+# Check current migration status
+alembic current
+
+# View migration history
+alembic history
+
+# Create a new migration (after model changes)
+alembic revision --autogenerate -m "Description of changes"
+
+# Downgrade to previous version
+alembic downgrade -1
+```
+
+#### Migration Files
+
+Migrations are stored in `/app/api/alembic/versions/`. The initial migration creates all three tables.
+
+### Sample Data
+
+A sample data script is provided to populate the database with test data:
+
+```bash
+cd api
+python create_sample_data.py
+```
+
+This creates:
+- 2 users (admin and regular user)
+- 3 monitors (2 active, 1 paused)
+- 3 SSL check history records
+
+**Sample Credentials:**
+- Admin: `username=admin`, `password=admin123`
+- User: `username=user1`, `password=user123`
+
+### Data Persistence
+
+The database file `ssl_monitor.db` is created automatically in the `/app/api` directory inside the container.
+
+#### Using Docker Volumes
+
+To persist the database across container restarts, the docker-compose configuration includes a named volume:
+
+```yaml
+volumes:
+  - ssl-monitor-data:/app/api
+```
+
+This ensures:
+- Database survives container restarts and rebuilds
+- Migration state is preserved
+- No data loss during updates
+
+#### Manual Volume Mount
+
+For development or custom deployments:
 
 ```bash
 docker run -p 8001:8001 -v $(pwd)/data:/app/api ssl-monitor
 ```
+
+**Important:** The database and migrations are designed to preserve existing data. When updating code:
+1. New migrations are automatically applied on container startup
+2. Existing data remains intact
+3. Schema changes are handled gracefully through Alembic
 
 ## API Documentation
 
