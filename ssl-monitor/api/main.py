@@ -11,7 +11,9 @@ import json
 import os
 
 from database import init_db, get_db, SSLCheck
-from ssl_checker import check_ssl_certificate
+from ssl_checker import get_ssl_certificate_info
+from network_utils import resolve_domain_to_ip, get_server_header, get_ip_geolocation
+from constants import DEFAULT_SSL_PORT, STATUS_SUCCESS, STATUS_ERROR, STATUS_WARNING, UNKNOWN_SERVER
 
 app = FastAPI(
     title="SSL Monitor API",
@@ -75,6 +77,102 @@ def save_check_result(db: Session, result: dict):
         return None
 
 
+def check_single_target(
+    domain: Optional[str] = None,
+    ip: Optional[str] = None,
+    port: int = DEFAULT_SSL_PORT
+) -> dict:
+    """
+    Perform SSL and server checks for a single domain or IP address.
+    
+    Args:
+        domain: Domain name to check (optional)
+        ip: IP address to check (optional)
+        port: Port number (default: 443)
+        
+    Returns:
+        Dictionary containing check results with status, timestamp, and data
+    """
+    checked_at = datetime.utcnow().isoformat()
+    
+    try:
+        # Validate input
+        if not domain and not ip:
+            return {
+                "status": STATUS_ERROR,
+                "timestamp": checked_at,
+                "error": "Provide either domain or ip"
+            }
+        
+        # Resolve domain to IP if domain is provided
+        if domain:
+            ip = resolve_domain_to_ip(domain)
+        
+        # Get SSL certificate information
+        ssl_info, ssl_status, ssl_error_type, recommendations = get_ssl_certificate_info(
+            domain, ip, port
+        )
+        
+        # Get server information
+        server = get_server_header(domain, ip, port)
+        
+        # Get IP geolocation information
+        ip_info = get_ip_geolocation(ip)
+        
+        # Determine server status
+        if server != UNKNOWN_SERVER:
+            server_status = STATUS_SUCCESS
+        elif ssl_status == STATUS_ERROR:
+            server_status = STATUS_WARNING
+        else:
+            server_status = STATUS_ERROR
+        
+        # Determine IP info status
+        ip_status = STATUS_SUCCESS if ip_info else STATUS_ERROR
+        
+        return {
+            "status": STATUS_SUCCESS,
+            "timestamp": checked_at,
+            "data": {
+                "domain": domain,
+                "ip": ip,
+                "port": port,
+                "ssl": ssl_info,
+                "server": server,
+                "ip_info": ip_info,
+                "checkedAt": checked_at,
+                "recommendations": recommendations,
+                "sslStatus": ssl_status,
+                "serverStatus": server_status,
+                "ipStatus": ip_status,
+                "sslErrorType": ssl_error_type
+            }
+        }
+        
+    except ValueError as e:
+        # Handle validation errors with sanitized messages
+        error_msg = str(e)
+        # Don't expose internal details if the error contains sensitive info
+        if "Cannot resolve domain" in error_msg:
+            return {
+                "status": STATUS_ERROR,
+                "timestamp": checked_at,
+                "error": "Unable to resolve domain name"
+            }
+        return {
+            "status": STATUS_ERROR,
+            "timestamp": checked_at,
+            "error": error_msg
+        }
+    except Exception as e:
+        # Generic error - don't expose internal details
+        return {
+            "status": STATUS_ERROR,
+            "timestamp": checked_at,
+            "error": "An error occurred while checking SSL certificate. Please verify the domain/IP and try again."
+        }
+
+
 @app.get("/")
 async def read_root():
     """Serve the main UI page."""
@@ -99,7 +197,7 @@ async def check_certificate(
         raise HTTPException(status_code=400, detail="Provide either domain or ip, not both")
     
     try:
-        result = check_ssl_certificate(domain=domain, ip=ip, port=port)
+        result = check_single_target(domain=domain, ip=ip, port=port)
         
         # Save to database
         check_id = save_check_result(db, result)
@@ -122,14 +220,14 @@ async def batch_check_certificates(
     # Check domains
     for domain in request.domains or []:
         try:
-            result = check_ssl_certificate(domain=domain, port=request.port)
+            result = check_single_target(domain=domain, port=request.port)
             check_id = save_check_result(db, result)
             if check_id:
                 result["check_id"] = check_id
             results.append(result)
         except Exception as e:
             results.append({
-                "status": "error",
+                "status": STATUS_ERROR,
                 "timestamp": datetime.utcnow().isoformat(),
                 "error": str(e),
                 "domain": domain
@@ -138,21 +236,21 @@ async def batch_check_certificates(
     # Check IPs
     for ip in request.ips or []:
         try:
-            result = check_ssl_certificate(ip=ip, port=request.port)
+            result = check_single_target(ip=ip, port=request.port)
             check_id = save_check_result(db, result)
             if check_id:
                 result["check_id"] = check_id
             results.append(result)
         except Exception as e:
             results.append({
-                "status": "error",
+                "status": STATUS_ERROR,
                 "timestamp": datetime.utcnow().isoformat(),
                 "error": str(e),
                 "ip": ip
             })
     
     return {
-        "status": "success",
+        "status": STATUS_SUCCESS,
         "timestamp": datetime.utcnow().isoformat(),
         "results": results
     }
