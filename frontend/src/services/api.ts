@@ -1,0 +1,86 @@
+import axios from 'axios';
+import type { SSLCheckResponse } from '../types';
+
+const api = axios.create({
+  baseURL: '/api',
+  timeout: 30000,
+});
+
+// Helper to determine if input is an IP address
+const isIPAddress = (host: string): boolean => {
+  const ipv4Pattern = /^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$/;
+  const ipv6Pattern = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))$/;
+  
+  return ipv4Pattern.test(host) || ipv6Pattern.test(host);
+};
+
+// Parse target input to extract host and port
+export const parseTarget = (target: string): { host: string; port: number } | null => {
+  const trimmed = target.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  // Check for bracketed IPv6 address with port: [IPv6]:port
+  const ipv6BracketMatch = trimmed.match(/^\[([^\]]+)\]:(\d+)$/);
+  if (ipv6BracketMatch) {
+    const host = ipv6BracketMatch[1];
+    const port = parseInt(ipv6BracketMatch[2], 10);
+    
+    if (port < 1 || port > 65535) {
+      throw new Error('Port must be between 1 and 65535');
+    }
+    
+    return { host, port };
+  }
+
+  // Check for bracketed IPv6 address without port: [IPv6]
+  const ipv6BracketOnlyMatch = trimmed.match(/^\[([^\]]+)\]$/);
+  if (ipv6BracketOnlyMatch) {
+    return {
+      host: ipv6BracketOnlyMatch[1],
+      port: 443,
+    };
+  }
+
+  // Check for non-bracketed input with port: host:port (IPv4 or hostname)
+  const hostPortMatch = trimmed.match(/^([^:]+):(\d+)$/);
+  
+  if (hostPortMatch) {
+    const host = hostPortMatch[1];
+    const port = parseInt(hostPortMatch[2], 10);
+    
+    if (port < 1 || port > 65535) {
+      throw new Error('Port must be between 1 and 65535');
+    }
+    
+    return { host, port };
+  }
+
+  // No port specified, use default
+  return {
+    host: trimmed,
+    port: 443,
+  };
+};
+
+export const checkSSL = async (target: string): Promise<SSLCheckResponse> => {
+  const parsed = parseTarget(target);
+  
+  if (!parsed) {
+    throw new Error('Invalid target');
+  }
+
+  const params: Record<string, string | number> = { port: parsed.port };
+  
+  if (isIPAddress(parsed.host)) {
+    params.ip = parsed.host;
+  } else {
+    params.domain = parsed.host;
+  }
+
+  const response = await api.get<SSLCheckResponse>('/check', { params });
+  return response.data;
+};
+
+export default api;
