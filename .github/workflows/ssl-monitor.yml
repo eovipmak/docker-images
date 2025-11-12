@@ -44,4 +44,4 @@ jobs:
             docker pull ${{ env.IMAGE_NAME }}:latest
             docker stop ssl-monitor || true
             docker rm ssl-monitor || true
-            docker run -d --name ssl-monitor -p 8001:8001 ${{ env.IMAGE_NAME }}:latest
+            docker run -d --name ssl-monitor -p 8001:8001 -e SSL_CHECKER_URL=http://ssl-checker:8000 ${{ env.IMAGE_NAME }}:latest
