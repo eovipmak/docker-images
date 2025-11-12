@@ -159,10 +159,11 @@ def check_single_target(
                 "timestamp": checked_at,
                 "error": "Unable to resolve domain name"
             }
+        # For other ValueError cases, return a generic message
         return {
             "status": STATUS_ERROR,
             "timestamp": checked_at,
-            "error": error_msg
+            "error": "Invalid input provided"
         }
     except Exception as e:
         # Generic error - don't expose internal details
