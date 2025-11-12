@@ -25,6 +25,13 @@ interface SSLResultDisplayProps {
   result: SSLCheckResponse | null;
 }
 
+// Typed mapping for SSL status to translation keys
+const STATUS_TRANSLATION_KEYS: Record<'success' | 'error' | 'warning', string> = {
+  success: 'statusSuccess',
+  error: 'statusError',
+  warning: 'statusWarning',
+};
+
 const SSLResultDisplay: React.FC<SSLResultDisplayProps> = ({ result }) => {
   const { t } = useLanguage();
 
@@ -83,7 +90,7 @@ const SSLResultDisplay: React.FC<SSLResultDisplayProps> = ({ result }) => {
           </Typography>
         </Box>
         <Chip
-          label={t(`status${data.sslStatus.charAt(0).toUpperCase() + data.sslStatus.slice(1)}`)}
+          label={t(STATUS_TRANSLATION_KEYS[data.sslStatus] || 'statusError')}
           color={getStatusColor()}
         />
       </Box>

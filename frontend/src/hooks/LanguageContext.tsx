@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { translations } from '../utils/translations';
 
@@ -19,6 +19,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const initialLanguage = savedLang && (savedLang === 'en' || savedLang === 'vi') ? savedLang : 'vi';
   
   const [language, setLanguageState] = useState<Language>(initialLanguage);
+
+  // Set initial document lang on mount
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
