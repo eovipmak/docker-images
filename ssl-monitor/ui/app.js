@@ -91,12 +91,17 @@ async function checkCertificate(event) {
     
     // Add loading state
     form.classList.add('htmx-request');
-    resultsDiv.innerHTML = `
-        <div class="alert alert-info mt-3">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            Checking certificate for ${target}:${port}...
-        </div>
-    `;
+    
+    // Create loading message safely to prevent XSS
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info mt-3';
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-border spinner-border-sm me-2';
+    spinner.setAttribute('role', 'status');
+    alertDiv.appendChild(spinner);
+    alertDiv.appendChild(document.createTextNode(`Checking certificate for ${target}:${port}...`));
+    resultsDiv.innerHTML = '';
+    resultsDiv.appendChild(alertDiv);
     
     try {
         // Determine if it's an IP or domain

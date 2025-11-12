@@ -206,7 +206,8 @@ async def check_certificate(
         
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Don't expose internal error details to external users
+        raise HTTPException(status_code=500, detail="An error occurred while checking the certificate")
 
 
 @app.post("/api/batch_check")
@@ -226,10 +227,11 @@ async def batch_check_certificates(
                 result["check_id"] = check_id
             results.append(result)
         except Exception as e:
+            # Don't expose internal error details to external users
             results.append({
                 "status": STATUS_ERROR,
                 "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e),
+                "error": "An error occurred while checking the certificate",
                 "domain": domain
             })
     
@@ -242,10 +244,11 @@ async def batch_check_certificates(
                 result["check_id"] = check_id
             results.append(result)
         except Exception as e:
+            # Don't expose internal error details to external users
             results.append({
                 "status": STATUS_ERROR,
                 "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e),
+                "error": "An error occurred while checking the certificate",
                 "ip": ip
             })
     
