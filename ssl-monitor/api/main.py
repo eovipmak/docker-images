@@ -4,8 +4,10 @@ SSL Monitor FastAPI Application
 This application provides a monitoring interface for SSL certificates.
 It stores check history in SQLite and makes API calls to the ssl-checker service.
 """
+import ipaddress
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -25,6 +27,108 @@ STATIC_DIR = BASE_DIR.parent / "static"
 
 # SSL Checker service URL - can be configured via environment variable
 SSL_CHECKER_URL = os.getenv("SSL_CHECKER_URL", "http://localhost:8000")
+
+# Domain validation regex - conservative pattern
+DOMAIN_PATTERN = re.compile(
+    r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+)
+
+# Private/reserved IP ranges to reject
+PRIVATE_IP_RANGES = [
+    ipaddress.ip_network('10.0.0.0/8'),
+    ipaddress.ip_network('172.16.0.0/12'),
+    ipaddress.ip_network('192.168.0.0/16'),
+    ipaddress.ip_network('127.0.0.0/8'),  # loopback
+    ipaddress.ip_network('169.254.0.0/16'),  # link-local
+    ipaddress.ip_network('::1/128'),  # IPv6 loopback
+    ipaddress.ip_network('fe80::/10'),  # IPv6 link-local
+    ipaddress.ip_network('fc00::/7'),  # IPv6 unique local
+]
+
+
+def validate_domain(domain: str) -> str:
+    """
+    Validate domain name to prevent SSRF attacks.
+    
+    Args:
+        domain: Domain name to validate
+        
+    Returns:
+        Normalized domain name
+        
+    Raises:
+        HTTPException: If domain is invalid
+    """
+    if not domain:
+        raise HTTPException(status_code=400, detail="Domain cannot be empty")
+    
+    # Strip and normalize
+    domain = domain.strip().lower()
+    
+    # Reject if contains URL schemes or paths
+    if '://' in domain or '/' in domain or '@' in domain:
+        raise HTTPException(status_code=400, detail="Invalid domain format")
+    
+    # Validate against domain pattern
+    if not DOMAIN_PATTERN.match(domain):
+        raise HTTPException(status_code=400, detail="Invalid domain name")
+    
+    return domain
+
+
+def validate_ip(ip: str) -> str:
+    """
+    Validate IP address and reject private/reserved ranges.
+    
+    Args:
+        ip: IP address to validate
+        
+    Returns:
+        Normalized IP address
+        
+    Raises:
+        HTTPException: If IP is invalid or in private/reserved range
+    """
+    if not ip:
+        raise HTTPException(status_code=400, detail="IP address cannot be empty")
+    
+    # Strip and normalize
+    ip = ip.strip()
+    
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+        
+        # Check against private/reserved ranges
+        for network in PRIVATE_IP_RANGES:
+            if ip_obj in network:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Private or reserved IP addresses are not allowed"
+                )
+        
+        return str(ip_obj)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid IP address format")
+
+
+def _safe_json_loads(data: str):
+    """
+    Safely load JSON data with error handling.
+    
+    Args:
+        data: JSON string to parse
+        
+    Returns:
+        Parsed JSON object or error sentinel
+    """
+    if not data:
+        return None
+    
+    try:
+        return json.loads(data)
+    except (json.JSONDecodeError, TypeError):
+        return {"error": "Invalid stored data"}
+
 
 app = FastAPI(
     title="SSL Monitor",
@@ -72,14 +176,20 @@ async def check_ssl(
         JSON response with SSL certificate details and check history
     """
     try:
-        # Make API call to ssl-checker service
+        # Validate input - either domain or IP must be provided
+        if not domain and not ip:
+            raise HTTPException(status_code=400, detail="Provide either domain or ip")
+        
+        # Validate and normalize inputs
         params = {"port": port}
         if domain:
-            params["domain"] = domain
+            validated_domain = validate_domain(domain)
+            params["domain"] = validated_domain
+            domain = validated_domain
         elif ip:
-            params["ip"] = ip
-        else:
-            raise HTTPException(status_code=400, detail="Provide either domain or ip")
+            validated_ip = validate_ip(ip)
+            params["ip"] = validated_ip
+            ip = validated_ip
         
         response = requests.get(f"{SSL_CHECKER_URL}/api/check", params=params, timeout=30)
         response.raise_for_status()
@@ -116,6 +226,8 @@ async def check_ssl(
             status_code=503,
             detail=f"SSL Checker service unavailable: {str(e)}"
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -161,7 +273,7 @@ async def get_history(
                 "server_status": check.server_status,
                 "ip_status": check.ip_status,
                 "checked_at": check.checked_at.isoformat(),
-                "data": json.loads(check.response_data) if check.response_data else None
+                "data": _safe_json_loads(check.response_data)
             }
             for check in checks
         ]
