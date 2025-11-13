@@ -136,13 +136,9 @@ app = FastAPI(
 )
 
 # Mount static files for the React app
-if FRONTEND_DIST_DIR.exists():
+# Only mount the assets directory, which contains all the built JS/CSS files
+if FRONTEND_DIST_DIR.exists() and (FRONTEND_DIST_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST_DIR / "assets")), name="assets")
-    # Mount other static files if they exist
-    for static_path in ["vite.svg"]:
-        file_path = FRONTEND_DIST_DIR / static_path
-        if file_path.exists():
-            app.mount(f"/{static_path}", StaticFiles(directory=str(FRONTEND_DIST_DIR)), name=static_path)
 
 # Initialize database on startup
 @app.on_event("startup")
