@@ -1,13 +1,26 @@
 import axios from 'axios';
 
+// Get base URL from environment or use default
+const getBaseURL = () => {
+  // Support runtime configuration for subpath deployments
+  const base = import.meta.env.VITE_BASE_PATH || '';
+  return base === '/' ? '' : base;
+};
+
 const api = axios.create({
-  baseURL: '/',
+  baseURL: getBaseURL(),
   timeout: 30000,
 });
+
+// Global flag to prevent multiple simultaneous redirects (race condition guard)
+let isRedirecting = false;
 
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
+    // WARNING: localStorage is vulnerable to XSS attacks
+    // TODO: Migrate to HTTP-only, Secure cookies for production
+    // This requires backend changes to support cookie-based authentication
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -24,10 +37,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Use redirect guard to prevent race condition when multiple 401s occur
+      if (!isRedirecting) {
+        isRedirecting = true;
+        // Clear token and redirect to login
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+        window.location.href = getBaseURL() + '/login';
+      }
     }
     return Promise.reject(error);
   }

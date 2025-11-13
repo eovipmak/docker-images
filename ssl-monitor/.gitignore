@@ -27,6 +27,7 @@ wheels/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend-dist/
 
 # Database
 *.db
