@@ -33,6 +33,7 @@ frontend-dist/
 *.db
 *.sqlite
 *.sqlite3
+backups/
 
 # IDE
 .vscode/
