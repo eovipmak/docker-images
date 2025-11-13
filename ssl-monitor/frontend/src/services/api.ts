@@ -1,14 +1,32 @@
 import axios from 'axios';
 import type { SSLCheckResponse } from '../types';
 
+// Get base path from environment or use default
+const getBasePath = () => {
+  // Support runtime configuration for subpath deployments
+  const base = import.meta.env.VITE_BASE_PATH || '';
+  // Treat empty string or '/' as root (empty string)
+  // For non-empty bases, remove trailing slash
+  if (!base || base === '/') {
+    return '';
+  }
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+};
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBasePath(),
   timeout: 30000,
 });
+
+// Global flag to prevent multiple simultaneous redirects (race condition guard)
+let isRedirecting = false;
 
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
+    // WARNING: localStorage is vulnerable to XSS attacks
+    // TODO: Migrate to HTTP-only, Secure cookies for production
+    // This requires backend changes to support cookie-based authentication
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -48,21 +66,27 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Refresh failed, use redirect guard and clear tokens
+        if (!isRedirecting) {
+          isRedirecting = true;
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+          window.location.href = getBasePath() + '/login';
+        }
         return Promise.reject(refreshError);
       }
     }
     
-    // For other errors or if refresh failed, clear and redirect
+    // For other 401 errors or if refresh failed, use redirect guard
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (!isRedirecting) {
+        isRedirecting = true;
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        window.location.href = getBasePath() + '/login';
+      }
     }
     
     return Promise.reject(error);
@@ -142,13 +166,13 @@ export const checkSSL = async (target: string): Promise<SSLCheckResponse> => {
     params.domain = parsed.host;
   }
 
-  const response = await api.get<SSLCheckResponse>('/check', { params });
+  const response = await api.get<SSLCheckResponse>('/api/check', { params });
   return response.data;
 };
 
 // Get monitoring statistics
 export const getStats = async () => {
-  const response = await api.get('/stats');
+  const response = await api.get('/api/stats');
   return response.data;
 };
 
@@ -158,19 +182,19 @@ export const getHistory = async (domain?: string, limit: number = 50) => {
   if (domain) {
     params.domain = domain;
   }
-  const response = await api.get('/history', { params });
+  const response = await api.get('/api/history', { params });
   return response.data;
 };
 
 // Get list of monitored domains
 export const getDomains = async (limit: number = 100) => {
-  const response = await api.get('/domains', { params: { limit } });
+  const response = await api.get('/api/domains', { params: { limit } });
   return response.data;
 };
 
 // Add a new domain to monitor
 export const addDomain = async (domain: string, port: number = 443) => {
-  const response = await api.post('/domains', { domain, port });
+  const response = await api.post('/api/domains', { domain, port });
   return response.data;
 };
 
