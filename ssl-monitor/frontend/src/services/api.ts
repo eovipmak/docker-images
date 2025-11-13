@@ -83,4 +83,32 @@ export const checkSSL = async (target: string): Promise<SSLCheckResponse> => {
   return response.data;
 };
 
+// Get monitoring statistics
+export const getStats = async () => {
+  const response = await api.get('/stats');
+  return response.data;
+};
+
+// Get check history
+export const getHistory = async (domain?: string, limit: number = 50) => {
+  const params: Record<string, string | number> = { limit };
+  if (domain) {
+    params.domain = domain;
+  }
+  const response = await api.get('/history', { params });
+  return response.data;
+};
+
+// Get list of monitored domains
+export const getDomains = async (limit: number = 100) => {
+  const response = await api.get('/domains', { params: { limit } });
+  return response.data;
+};
+
+// Add a new domain to monitor
+export const addDomain = async (domain: string, port: number = 443) => {
+  const response = await api.post('/domains', { domain, port });
+  return response.data;
+};
+
 export default api;
