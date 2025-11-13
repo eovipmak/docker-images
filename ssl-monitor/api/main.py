@@ -277,16 +277,19 @@ async def check_ssl(
     domain: Optional[str] = None,
     ip: Optional[str] = None,
     port: int = 443,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
 ):
     """
     Check SSL certificate by calling ssl-checker service and save result to database.
+    Results are associated with the authenticated user for data isolation.
     
     Args:
         domain: Domain name to check
         ip: IP address to check
         port: Port number (default: 443)
         db: Database session
+        user: Current authenticated user
         
     Returns:
         JSON response with SSL certificate details and check history
@@ -315,8 +318,10 @@ async def check_ssl(
         status = result.get("status", "error")
         data = result.get("data", {})
         
-        # Create database record
+        # Create database record with user_id for isolation
         ssl_check = SSLCheck(
+            user_id=user.id,
+            organization_id=user.organization_id,
             domain=domain or data.get("domain"),
             ip=data.get("ip", ip),
             port=port,
@@ -355,20 +360,24 @@ async def check_ssl(
 async def get_history(
     domain: Optional[str] = None,
     limit: int = 50,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
 ):
     """
-    Get SSL check history from database.
+    Get SSL check history from database for the current user.
+    Data is filtered by user_id to ensure isolation.
     
     Args:
         domain: Optional domain filter
         limit: Maximum number of results (default: 50)
         db: Database session
+        user: Current authenticated user
         
     Returns:
-        List of SSL check history records
+        List of SSL check history records for the current user
     """
-    query = db.query(SSLCheck)
+    # Base query filtered by user_id for data isolation
+    query = db.query(SSLCheck).filter(SSLCheck.user_id == user.id)
     
     if domain:
         query = query.filter(SSLCheck.domain == domain)
@@ -397,22 +406,36 @@ async def get_history(
 
 
 @app.get("/api/stats", summary="Get SSL monitoring statistics")
-async def get_stats(db: Session = Depends(get_db)):
+async def get_stats(
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
     """
-    Get overall statistics from monitoring data.
+    Get statistics from monitoring data for the current user.
+    Data is filtered by user_id to ensure isolation.
     
     Args:
         db: Database session
+        user: Current authenticated user
         
     Returns:
-        Statistics about SSL checks
+        Statistics about SSL checks for the current user
     """
-    total_checks = db.query(SSLCheck).count()
-    successful_checks = db.query(SSLCheck).filter(SSLCheck.status == "success").count()
-    error_checks = db.query(SSLCheck).filter(SSLCheck.status == "error").count()
+    # Filter all queries by user_id
+    total_checks = db.query(SSLCheck).filter(SSLCheck.user_id == user.id).count()
+    successful_checks = db.query(SSLCheck).filter(
+        SSLCheck.user_id == user.id,
+        SSLCheck.status == "success"
+    ).count()
+    error_checks = db.query(SSLCheck).filter(
+        SSLCheck.user_id == user.id,
+        SSLCheck.status == "error"
+    ).count()
     
-    # Get unique domains checked
-    unique_domains = db.query(SSLCheck.domain).distinct().count()
+    # Get unique domains checked by this user
+    unique_domains = db.query(SSLCheck.domain).filter(
+        SSLCheck.user_id == user.id
+    ).distinct().count()
     
     return {
         "status": "success",
@@ -428,25 +451,29 @@ async def get_stats(db: Session = Depends(get_db)):
 @app.get("/api/domains", summary="Get list of monitored domains")
 async def get_domains(
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
 ):
     """
-    Get list of unique domains that have been checked.
+    Get list of unique domains that have been checked by the current user.
+    Data is filtered by user_id to ensure isolation.
     
     Args:
         limit: Maximum number of domains to return (default: 100)
         db: Database session
+        user: Current authenticated user
         
     Returns:
-        List of unique domains with their latest check information
+        List of unique domains with their latest check information for the current user
     """
-    # Get unique domains with their latest check
+    # Get unique domains with their latest check, filtered by user_id
     subquery = (
         db.query(
             SSLCheck.domain,
             db.func.max(SSLCheck.checked_at).label("latest_check")
         )
         .filter(SSLCheck.domain.isnot(None))
+        .filter(SSLCheck.user_id == user.id)
         .group_by(SSLCheck.domain)
         .subquery()
     )
@@ -461,6 +488,7 @@ async def get_domains(
                 SSLCheck.checked_at == subquery.c.latest_check
             )
         )
+        .filter(SSLCheck.user_id == user.id)
         .order_by(SSLCheck.checked_at.desc())
         .limit(limit)
         .all()
@@ -486,14 +514,17 @@ async def get_domains(
 @app.post("/api/domains", summary="Add a new domain and check SSL")
 async def add_domain(
     domain_data: DomainCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
 ):
     """
     Add a new domain to monitor and perform initial SSL check.
+    Domain is associated with the authenticated user for data isolation.
     
     Args:
         domain_data: Domain information with validation
         db: Database session
+        user: Current authenticated user
         
     Returns:
         SSL check result for the newly added domain
@@ -516,8 +547,10 @@ async def add_domain(
         status = result.get("status", "error")
         data = result.get("data", {})
         
-        # Create database record
+        # Create database record with user_id for isolation
         ssl_check = SSLCheck(
+            user_id=user.id,
+            organization_id=user.organization_id,
             domain=validated_domain,
             ip=data.get("ip"),
             port=domain_data.port,

@@ -1,6 +1,7 @@
 """
 Database models for SSL Monitor
 """
+import os
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,6 +11,25 @@ from fastapi_users.db import SQLAlchemyBaseUserTable
 from typing import AsyncGenerator
 
 Base = declarative_base()
+
+
+class Organization(Base):
+    """Model for storing organization information"""
+    __tablename__ = "organizations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    users = relationship("User", back_populates="organization")
+    monitors = relationship("Monitor", back_populates="organization", cascade="all, delete-orphan")
+    ssl_checks = relationship("SSLCheck", back_populates="organization", cascade="all, delete-orphan")
+    alerts = relationship("Alert", back_populates="organization", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<Organization(name={self.name})>"
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -22,10 +42,14 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     is_active = Column(Boolean, nullable=False, default=True)
     is_superuser = Column(Boolean, nullable=False, default=False)
     is_verified = Column(Boolean, nullable=False, default=False)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationship to monitors
+    # Relationships
+    organization = relationship("Organization", back_populates="users")
     monitors = relationship("Monitor", back_populates="user", cascade="all, delete-orphan")
+    ssl_checks = relationship("SSLCheck", back_populates="user", cascade="all, delete-orphan")
+    alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(email={self.email}, is_verified={self.is_verified})>"
@@ -35,7 +59,8 @@ class Monitor(Base):
     __tablename__ = "monitors"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     domain = Column(String, nullable=False, index=True)
     check_interval = Column(Integer, default=3600)  # in seconds, default 1 hour
     webhook_url = Column(String, nullable=True)
@@ -43,8 +68,9 @@ class Monitor(Base):
     status = Column(String, default="active")  # active, paused, error
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Relationship to user
+    # Relationships
     user = relationship("User", back_populates="monitors")
+    organization = relationship("Organization", back_populates="monitors")
     
     def __repr__(self):
         return f"<Monitor(domain={self.domain}, user_id={self.user_id}, status={self.status})>"
@@ -55,6 +81,8 @@ class SSLCheck(Base):
     __tablename__ = "ssl_checks"
     
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     domain = Column(String, index=True)
     ip = Column(String)
     port = Column(Integer, default=443)
@@ -62,20 +90,48 @@ class SSLCheck(Base):
     ssl_status = Column(String)
     server_status = Column(String)
     ip_status = Column(String)
-    checked_at = Column(DateTime, default=datetime.utcnow)
+    checked_at = Column(DateTime, default=datetime.utcnow, index=True)
     response_data = Column(Text)  # Store full JSON response
+    
+    # Relationships
+    user = relationship("User", back_populates="ssl_checks")
+    organization = relationship("Organization", back_populates="ssl_checks")
     
     def __repr__(self):
         return f"<SSLCheck(domain={self.domain}, status={self.status}, checked_at={self.checked_at})>"
 
 
+class Alert(Base):
+    """Model for storing alerts and notifications"""
+    __tablename__ = "alerts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
+    domain = Column(String, nullable=False, index=True)
+    alert_type = Column(String, nullable=False)  # expiring_soon, expired, invalid, error
+    severity = Column(String, default="medium")  # low, medium, high, critical
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    is_resolved = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    resolved_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="alerts")
+    organization = relationship("Organization", back_populates="alerts")
+    
+    def __repr__(self):
+        return f"<Alert(domain={self.domain}, type={self.alert_type}, severity={self.severity})>"
+
+
 # Database setup - Synchronous for main app
-DATABASE_URL = "sqlite:///./ssl_monitor.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ssl_monitor.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Async database setup for FastAPI Users
-ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./ssl_monitor.db"
+ASYNC_DATABASE_URL = os.getenv("ASYNC_DATABASE_URL", "sqlite+aiosqlite:///./ssl_monitor.db")
 async_engine = create_async_engine(ASYNC_DATABASE_URL)
 async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
 
