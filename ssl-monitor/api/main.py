@@ -22,8 +22,7 @@ from database import init_db, get_db, SSLCheck
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
-UI_DIR = BASE_DIR.parent / "ui"
-STATIC_DIR = BASE_DIR.parent / "static"
+FRONTEND_DIST_DIR = BASE_DIR.parent / "frontend-dist"
 
 # SSL Checker service URL - can be configured via environment variable
 SSL_CHECKER_URL = os.getenv("SSL_CHECKER_URL", "http://localhost:8000")
@@ -136,8 +135,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+# Mount static files for the React app
+# Only mount the assets directory, which contains all the built JS/CSS files
+if FRONTEND_DIST_DIR.exists() and (FRONTEND_DIST_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST_DIR / "assets")), name="assets")
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -148,12 +149,16 @@ def startup_event():
 @app.get("/", response_class=HTMLResponse, summary="Serve the frontend UI")
 async def serve_ui():
     """
-    Serve the main frontend UI page.
+    Serve the main frontend UI page (React app).
     
     Returns:
-        HTML response with the UI
+        HTML response with the React app
     """
-    return FileResponse(str(UI_DIR / "index.html"))
+    index_path = FRONTEND_DIST_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")
 
 
 @app.get("/api/check", summary="Check SSL certificate and save to database")
@@ -307,3 +312,24 @@ async def get_stats(db: Session = Depends(get_db)):
             "unique_domains": unique_domains
         }
     }
+
+
+# Catch-all route for React Router (must be last)
+# This handles client-side routing by serving index.html for all non-API routes
+@app.get("/{full_path:path}", response_class=HTMLResponse, summary="Serve React app for client-side routing")
+async def catch_all(full_path: str):
+    """
+    Catch-all route to serve the React app for client-side routing.
+    This allows React Router to handle navigation.
+    
+    Args:
+        full_path: The requested path
+        
+    Returns:
+        HTML response with the React app
+    """
+    index_path = FRONTEND_DIST_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")

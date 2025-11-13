@@ -23,6 +23,11 @@ wheels/
 .installed.cfg
 *.egg
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # Database
 *.db
 *.sqlite

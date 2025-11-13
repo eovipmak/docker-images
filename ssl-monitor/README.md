@@ -1,23 +1,25 @@
 # SSL Monitor
 
-A web-based SSL certificate monitoring application with history tracking. This application provides a user-friendly interface to check SSL certificates and stores the check history in a SQLite database.
+A full-stack web application for SSL certificate monitoring with history tracking. This application combines a modern React frontend with a FastAPI backend and SQLite database for persistent storage.
 
 ## Features
 
+- **Modern React UI**: Built with React 19, TypeScript, and Material-UI
 - **SSL Certificate Checking**: Check SSL certificates for domains and IP addresses
 - **History Tracking**: Store and view history of all SSL checks in SQLite database
 - **Statistics Dashboard**: View overall monitoring statistics
-- **Real-time Updates**: Uses HTMX for dynamic, real-time UI updates
-- **Bootstrap 5 UI**: Modern, responsive interface using Bootstrap 5
+- **Real-time Updates**: Dynamic UI updates
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **API Integration**: Makes API calls to the ssl-checker service for SSL validation
 
 ## Technology Stack
 
 **Frontend:**
-- HTML5
-- Bootstrap 5 (CDN)
-- Vanilla JavaScript
-- HTMX for dynamic updates
+- React 19 with TypeScript
+- Material-UI (MUI) for UI components
+- Vite for fast development and optimized builds
+- React Router for client-side routing
+- Axios for API calls
 
 **Backend:**
 - FastAPI (Python web framework)
@@ -29,17 +31,21 @@ A web-based SSL certificate monitoring application with history tracking. This a
 
 ```plaintext
 ssl-monitor/
-├── api/                    # Backend API
-│   ├── main.py            # FastAPI application and endpoints
-│   ├── database.py        # Database models and configuration
-│   └── requirements.txt   # Python dependencies
-├── ui/                     # Frontend UI
-│   └── index.html         # Main HTML page
-├── static/                 # Static files
-│   ├── styles.css         # Custom CSS styles
-│   └── app.js             # JavaScript application logic
-├── Dockerfile             # Docker configuration
-└── README.md              # This file
+├── frontend/              # React frontend application
+│   ├── src/              # React source code
+│   │   ├── components/   # Reusable components
+│   │   ├── pages/        # Page components
+│   │   ├── services/     # API services
+│   │   └── ...
+│   ├── package.json      # Frontend dependencies
+│   └── vite.config.ts    # Vite configuration
+├── api/                  # Backend API
+│   ├── main.py          # FastAPI application and endpoints
+│   ├── database.py      # Database models and configuration
+│   ├── alembic/         # Database migrations
+│   └── requirements.txt # Python dependencies
+├── Dockerfile           # Multi-stage Docker build
+└── README.md            # This file
 ```
 
 ## Quick Start

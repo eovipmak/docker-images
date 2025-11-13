@@ -4,13 +4,6 @@ This repository contains various Docker-based applications.
 
 ## Projects
 
-### SSL Checker Frontend
-A modern React.js frontend application for SSL certificate checking with TypeScript, Material-UI, and responsive design.
-
-**Location:** `frontend/`  
-**Port:** 3000 (dev), 80 (production)  
-**Documentation:** [frontend/README.md](frontend/README.md)
-
 ### SSL Checker
 A FastAPI-based application that checks SSL certificate information, web server technology, and IP geolocation details for domains and IP addresses.
 
@@ -19,11 +12,16 @@ A FastAPI-based application that checks SSL certificate information, web server 
 **Documentation:** [ssl-checker/README.md](ssl-checker/README.md)
 
 ### SSL Monitor
-A web-based SSL certificate monitoring application with history tracking. Built with Bootstrap 5, HTMX, and FastAPI with SQLite for persistent storage.
+A web-based SSL certificate monitoring application with history tracking. Features a modern React frontend with TypeScript and Material-UI, combined with a FastAPI backend and SQLite for persistent storage.
 
 **Location:** `ssl-monitor/`  
 **Port:** 8001  
 **Documentation:** [ssl-monitor/README.md](ssl-monitor/README.md)
+
+**Technology Stack:**
+- **Frontend:** React 19, TypeScript, Material-UI, Vite
+- **Backend:** FastAPI, SQLAlchemy, SQLite
+- **Features:** Real-time monitoring, history tracking, responsive design
 
 ### Image Search
 Image search application.
@@ -51,14 +49,23 @@ Each project can be run independently. See the respective README files for detai
 ## Architecture
 
 ```
-┌─────────────────┐         ┌─────────────────┐
-│  SSL Monitor    │ ──────> │  SSL Checker    │
-│  (Port 8001)    │ API     │  (Port 8000)    │
-│                 │ Calls   │                 │
-│  - Frontend UI  │         │  - SSL Validation│
-│  - SQLite DB    │         │  - Cert Info    │
-│  - History      │         │  - Geo Lookup   │
-└─────────────────┘         └─────────────────┘
+┌─────────────────────────────┐         ┌─────────────────┐
+│     SSL Monitor             │ ──────> │  SSL Checker    │
+│     (Port 8001)             │ API     │  (Port 8000)    │
+│                             │ Calls   │                 │
+│  ┌───────────────────────┐  │         │  - SSL Validation│
+│  │ React Frontend        │  │         │  - Cert Info    │
+│  │ (TypeScript, MUI)     │  │         │  - Geo Lookup   │
+│  └───────────────────────┘  │         └─────────────────┘
+│  ┌───────────────────────┐  │
+│  │ FastAPI Backend       │  │
+│  │ (Python, SQLAlchemy)  │  │
+│  └───────────────────────┘  │
+│  ┌───────────────────────┐  │
+│  │ SQLite Database       │  │
+│  │ (History & Monitors)  │  │
+│  └───────────────────────┘  │
+└─────────────────────────────┘
 ```
 
-SSL Monitor uses SSL Checker as a backend service for performing SSL certificate checks, while adding its own database layer for history tracking and monitoring statistics.
+SSL Monitor is a full-stack application with an integrated React frontend and FastAPI backend. It uses SSL Checker as a backend service for performing SSL certificate checks, while adding its own database layer for history tracking and monitoring statistics.
