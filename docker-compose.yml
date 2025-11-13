@@ -7,7 +7,7 @@ services:
     networks:
       - ssl-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/check?domain=google.com&port=443')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
       interval: 10s
       timeout: 5s
       retries: 5
