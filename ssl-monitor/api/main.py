@@ -16,10 +16,13 @@ import requests
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, SSLCheck
+from database import init_db, get_db, SSLCheck, User
+from auth import fastapi_users, auth_backend, current_active_user
+from schemas import UserRead, UserCreate
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -150,8 +153,48 @@ class DomainCreate(BaseModel):
 
 app = FastAPI(
     title="SSL Monitor",
-    description="Monitor SSL certificates with history tracking",
+    description="Monitor SSL certificates with history tracking and JWT authentication",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow frontend to access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include authentication routes
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserCreate),
+    prefix="/users",
+    tags=["users"],
 )
 
 # Mount static files for the React app
@@ -163,6 +206,18 @@ if FRONTEND_DIST_DIR.exists() and (FRONTEND_DIST_DIR / "assets").exists():
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+
+# Custom /auth/me endpoint for getting current user info
+@app.get("/auth/me", response_model=UserRead, tags=["auth"])
+async def get_current_user(user: User = Depends(current_active_user)):
+    """
+    Get current authenticated user information.
+    
+    Returns:
+        Current user data
+    """
+    return user
 
 
 @app.get("/", response_class=HTMLResponse, summary="Serve the frontend UI")

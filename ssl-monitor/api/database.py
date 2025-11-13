@@ -1,29 +1,32 @@
 """
 Database models for SSL Monitor
 """
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
+from fastapi_users.db import SQLAlchemyBaseUserTable
 
 Base = declarative_base()
 
 
-class User(Base):
-    """Model for storing user information"""
+class User(SQLAlchemyBaseUserTable[int], Base):
+    """Model for storing user information with authentication fields"""
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False, index=True)
-    password_hash = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="user")  # admin or user
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    is_superuser = Column(Boolean, nullable=False, default=False)
+    is_verified = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship to monitors
     monitors = relationship("Monitor", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<User(username={self.username}, role={self.role})>"
+        return f"<User(email={self.email}, is_verified={self.is_verified})>"
 
 
 class Monitor(Base):
