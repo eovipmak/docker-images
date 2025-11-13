@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # JWT Secret Key - Should be set via environment variable in production
 SECRET = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production-please-use-a-strong-random-secret")
+REFRESH_SECRET = os.getenv("JWT_REFRESH_SECRET_KEY", "your-refresh-secret-key-change-in-production-please-use-different-secret")
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
@@ -60,24 +61,38 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    """Get JWT authentication strategy"""
+    """Get JWT authentication strategy for access tokens"""
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)  # 1 hour access token
+
+
+def get_refresh_jwt_strategy() -> JWTStrategy:
+    """Get JWT authentication strategy for refresh tokens"""
+    return JWTStrategy(secret=REFRESH_SECRET, lifetime_seconds=604800)  # 7 days refresh token
 
 
 # Bearer transport for token-based authentication
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
-# Authentication backend with JWT
+# Authentication backend with JWT for access tokens
 auth_backend = AuthenticationBackend(
     name="jwt",
     transport=bearer_transport,
     get_strategy=get_jwt_strategy,
 )
 
+# Refresh token backend
+refresh_bearer_transport = BearerTransport(tokenUrl="auth/jwt/refresh")
+
+refresh_auth_backend = AuthenticationBackend(
+    name="jwt-refresh",
+    transport=refresh_bearer_transport,
+    get_strategy=get_refresh_jwt_strategy,
+)
+
 # FastAPI Users instance
 fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
-    [auth_backend],
+    [auth_backend, refresh_auth_backend],
 )
 
 # Current user dependency - for protected routes

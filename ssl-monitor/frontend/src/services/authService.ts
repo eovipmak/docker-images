@@ -53,6 +53,7 @@ export interface User {
 
 export interface AuthResponse {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 
@@ -70,9 +71,12 @@ export const authService = {
 
     const response = await api.post('/auth/jwt/login', formData);
     
-    // Store the token
+    // Store the tokens
     if (response.data.access_token) {
       localStorage.setItem('auth_token', response.data.access_token);
+    }
+    if (response.data.refresh_token) {
+      localStorage.setItem('refresh_token', response.data.refresh_token);
     }
     
     return response.data;
@@ -83,6 +87,7 @@ export const authService = {
       await api.post('/auth/jwt/logout');
     } finally {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
     }
   },
@@ -90,6 +95,20 @@ export const authService = {
   async getCurrentUser(): Promise<User> {
     const response = await api.get('/auth/me');
     localStorage.setItem('user', JSON.stringify(response.data));
+    return response.data;
+  },
+
+  async refreshToken(): Promise<AuthResponse> {
+    const response = await api.post('/auth/jwt/refresh');
+    
+    // Store the new tokens
+    if (response.data.access_token) {
+      localStorage.setItem('auth_token', response.data.access_token);
+    }
+    if (response.data.refresh_token) {
+      localStorage.setItem('refresh_token', response.data.refresh_token);
+    }
+    
     return response.data;
   },
 

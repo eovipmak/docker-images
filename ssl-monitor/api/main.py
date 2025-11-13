@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from database import init_db, get_db, SSLCheck, User
-from auth import fastapi_users, auth_backend, current_active_user
+from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
 from schemas import UserRead, UserCreate
 
 # Get the absolute path to directories
@@ -218,6 +218,43 @@ async def get_current_user(user: User = Depends(current_active_user)):
         Current user data
     """
     return user
+
+
+# Custom refresh token endpoint
+@app.post("/auth/jwt/refresh", tags=["auth"])
+async def refresh_token(user: User = Depends(current_active_user)):
+    """
+    Refresh access token using a valid access token.
+    This endpoint returns a new access token and refresh token.
+    
+    Returns:
+        New access token and refresh token
+    """
+    from jose import jwt
+    from datetime import datetime, timedelta
+    from auth import SECRET, REFRESH_SECRET
+    
+    # Generate new access token (1 hour)
+    access_token_payload = {
+        "sub": str(user.id),
+        "aud": ["fastapi-users:auth"],
+        "exp": datetime.utcnow() + timedelta(seconds=3600)
+    }
+    access_token = jwt.encode(access_token_payload, SECRET, algorithm="HS256")
+    
+    # Generate new refresh token (7 days)
+    refresh_token_payload = {
+        "sub": str(user.id),
+        "aud": ["fastapi-users:refresh"],
+        "exp": datetime.utcnow() + timedelta(seconds=604800)
+    }
+    refresh_token = jwt.encode(refresh_token_payload, REFRESH_SECRET, algorithm="HS256")
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 
 @app.get("/", response_class=HTMLResponse, summary="Serve the frontend UI")
