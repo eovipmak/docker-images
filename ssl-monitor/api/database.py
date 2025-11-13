@@ -2,10 +2,12 @@
 Database models for SSL Monitor
 """
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from fastapi_users.db import SQLAlchemyBaseUserTable
+from typing import AsyncGenerator
 
 Base = declarative_base()
 
@@ -27,7 +29,6 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     
     def __repr__(self):
         return f"<User(email={self.email}, is_verified={self.is_verified})>"
-
 
 class Monitor(Base):
     """Model for storing monitor configurations"""
@@ -68,10 +69,15 @@ class SSLCheck(Base):
         return f"<SSLCheck(domain={self.domain}, status={self.status}, checked_at={self.checked_at})>"
 
 
-# Database setup
+# Database setup - Synchronous for main app
 DATABASE_URL = "sqlite:///./ssl_monitor.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Async database setup for FastAPI Users
+ASYNC_DATABASE_URL = "sqlite+aiosqlite:///./ssl_monitor.db"
+async_engine = create_async_engine(ASYNC_DATABASE_URL)
+async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
 
 
 def init_db():
@@ -80,9 +86,15 @@ def init_db():
 
 
 def get_db():
-    """Get database session"""
+    """Get synchronous database session"""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get async database session for FastAPI Users"""
+    async with async_session_maker() as session:
+        yield session

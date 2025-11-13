@@ -11,9 +11,9 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import User, get_db
+from database import User, get_async_session
 
 # JWT Secret Key - Should be set via environment variable in production
 SECRET = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production-please-use-a-strong-random-secret")
@@ -44,9 +44,9 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         # TODO: Send email with verification token
 
 
-async def get_user_db(db: Session = Depends(get_db)):
+async def get_user_db(session: AsyncSession = Depends(get_async_session)):
     """Get user database adapter"""
-    yield SQLAlchemyUserDatabase(db, User)
+    yield SQLAlchemyUserDatabase(session, User)
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):

@@ -2,7 +2,9 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
 import { LanguageProvider } from './hooks/useLanguage';
+import { AuthProvider } from './hooks/useAuth';
 import Navigation from './components/Navigation';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Code splitting with React.lazy
 const Login = lazy(() => import('./pages/Login'));
@@ -38,19 +40,35 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <LanguageProvider>
-        <Router>
-          <Navigation />
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/add-domain" element={<AddDomain />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
-        </Router>
-      </LanguageProvider>
+      <AuthProvider>
+        <LanguageProvider>
+          <Router>
+            <Navigation />
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/add-domain"
+                  element={
+                    <ProtectedRoute>
+                      <AddDomain />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </LanguageProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
