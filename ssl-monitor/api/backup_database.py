@@ -61,7 +61,8 @@ def backup_database(output_dir: Path = None):
     print(f"Creating backup of {db_path}")
     print(f"Destination: {backup_path}")
     
-    shutil.copy2(db_path, backup_path)
+    with sqlite3.connect(db_path) as source, sqlite3.connect(backup_path) as dest:
+        source.backup(dest)
     
     # Verify backup was created
     if backup_path.exists():
