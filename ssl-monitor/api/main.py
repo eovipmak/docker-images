@@ -16,10 +16,13 @@ import requests
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, SSLCheck
+from database import init_db, get_db, SSLCheck, User
+from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
+from schemas import UserRead, UserCreate
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -150,8 +153,48 @@ class DomainCreate(BaseModel):
 
 app = FastAPI(
     title="SSL Monitor",
-    description="Monitor SSL certificates with history tracking",
+    description="Monitor SSL certificates with history tracking and JWT authentication",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow frontend to access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include authentication routes
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserCreate),
+    prefix="/users",
+    tags=["users"],
 )
 
 # Mount static files for the React app
@@ -163,6 +206,55 @@ if FRONTEND_DIST_DIR.exists() and (FRONTEND_DIST_DIR / "assets").exists():
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+
+# Custom /auth/me endpoint for getting current user info
+@app.get("/auth/me", response_model=UserRead, tags=["auth"])
+async def get_current_user(user: User = Depends(current_active_user)):
+    """
+    Get current authenticated user information.
+    
+    Returns:
+        Current user data
+    """
+    return user
+
+
+# Custom refresh token endpoint
+@app.post("/auth/jwt/refresh", tags=["auth"])
+async def refresh_token(user: User = Depends(current_active_user)):
+    """
+    Refresh access token using a valid access token.
+    This endpoint returns a new access token and refresh token.
+    
+    Returns:
+        New access token and refresh token
+    """
+    from jose import jwt
+    from datetime import datetime, timedelta
+    from auth import SECRET, REFRESH_SECRET
+    
+    # Generate new access token (1 hour)
+    access_token_payload = {
+        "sub": str(user.id),
+        "aud": ["fastapi-users:auth"],
+        "exp": datetime.utcnow() + timedelta(seconds=3600)
+    }
+    access_token = jwt.encode(access_token_payload, SECRET, algorithm="HS256")
+    
+    # Generate new refresh token (7 days)
+    refresh_token_payload = {
+        "sub": str(user.id),
+        "aud": ["fastapi-users:refresh"],
+        "exp": datetime.utcnow() + timedelta(seconds=604800)
+    }
+    refresh_token = jwt.encode(refresh_token_payload, REFRESH_SECRET, algorithm="HS256")
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 
 @app.get("/", response_class=HTMLResponse, summary="Serve the frontend UI")
