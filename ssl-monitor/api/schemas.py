@@ -3,12 +3,13 @@ User schemas for FastAPI Users
 """
 from typing import Optional
 from fastapi_users import schemas
+from pydantic import EmailStr
 
 
 class UserRead(schemas.BaseUser[int]):
     """Schema for reading user data"""
     id: int
-    email: str
+    email: EmailStr
     is_active: bool = True
     is_superuser: bool = False
     is_verified: bool = False
@@ -19,7 +20,7 @@ class UserRead(schemas.BaseUser[int]):
 
 class UserCreate(schemas.BaseUserCreate):
     """Schema for creating a new user"""
-    email: str
+    email: EmailStr
     password: str
     is_active: Optional[bool] = True
     is_superuser: Optional[bool] = False
@@ -29,7 +30,7 @@ class UserCreate(schemas.BaseUserCreate):
 class UserUpdate(schemas.BaseUserUpdate):
     """Schema for updating user data"""
     password: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_verified: Optional[bool] = None

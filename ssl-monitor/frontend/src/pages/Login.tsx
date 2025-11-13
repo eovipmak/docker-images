@@ -36,6 +36,7 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(''); // Clear success message before login attempt
     setLoading(true);
 
     try {
@@ -64,8 +65,38 @@ const Login: React.FC = () => {
       return;
     }
 
-    if (password.length < 3) {
-      setError('Password must be at least 3 characters long');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      setLoading(false);
+      return;
+    }
+
+    // Check password complexity
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasUpperCase) {
+      setError('Password must contain at least one uppercase letter');
+      setLoading(false);
+      return;
+    }
+
+    if (!hasLowerCase) {
+      setError('Password must contain at least one lowercase letter');
+      setLoading(false);
+      return;
+    }
+
+    if (!hasDigit) {
+      setError('Password must contain at least one digit');
+      setLoading(false);
+      return;
+    }
+
+    if (!hasSpecialChar) {
+      setError('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
       setLoading(false);
       return;
     }

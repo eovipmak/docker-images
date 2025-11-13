@@ -2,6 +2,7 @@
 Authentication configuration using FastAPI Users
 """
 import os
+import logging
 from typing import Optional
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
@@ -15,6 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import User, get_async_session
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
 # JWT Secret Key - Should be set via environment variable in production
 SECRET = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production-please-use-a-strong-random-secret")
 
@@ -27,21 +31,22 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         """Hook called after user registration"""
-        print(f"User {user.id} has registered with email {user.email}")
+        logger.info(f"User {user.id} has registered")
+        # TODO: Send email with verification token
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
         """Hook called after forgot password request"""
-        print(f"User {user.id} has forgotten their password. Reset token: {token}")
-        # TODO: Send email with reset token
+        logger.info(f"Password reset requested for user {user.id}")
+        # TODO: Send email with reset token (do not log the token)
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
         """Hook called after verification request"""
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
-        # TODO: Send email with verification token
+        logger.info(f"Verification requested for user {user.id}")
+        # TODO: Send email with verification token (do not log the token)
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
@@ -55,7 +60,7 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    """Get JWT authentication strategy with refresh token support"""
+    """Get JWT authentication strategy"""
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)  # 1 hour access token
 
 

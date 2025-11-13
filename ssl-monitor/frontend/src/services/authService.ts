@@ -59,7 +59,7 @@ export interface AuthResponse {
 // Authentication API calls
 export const authService = {
   async register(data: RegisterData): Promise<User> {
-    const response = await axios.post('/auth/register', data);
+    const response = await api.post('/auth/register', data);
     return response.data;
   },
 
@@ -68,11 +68,7 @@ export const authService = {
     formData.append('username', email);
     formData.append('password', password);
 
-    const response = await axios.post('/auth/jwt/login', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post('/auth/jwt/login', formData);
     
     // Store the token
     if (response.data.access_token) {
@@ -84,7 +80,7 @@ export const authService = {
 
   async logout(): Promise<void> {
     try {
-      await axios.post('/auth/jwt/logout');
+      await api.post('/auth/jwt/logout');
     } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
@@ -102,15 +98,15 @@ export const authService = {
   },
 
   async verify(token: string): Promise<void> {
-    await axios.post('/auth/verify', { token });
+    await api.post('/auth/verify', { token });
   },
 
   async forgotPassword(email: string): Promise<void> {
-    await axios.post('/auth/forgot-password', { email });
+    await api.post('/auth/forgot-password', { email });
   },
 
   async resetPassword(token: string, password: string): Promise<void> {
-    await axios.post('/auth/reset-password', { token, password });
+    await api.post('/auth/reset-password', { token, password });
   },
 
   getToken(): string | null {
