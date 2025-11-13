@@ -16,6 +16,7 @@ import requests
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from database import init_db, get_db, SSLCheck
@@ -127,6 +128,24 @@ def _safe_json_loads(data: str):
         return json.loads(data)
     except (json.JSONDecodeError, TypeError):
         return {"error": "Invalid stored data"}
+
+
+# Pydantic models for request validation
+class DomainCreate(BaseModel):
+    """Request model for creating a new domain to monitor"""
+    domain: str = Field(..., description="Domain name to monitor", min_length=1, max_length=255)
+    port: int = Field(default=443, description="Port number to check", ge=1, le=65535)
+    
+    @field_validator('domain')
+    @classmethod
+    def validate_domain_field(cls, v: str) -> str:
+        """Validate domain name format"""
+        v = v.strip().lower()
+        if '://' in v or '/' in v or '@' in v:
+            raise ValueError("Invalid domain format")
+        if not DOMAIN_PATTERN.match(v):
+            raise ValueError("Invalid domain name")
+        return v
 
 
 app = FastAPI(
@@ -312,6 +331,143 @@ async def get_stats(db: Session = Depends(get_db)):
             "unique_domains": unique_domains
         }
     }
+
+
+@app.get("/api/domains", summary="Get list of monitored domains")
+async def get_domains(
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of unique domains that have been checked.
+    
+    Args:
+        limit: Maximum number of domains to return (default: 100)
+        db: Database session
+        
+    Returns:
+        List of unique domains with their latest check information
+    """
+    # Get unique domains with their latest check
+    subquery = (
+        db.query(
+            SSLCheck.domain,
+            db.func.max(SSLCheck.checked_at).label("latest_check")
+        )
+        .filter(SSLCheck.domain.isnot(None))
+        .group_by(SSLCheck.domain)
+        .subquery()
+    )
+    
+    # Join to get full details of the latest check for each domain
+    domains_data = (
+        db.query(SSLCheck)
+        .join(
+            subquery,
+            db.and_(
+                SSLCheck.domain == subquery.c.domain,
+                SSLCheck.checked_at == subquery.c.latest_check
+            )
+        )
+        .order_by(SSLCheck.checked_at.desc())
+        .limit(limit)
+        .all()
+    )
+    
+    return {
+        "status": "success",
+        "count": len(domains_data),
+        "domains": [
+            {
+                "domain": check.domain,
+                "ip": check.ip,
+                "port": check.port,
+                "status": check.status,
+                "ssl_status": check.ssl_status,
+                "last_checked": check.checked_at.isoformat(),
+            }
+            for check in domains_data
+        ]
+    }
+
+
+@app.post("/api/domains", summary="Add a new domain and check SSL")
+async def add_domain(
+    domain_data: DomainCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Add a new domain to monitor and perform initial SSL check.
+    
+    Args:
+        domain_data: Domain information with validation
+        db: Database session
+        
+    Returns:
+        SSL check result for the newly added domain
+    """
+    try:
+        # Validate domain using existing validation function
+        validated_domain = validate_domain(domain_data.domain)
+        
+        # Perform SSL check using ssl-checker service
+        params = {
+            "domain": validated_domain,
+            "port": domain_data.port
+        }
+        
+        response = requests.get(f"{SSL_CHECKER_URL}/api/check", params=params, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract data for database storage
+        status = result.get("status", "error")
+        data = result.get("data", {})
+        
+        # Create database record
+        ssl_check = SSLCheck(
+            domain=validated_domain,
+            ip=data.get("ip"),
+            port=domain_data.port,
+            status=status,
+            ssl_status=data.get("sslStatus", "unknown"),
+            server_status=data.get("serverStatus", "unknown"),
+            ip_status=data.get("ipStatus", "unknown"),
+            checked_at=datetime.utcnow(),
+            response_data=json.dumps(result)
+        )
+        
+        db.add(ssl_check)
+        db.commit()
+        db.refresh(ssl_check)
+        
+        # Return the check result
+        return {
+            "status": "success",
+            "message": f"Domain {validated_domain} added and checked successfully",
+            "data": {
+                "id": ssl_check.id,
+                "domain": ssl_check.domain,
+                "ip": ssl_check.ip,
+                "port": ssl_check.port,
+                "ssl_status": ssl_check.ssl_status,
+                "checked_at": ssl_check.checked_at.isoformat(),
+                "check_result": result
+            }
+        }
+        
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"SSL Checker service unavailable: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred: {str(e)}"
+        )
 
 
 # Catch-all route for React Router (must be last)
