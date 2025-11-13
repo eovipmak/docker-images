@@ -1,15 +1,20 @@
 import axios from 'axios';
 import type { SSLCheckResponse } from '../types';
 
-// Get base URL from environment or use default
-const getBaseURL = () => {
+// Get base path from environment or use default
+const getBasePath = () => {
   // Support runtime configuration for subpath deployments
   const base = import.meta.env.VITE_BASE_PATH || '';
-  return base === '/' ? base : base + '/api';
+  // Treat empty string or '/' as root (empty string)
+  // For non-empty bases, remove trailing slash
+  if (!base || base === '/') {
+    return '';
+  }
+  return base.endsWith('/') ? base.slice(0, -1) : base;
 };
 
 const api = axios.create({
-  baseURL: getBaseURL() || '/api',
+  baseURL: getBasePath(),
   timeout: 30000,
 });
 
@@ -67,8 +72,7 @@ api.interceptors.response.use(
           localStorage.removeItem('auth_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('user');
-          const basePath = import.meta.env.VITE_BASE_PATH || '';
-          window.location.href = (basePath === '/' ? '' : basePath) + '/login';
+          window.location.href = getBasePath() + '/login';
         }
         return Promise.reject(refreshError);
       }
@@ -81,8 +85,7 @@ api.interceptors.response.use(
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
-        const basePath = import.meta.env.VITE_BASE_PATH || '';
-        window.location.href = (basePath === '/' ? '' : basePath) + '/login';
+        window.location.href = getBasePath() + '/login';
       }
     }
     
@@ -163,13 +166,13 @@ export const checkSSL = async (target: string): Promise<SSLCheckResponse> => {
     params.domain = parsed.host;
   }
 
-  const response = await api.get<SSLCheckResponse>('/check', { params });
+  const response = await api.get<SSLCheckResponse>('/api/check', { params });
   return response.data;
 };
 
 // Get monitoring statistics
 export const getStats = async () => {
-  const response = await api.get('/stats');
+  const response = await api.get('/api/stats');
   return response.data;
 };
 
@@ -179,19 +182,19 @@ export const getHistory = async (domain?: string, limit: number = 50) => {
   if (domain) {
     params.domain = domain;
   }
-  const response = await api.get('/history', { params });
+  const response = await api.get('/api/history', { params });
   return response.data;
 };
 
 // Get list of monitored domains
 export const getDomains = async (limit: number = 100) => {
-  const response = await api.get('/domains', { params: { limit } });
+  const response = await api.get('/api/domains', { params: { limit } });
   return response.data;
 };
 
 // Add a new domain to monitor
 export const addDomain = async (domain: string, port: number = 443) => {
-  const response = await api.post('/domains', { domain, port });
+  const response = await api.post('/api/domains', { domain, port });
   return response.data;
 };
 
