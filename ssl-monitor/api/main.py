@@ -15,10 +15,13 @@ from typing import Optional, List
 import requests
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig
 from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
@@ -152,11 +155,33 @@ class DomainCreate(BaseModel):
         return v
 
 
+class TrailingSlashMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to handle trailing slashes in URLs by redirecting to non-trailing slash version.
+    This prevents 405 errors when requests are made with trailing slashes.
+    """
+    async def dispatch(self, request: Request, call_next):
+        url_path = request.url.path
+        # Only redirect if path has trailing slash and is not root
+        if url_path != "/" and url_path.endswith("/"):
+            # Remove trailing slash
+            new_path = url_path.rstrip("/")
+            # Build new URL with query parameters if any
+            new_url = request.url.replace(path=new_path)
+            return RedirectResponse(url=str(new_url), status_code=307)  # 307 preserves HTTP method
+        
+        response = await call_next(request)
+        return response
+
+
 app = FastAPI(
     title="SSL Monitor",
     description="Monitor SSL certificates with history tracking and JWT authentication",
     version="1.0.0"
 )
+
+# Add trailing slash redirect middleware (must be before CORS)
+app.add_middleware(TrailingSlashMiddleware)
 
 # Add CORS middleware to allow frontend to access the API
 app.add_middleware(
