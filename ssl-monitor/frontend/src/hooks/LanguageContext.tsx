@@ -22,7 +22,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.lang = 'en';
   }, []);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = () => {
     // Keep language as English only
     console.log('Language switching is disabled. English is the only supported language.');
   };
