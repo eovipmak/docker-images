@@ -39,7 +39,6 @@ import {
   AccessTime as AccessTimeIcon,
   Refresh as RefreshIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon,
   Settings as SettingsIcon,
   NotificationsOff as NotificationsOffIcon,
   Notifications as NotificationsIcon,
