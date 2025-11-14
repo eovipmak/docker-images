@@ -39,7 +39,7 @@ function setupNetworkMonitoring(page: Page): Array<{ url: string; status: number
         try {
           const responseBody = await response.text();
           console.error(`Response body: ${responseBody}`);
-        } catch (e) {
+        } catch {
           console.error('Could not read response body');
         }
       }
