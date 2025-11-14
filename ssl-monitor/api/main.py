@@ -25,9 +25,9 @@ from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig
+from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig, Monitor
 from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
-from schemas import UserRead, UserCreate, AlertConfigCreate, AlertConfigUpdate, AlertConfigRead, AlertRead
+from schemas import UserRead, UserCreate, AlertConfigCreate, AlertConfigUpdate, AlertConfigRead, AlertRead, MonitorCreate, MonitorUpdate, MonitorRead
 from alert_service import process_ssl_check_alerts, get_or_create_alert_config
 
 # Get the absolute path to directories
@@ -648,6 +648,230 @@ async def add_domain(
             status_code=500,
             detail=f"An error occurred: {str(e)}"
         )
+
+
+@app.delete("/api/domains/{domain}", summary="Delete a domain from monitoring")
+async def delete_domain(
+    domain: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Delete all checks for a specific domain for the current user.
+    This removes the domain from monitoring.
+    
+    Args:
+        domain: Domain name to delete
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Success message with count of deleted records
+    """
+    try:
+        # Delete all SSL checks for this domain and user
+        deleted_count = db.query(SSLCheck).filter(
+            SSLCheck.user_id == user.id,
+            SSLCheck.domain == domain
+        ).delete()
+        
+        # Delete all alerts for this domain and user
+        db.query(Alert).filter(
+            Alert.user_id == user.id,
+            Alert.domain == domain
+        ).delete()
+        
+        db.commit()
+        
+        # Broadcast WebSocket update
+        await manager.broadcast({
+            "type": "update",
+            "action": "domain_deleted",
+            "domain": domain
+        })
+        
+        return {
+            "status": "success",
+            "message": f"Domain {domain} deleted successfully",
+            "deleted_checks": deleted_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete domain: {str(e)}"
+        )
+
+
+@app.get("/api/monitors", response_model=List[MonitorRead], summary="Get all monitors for user")
+async def get_monitors(
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Get all monitor configurations for the current user.
+    
+    Args:
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        List of monitors
+    """
+    monitors = db.query(Monitor).filter(Monitor.user_id == user.id).all()
+    return monitors
+
+
+@app.get("/api/monitors/{domain}", response_model=MonitorRead, summary="Get monitor for specific domain")
+async def get_monitor(
+    domain: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Get monitor configuration for a specific domain.
+    
+    Args:
+        domain: Domain name
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Monitor configuration
+    """
+    monitor = db.query(Monitor).filter(
+        Monitor.user_id == user.id,
+        Monitor.domain == domain
+    ).first()
+    
+    if not monitor:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    
+    return monitor
+
+
+@app.post("/api/monitors", response_model=MonitorRead, summary="Create or update monitor configuration")
+async def create_or_update_monitor(
+    monitor_data: MonitorCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Create or update monitor configuration for a domain.
+    
+    Args:
+        monitor_data: Monitor configuration
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Created or updated monitor
+    """
+    # Validate domain
+    validated_domain = validate_domain(monitor_data.domain)
+    
+    # Check if monitor already exists
+    existing_monitor = db.query(Monitor).filter(
+        Monitor.user_id == user.id,
+        Monitor.domain == validated_domain
+    ).first()
+    
+    if existing_monitor:
+        # Update existing monitor
+        existing_monitor.port = monitor_data.port
+        existing_monitor.check_interval = monitor_data.check_interval
+        existing_monitor.alerts_enabled = monitor_data.alerts_enabled
+        existing_monitor.webhook_url = monitor_data.webhook_url
+        existing_monitor.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing_monitor)
+        return existing_monitor
+    else:
+        # Create new monitor
+        monitor = Monitor(
+            user_id=user.id,
+            organization_id=user.organization_id,
+            domain=validated_domain,
+            port=monitor_data.port,
+            check_interval=monitor_data.check_interval,
+            alerts_enabled=monitor_data.alerts_enabled,
+            webhook_url=monitor_data.webhook_url,
+            status="active"
+        )
+        db.add(monitor)
+        db.commit()
+        db.refresh(monitor)
+        return monitor
+
+
+@app.patch("/api/monitors/{domain}", response_model=MonitorRead, summary="Update monitor configuration")
+async def update_monitor(
+    domain: str,
+    monitor_data: MonitorUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Update monitor configuration for a domain.
+    
+    Args:
+        domain: Domain name
+        monitor_data: Updated monitor configuration
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Updated monitor
+    """
+    monitor = db.query(Monitor).filter(
+        Monitor.user_id == user.id,
+        Monitor.domain == domain
+    ).first()
+    
+    if not monitor:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    
+    # Update fields that are provided
+    update_data = monitor_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(monitor, field, value)
+    
+    monitor.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(monitor)
+    
+    return monitor
+
+
+@app.delete("/api/monitors/{domain}", summary="Delete monitor configuration")
+async def delete_monitor(
+    domain: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Delete monitor configuration for a domain.
+    
+    Args:
+        domain: Domain name
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Success message
+    """
+    monitor = db.query(Monitor).filter(
+        Monitor.user_id == user.id,
+        Monitor.domain == domain
+    ).first()
+    
+    if not monitor:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    
+    db.delete(monitor)
+    db.commit()
+    
+    return {"status": "success", "message": f"Monitor for {domain} deleted"}
 
 
 @app.get("/api/alert-config", response_model=AlertConfigRead, summary="Get user's alert configuration")

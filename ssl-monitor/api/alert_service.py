@@ -37,21 +37,27 @@ def check_certificate_expiry(ssl_data: Dict[str, Any], alert_config: AlertConfig
     Returns:
         tuple of (alert_type, severity, message, days_remaining) or None
     """
-    if not ssl_data or 'certificate' not in ssl_data:
+    if not ssl_data:
         return None
     
-    cert = ssl_data.get('certificate', {})
-    expiry_str = cert.get('expiryDate')
+    # Get SSL info from the data structure
+    ssl_info = ssl_data.get('ssl', {})
     
-    if not expiry_str:
-        return None
+    # Try to get daysUntilExpiration directly (from ssl-checker API)
+    days_remaining = ssl_info.get('daysUntilExpiration')
     
-    expiry_date = parse_expiry_date(expiry_str)
-    if not expiry_date:
-        return None
-    
-    now = datetime.utcnow()
-    days_remaining = (expiry_date - now).days
+    if days_remaining is None:
+        # Fallback: try to parse from notAfter date
+        expiry_str = ssl_info.get('notAfter')
+        if not expiry_str:
+            return None
+        
+        expiry_date = parse_expiry_date(expiry_str)
+        if not expiry_date:
+            return None
+        
+        now = datetime.utcnow()
+        days_remaining = (expiry_date - now).days
     
     # Check if certificate is expired
     if days_remaining < 0 and alert_config.alert_cert_expired:
@@ -331,11 +337,25 @@ def process_ssl_check_alerts(
 ) -> List[Alert]:
     """
     Process SSL check results and create alerts based on user configuration
+    and per-domain monitor settings.
     
     Returns:
         List of created alerts
     """
     if not alert_config or not alert_config.enabled:
+        return []
+    
+    # Import Monitor here to avoid circular dependency
+    from database import Monitor
+    
+    # Check if domain has monitor with alerts disabled
+    monitor = db.query(Monitor).filter(
+        Monitor.user_id == user_id,
+        Monitor.domain == domain
+    ).first()
+    
+    if monitor and not monitor.alerts_enabled:
+        # Alerts disabled for this specific domain
         return []
     
     created_alerts = []
@@ -376,7 +396,14 @@ def process_ssl_check_alerts(
         created_alerts.append(alert)
     
     # Send webhook notifications
-    if created_alerts and alert_config.webhook_url:
+    # Use domain-specific webhook if available, otherwise use global config
+    webhook_url = None
+    if monitor and monitor.webhook_url:
+        webhook_url = monitor.webhook_url
+    elif alert_config.webhook_url:
+        webhook_url = alert_config.webhook_url
+    
+    if created_alerts and webhook_url:
         for alert in created_alerts:
             alert_data = {
                 'domain': alert.domain,
@@ -385,7 +412,7 @@ def process_ssl_check_alerts(
                 'message': alert.message,
                 'created_at': alert.created_at.isoformat()
             }
-            send_webhook_notification(alert_config.webhook_url, alert_data)
+            send_webhook_notification(webhook_url, alert_data)
     
     return created_alerts
 
