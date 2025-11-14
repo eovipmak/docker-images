@@ -6,7 +6,7 @@ import { LanguageProvider } from '../hooks/useLanguage';
 
 // Mock the API module
 vi.mock('../services/api', () => ({
-  checkSSL: vi.fn(),
+  addDomain: vi.fn(),
   parseTarget: vi.fn((target: string) => ({ host: target, port: 443 })),
 }));
 
