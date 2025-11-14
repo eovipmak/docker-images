@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -524,7 +524,7 @@ async def get_domains(
         db.query(SSLCheck)
         .join(
             subquery,
-            db.and_(
+            and_(
                 SSLCheck.domain == subquery.c.domain,
                 SSLCheck.checked_at == subquery.c.latest_check
             )
@@ -924,7 +924,7 @@ async def get_domains_status(
         db.query(SSLCheck)
         .join(
             subquery,
-            db.and_(
+            and_(
                 SSLCheck.domain == subquery.c.domain,
                 SSLCheck.checked_at == subquery.c.latest_check
             )
