@@ -9,7 +9,7 @@ import ipaddress
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Set
 
@@ -670,15 +670,21 @@ async def delete_domain(
     """
     try:
         # Delete all SSL checks for this domain and user
-        deleted_count = db.query(SSLCheck).filter(
+        deleted_checks = db.query(SSLCheck).filter(
             SSLCheck.user_id == user.id,
             SSLCheck.domain == domain
         ).delete()
         
         # Delete all alerts for this domain and user
-        db.query(Alert).filter(
+        deleted_alerts = db.query(Alert).filter(
             Alert.user_id == user.id,
             Alert.domain == domain
+        ).delete()
+        
+        # Delete monitor for this domain and user
+        deleted_monitors = db.query(Monitor).filter(
+            Monitor.user_id == user.id,
+            Monitor.domain == domain
         ).delete()
         
         db.commit()
@@ -693,7 +699,9 @@ async def delete_domain(
         return {
             "status": "success",
             "message": f"Domain {domain} deleted successfully",
-            "deleted_checks": deleted_count
+            "deleted_checks": deleted_checks,
+            "deleted_alerts": deleted_alerts,
+            "deleted_monitors": deleted_monitors
         }
         
     except Exception as e:
@@ -1140,8 +1148,6 @@ def calculate_uptime_percentage(db: Session, user_id: int, domain: str, days: in
     Returns:
         Dictionary with uptime statistics
     """
-    from datetime import timedelta
-    
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Get all checks for this domain in the time period

@@ -299,25 +299,6 @@ const Dashboard: React.FC = () => {
     setSelectedDomain(null);
   };
 
-  // Handle domain delete
-  const handleDeleteDomain = async (domainName: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent card click
-    
-    if (!window.confirm(`Are you sure you want to delete monitoring for ${domainName}?`)) {
-      return;
-    }
-
-    try {
-      await deleteDomain(domainName);
-      showSnackbar(`Domain ${domainName} deleted successfully`, 'success');
-      // Refresh data
-      await fetchData();
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to delete domain';
-      showSnackbar(errorMsg, 'error');
-    }
-  };
-
   // Handle alert toggle for domain
   const handleToggleAlerts = async (domainName: string, currentStatus: boolean) => {
     try {
