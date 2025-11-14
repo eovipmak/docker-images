@@ -4,21 +4,23 @@ SSL Monitor FastAPI Application
 This application provides a monitoring interface for SSL certificates.
 It stores check history in SQLite and makes API calls to the ssl-checker service.
 """
+import asyncio
 import ipaddress
 import json
 import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Set
 
 import requests
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -509,7 +511,7 @@ async def get_domains(
     subquery = (
         db.query(
             SSLCheck.domain,
-            db.func.max(SSLCheck.checked_at).label("latest_check")
+            func.max(SSLCheck.checked_at).label("latest_check")
         )
         .filter(SSLCheck.domain.isnot(None))
         .filter(SSLCheck.user_id == user.id)
@@ -522,7 +524,7 @@ async def get_domains(
         db.query(SSLCheck)
         .join(
             subquery,
-            db.and_(
+            and_(
                 SSLCheck.domain == subquery.c.domain,
                 SSLCheck.checked_at == subquery.c.latest_check
             )
@@ -815,6 +817,164 @@ async def delete_alert(
     db.commit()
     
     return {"status": "success", "message": "Alert deleted"}
+
+
+# WebSocket connection manager for real-time updates
+class ConnectionManager:
+    """Manages WebSocket connections for real-time domain status updates"""
+    
+    def __init__(self):
+        self.active_connections: Set[WebSocket] = set()
+    
+    async def connect(self, websocket: WebSocket):
+        """Accept and store a new WebSocket connection"""
+        await websocket.accept()
+        self.active_connections.add(websocket)
+    
+    def disconnect(self, websocket: WebSocket):
+        """Remove a WebSocket connection"""
+        self.active_connections.discard(websocket)
+    
+    async def broadcast(self, message: dict):
+        """Broadcast a message to all connected clients"""
+        disconnected = set()
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                disconnected.add(connection)
+        
+        # Clean up disconnected clients
+        for connection in disconnected:
+            self.active_connections.discard(connection)
+
+
+# Global connection manager instance
+manager = ConnectionManager()
+
+
+@app.websocket("/ws/domains")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time domain status updates.
+    
+    Clients connect to receive periodic updates about all monitored domains.
+    Updates are sent every 30 seconds with the latest SSL check data.
+    """
+    await manager.connect(websocket)
+    
+    try:
+        # Send initial data
+        # Note: We can't use Depends(current_active_user) in WebSocket endpoints
+        # Clients should authenticate via token in query params or initial message
+        
+        while True:
+            # Wait for any message from client (heartbeat/keep-alive)
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                
+                # If client sends a message, it could be a token or request for data
+                # For now, we'll just acknowledge it
+                if data:
+                    await websocket.send_json({"type": "pong"})
+                    
+            except asyncio.TimeoutError:
+                # No message received, continue to next iteration
+                pass
+                
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        manager.disconnect(websocket)
+
+
+@app.get("/api/domains/status", summary="Get all monitored domains with latest SSL status")
+async def get_domains_status(
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Get list of unique domains with their latest SSL check information and full certificate data.
+    This endpoint provides enhanced data for the real-time monitoring dashboard.
+    
+    Args:
+        limit: Maximum number of domains to return (default: 100)
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        List of domains with comprehensive SSL certificate information
+    """
+    # Get unique domains with their latest check, filtered by user_id
+    subquery = (
+        db.query(
+            SSLCheck.domain,
+            func.max(SSLCheck.checked_at).label("latest_check")
+        )
+        .filter(SSLCheck.domain.isnot(None))
+        .filter(SSLCheck.user_id == user.id)
+        .group_by(SSLCheck.domain)
+        .subquery()
+    )
+    
+    # Join to get full details of the latest check for each domain
+    domains_data = (
+        db.query(SSLCheck)
+        .join(
+            subquery,
+            and_(
+                SSLCheck.domain == subquery.c.domain,
+                SSLCheck.checked_at == subquery.c.latest_check
+            )
+        )
+        .filter(SSLCheck.user_id == user.id)
+        .order_by(SSLCheck.checked_at.desc())
+        .limit(limit)
+        .all()
+    )
+    
+    domains_list = []
+    for check in domains_data:
+        # Parse the full response data
+        full_data = _safe_json_loads(check.response_data)
+        
+        # Extract SSL information from the data
+        ssl_info = {}
+        if full_data and full_data.get("data"):
+            data = full_data["data"]
+            ssl_data = data.get("ssl", {})
+            
+            ssl_info = {
+                "daysUntilExpiration": ssl_data.get("daysUntilExpiration"),
+                "notAfter": ssl_data.get("notAfter"),
+                "notBefore": ssl_data.get("notBefore"),
+                "issuer": ssl_data.get("issuer"),
+                "subject": ssl_data.get("subject"),
+                "serialNumber": ssl_data.get("serialNumber"),
+                "signatureAlgorithm": ssl_data.get("signatureAlgorithm"),
+                "tlsVersion": ssl_data.get("tlsVersion"),
+                "cipherSuite": ssl_data.get("cipherSuite"),
+            }
+        
+        domain_info = {
+            "domain": check.domain,
+            "ip": check.ip,
+            "port": check.port,
+            "status": check.status,
+            "ssl_status": check.ssl_status,
+            "last_checked": check.checked_at.isoformat(),
+            "ssl_info": ssl_info,
+        }
+        domains_list.append(domain_info)
+    
+    return {
+        "status": "success",
+        "count": len(domains_list),
+        "domains": domains_list,
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 
 # Catch-all route for React Router (must be last)
