@@ -2,9 +2,12 @@
 Alert service for detecting SSL certificate issues and sending notifications
 """
 import json
+import socket
+import ipaddress
 import requests
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
+from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from database import Alert, AlertConfig, SSLCheck
@@ -169,9 +172,48 @@ def create_alert(
     domain: str,
     alert_type: str,
     severity: str,
-    message: str
-) -> Alert:
-    """Create a new alert in the database"""
+    message: str,
+    deduplication_window_hours: int = 24
+) -> Optional[Alert]:
+    """
+    Create a new alert in the database with deduplication
+    
+    Args:
+        db: Database session
+        user_id: User ID
+        organization_id: Organization ID (optional)
+        domain: Domain name
+        alert_type: Type of alert
+        severity: Severity level
+        message: Alert message
+        deduplication_window_hours: Hours to check for duplicate alerts (default 24)
+    
+    Returns:
+        New or existing alert, or None if skipped due to deduplication
+    """
+    # Check for existing unresolved alert in the deduplication window
+    cutoff_time = datetime.utcnow() - timedelta(hours=deduplication_window_hours)
+    existing_alert = (
+        db.query(Alert)
+        .filter(
+            Alert.user_id == user_id,
+            Alert.domain == domain,
+            Alert.alert_type == alert_type,
+            Alert.is_resolved == False,
+            Alert.created_at >= cutoff_time
+        )
+        .first()
+    )
+    
+    if existing_alert:
+        # Update the timestamp on existing alert instead of creating duplicate
+        existing_alert.created_at = datetime.utcnow()
+        existing_alert.message = message  # Update message in case details changed
+        db.commit()
+        db.refresh(existing_alert)
+        return existing_alert
+    
+    # Create new alert
     alert = Alert(
         user_id=user_id,
         organization_id=organization_id,
@@ -189,14 +231,82 @@ def create_alert(
     return alert
 
 
+def _is_private_ip(ip_str: str) -> bool:
+    """Check if IP address is private, loopback, or reserved"""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+        return (
+            ip.is_private or
+            ip.is_loopback or
+            ip.is_link_local or
+            ip.is_reserved or
+            ip.is_multicast
+        )
+    except ValueError:
+        return True  # Treat invalid IPs as private for safety
+
+
+def _validate_webhook_url(webhook_url: str) -> bool:
+    """
+    Validate webhook URL to prevent SSRF attacks
+    
+    Returns:
+        True if URL is safe to use, False otherwise
+    """
+    if not webhook_url:
+        return False
+    
+    try:
+        # Parse URL
+        parsed = urlparse(webhook_url)
+        
+        # Require http or https scheme
+        if parsed.scheme not in ['http', 'https']:
+            return False
+        
+        # Reject empty hosts
+        if not parsed.hostname:
+            return False
+        
+        # Reject localhost
+        if parsed.hostname.lower() in ['localhost', '127.0.0.1', '::1']:
+            return False
+        
+        # If hostname is an IP, validate it directly
+        try:
+            if _is_private_ip(parsed.hostname):
+                return False
+        except ValueError:
+            pass  # Not an IP, continue with DNS resolution
+        
+        # Perform DNS resolution and validate all returned IPs
+        try:
+            addr_info = socket.getaddrinfo(parsed.hostname, None)
+            for info in addr_info:
+                ip_str = info[4][0]
+                if _is_private_ip(ip_str):
+                    return False
+        except socket.gaierror:
+            return False  # DNS resolution failed
+        
+        return True
+        
+    except Exception:
+        return False
+
+
 def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> bool:
     """
-    Send alert notification to webhook URL
+    Send alert notification to webhook URL with SSRF protection
     
     Returns:
         True if successful, False otherwise
     """
     if not webhook_url:
+        return False
+    
+    # Validate URL to prevent SSRF
+    if not _validate_webhook_url(webhook_url):
         return False
     
     try:

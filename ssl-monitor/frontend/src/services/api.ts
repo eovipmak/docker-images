@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { SSLCheckResponse } from '../types';
+import type { SSLCheckResponse, AlertConfigUpdate } from '../types';
 
 // Get base path from environment or use default
 const getBasePath = () => {
@@ -204,7 +204,7 @@ export const getAlertConfig = async () => {
   return response.data;
 };
 
-export const updateAlertConfig = async (config: any) => {
+export const updateAlertConfig = async (config: AlertConfigUpdate) => {
   const response = await api.post('/api/alert-config', config);
   return response.data;
 };

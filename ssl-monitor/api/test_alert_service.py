@@ -331,7 +331,7 @@ def test_check_geo_changes(db_session, test_user, test_alert_config):
 
 
 def test_no_spam_duplicate_alerts(db_session, test_user, test_alert_config):
-    """Test that alerts don't spam for the same condition"""
+    """Test that alert deduplication prevents spam"""
     expiry_date = datetime.utcnow() + timedelta(days=25)
     ssl_check_data = {
         'status': 'success',
@@ -353,10 +353,10 @@ def test_no_spam_duplicate_alerts(db_session, test_user, test_alert_config):
         test_alert_config
     )
     assert len(alerts1) == 1
+    first_alert_id = alerts1[0].id
     
-    # Second check with same condition should still create a new alert
-    # (This is expected behavior - each check creates alerts based on current state)
-    # In production, you might want to add de-duplication logic
+    # Second check with same condition should NOT create duplicate
+    # Due to deduplication within 24-hour window
     alerts2 = process_ssl_check_alerts(
         db_session,
         test_user.id,
@@ -365,7 +365,16 @@ def test_no_spam_duplicate_alerts(db_session, test_user, test_alert_config):
         ssl_check_data,
         test_alert_config
     )
-    assert len(alerts2) >= 1
+    # Should return the same alert (updated timestamp)
+    assert len(alerts2) == 1
+    assert alerts2[0].id == first_alert_id
+    
+    # Verify total alert count hasn't increased
+    total_alerts = db_session.query(Alert).filter(
+        Alert.user_id == test_user.id,
+        Alert.domain == 'example.com'
+    ).count()
+    assert total_alerts == 1
 
 
 if __name__ == '__main__':

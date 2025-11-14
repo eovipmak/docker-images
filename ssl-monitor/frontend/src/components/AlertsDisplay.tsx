@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import {
   Warning,
-  Error,
+  Error as ErrorIcon,
   Info,
   CheckCircle,
   Delete,
@@ -98,7 +98,7 @@ export default function AlertsDisplay({ unresolvedOnly = true, limit = 20 }: Ale
     switch (severity) {
       case 'critical':
       case 'high':
-        return <Error color="error" />;
+        return <ErrorIcon color="error" />;
       case 'medium':
         return <Warning color="warning" />;
       case 'low':

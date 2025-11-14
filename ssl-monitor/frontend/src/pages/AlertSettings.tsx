@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Paper,
@@ -24,9 +24,17 @@ export default function AlertSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const successTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadConfig();
+    
+    // Cleanup on unmount
+    return () => {
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+    };
   }, []);
 
   const loadConfig = async () => {
@@ -35,8 +43,13 @@ export default function AlertSettings() {
       setError(null);
       const data = await getAlertConfig();
       setConfig(data);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load alert configuration');
+    } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
+          ? String(err.response.data.detail)
+          : 'Failed to load alert configuration';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -49,6 +62,11 @@ export default function AlertSettings() {
       setSaving(true);
       setError(null);
       setSuccess(false);
+      
+      // Clear any existing timer
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
 
       const updateData: AlertConfigUpdate = {
         enabled: config.enabled,
@@ -66,15 +84,25 @@ export default function AlertSettings() {
       const updatedConfig = await updateAlertConfig(updateData);
       setConfig(updatedConfig);
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save configuration');
+      
+      // Set timer with cleanup tracking
+      successTimerRef.current = window.setTimeout(() => {
+        setSuccess(false);
+        successTimerRef.current = null;
+      }, 3000);
+    } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
+          ? String(err.response.data.detail)
+          : 'Failed to save configuration';
+      setError(message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleChange = (field: keyof AlertConfig, value: any) => {
+  const handleChange = (field: keyof AlertConfig, value: string | boolean) => {
     if (!config) return;
     setConfig({ ...config, [field]: value });
   };

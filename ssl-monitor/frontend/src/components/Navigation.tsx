@@ -81,9 +81,9 @@ const Navigation: React.FC = () => {
                   sx={{
                     backgroundColor: isActive('/alert-settings') ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                   }}
-                  aria-label="Alert Settings"
+                  aria-label={t('alertSettings')}
                 >
-                  Alerts
+                  {t('alerts')}
                 </Button>
                 <Button
                   color="inherit"

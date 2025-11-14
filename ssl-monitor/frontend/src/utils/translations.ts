@@ -10,6 +10,8 @@ export const translations: Record<Language, Record<string, string>> = {
     login: 'Login',
     dashboard: 'Dashboard',
     addDomain: 'Add Domain',
+    alerts: 'Alerts',
+    alertSettings: 'Alert Settings',
     
     // Form
     formTitle: 'SSL Certificate Check',
@@ -108,6 +110,8 @@ export const translations: Record<Language, Record<string, string>> = {
     login: 'Đăng nhập',
     dashboard: 'Bảng điều khiển',
     addDomain: 'Thêm tên miền',
+    alerts: 'Cảnh báo',
+    alertSettings: 'Cài đặt cảnh báo',
     
     // Form
     formTitle: 'Kiểm tra chứng chỉ SSL',
