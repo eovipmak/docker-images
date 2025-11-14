@@ -31,6 +31,9 @@ import {
   ListItemIcon,
   ListItemText,
   LinearProgress,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -125,6 +128,9 @@ const Dashboard: React.FC = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; domain: DomainStatus } | null>(null);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [settingsDomain, setSettingsDomain] = useState<DomainStatus | null>(null);
+  const [settingsCheckInterval, setSettingsCheckInterval] = useState<number>(3600);
   
   const wsRef = useRef<WebSocket | null>(null);
   const autoRefreshRef = useRef<number | null>(null);
@@ -359,6 +365,43 @@ const Dashboard: React.FC = () => {
         : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
           ? String(err.response.data.detail)
           : 'Failed to send test alert';
+      showSnackbar(errorMsg, 'error');
+    }
+  };
+
+  // Handle settings from menu
+  const handleSettingsFromMenu = () => {
+    if (!menuAnchor) return;
+    
+    setSettingsDomain(menuAnchor.domain);
+    setSettingsCheckInterval(menuAnchor.domain.monitor?.check_interval || 3600);
+    setSettingsDialogOpen(true);
+    setMenuAnchor(null);
+  };
+
+  // Handle close settings dialog
+  const handleCloseSettingsDialog = () => {
+    setSettingsDialogOpen(false);
+    setSettingsDomain(null);
+  };
+
+  // Handle save settings
+  const handleSaveSettings = async () => {
+    if (!settingsDomain) return;
+    
+    try {
+      await updateMonitor(settingsDomain.domain, { check_interval: settingsCheckInterval });
+      showSnackbar(`Settings updated for ${settingsDomain.domain}`, 'success');
+      setSettingsDialogOpen(false);
+      setSettingsDomain(null);
+      // Refresh data
+      await fetchData();
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error 
+        ? err.message 
+        : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
+          ? String(err.response.data.detail)
+          : 'Failed to update settings';
       showSnackbar(errorMsg, 'error');
     }
   };
@@ -931,6 +974,50 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Monitor Settings Dialog */}
+      <Dialog
+        open={settingsDialogOpen}
+        onClose={handleCloseSettingsDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Monitor Settings
+          {settingsDomain && (
+            <Typography variant="body2" color="text.secondary">
+              {settingsDomain.domain}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel id="check-interval-label">Check Interval</InputLabel>
+              <Select
+                labelId="check-interval-label"
+                value={settingsCheckInterval}
+                label="Check Interval"
+                onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
+              >
+                <MenuItem value={3600}>1 hour</MenuItem>
+                <MenuItem value={10800}>3 hours</MenuItem>
+                <MenuItem value={43200}>12 hours</MenuItem>
+                <MenuItem value={86400}>24 hours (1 day)</MenuItem>
+              </Select>
+            </FormControl>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              How often to check the SSL certificate status
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSettingsDialog}>Cancel</Button>
+          <Button onClick={handleSaveSettings} variant="contained" color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}
@@ -966,6 +1053,12 @@ const Dashboard: React.FC = () => {
               ? 'Enable Alerts'
               : 'Disable Alerts'}
           </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleSettingsFromMenu}>
+          <ListItemIcon>
+            <SettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Monitor Settings</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleTestAlertFromMenu}>
           <ListItemIcon>
