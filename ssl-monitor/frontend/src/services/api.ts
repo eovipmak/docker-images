@@ -275,6 +275,16 @@ export const updateAlertConfig = async (config: AlertConfigUpdate) => {
   return response.data;
 };
 
+export const testWebhook = async () => {
+  const response = await api.post('/api/alert-config/test-webhook');
+  return response.data;
+};
+
+export const testDomainAlert = async (domain: string) => {
+  const response = await api.post(`/api/monitors/${encodeURIComponent(domain)}/test-alert`);
+  return response.data;
+};
+
 // Alerts APIs
 export const getAlerts = async (unreadOnly = false, unresolvedOnly = false, limit = 50): Promise<Alert[]> => {
   const params: Record<string, boolean | number> = { limit };

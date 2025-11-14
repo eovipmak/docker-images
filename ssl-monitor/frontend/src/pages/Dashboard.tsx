@@ -42,9 +42,10 @@ import {
   Settings as SettingsIcon,
   NotificationsOff as NotificationsOffIcon,
   Notifications as NotificationsIcon,
+  BugReport as BugReportIcon,
 } from '@mui/icons-material';
 import { useLanguage } from '../hooks/useLanguage';
-import { getStats, getHistory, deleteDomain, updateMonitor } from '../services/api';
+import { getStats, getHistory, deleteDomain, updateMonitor, testDomainAlert } from '../services/api';
 import AlertsDisplay from '../components/AlertsDisplay';
 
 interface Stats {
@@ -339,6 +340,26 @@ const Dashboard: React.FC = () => {
     if (menuAnchor) {
       const alertsEnabled = menuAnchor.domain.monitor?.alerts_enabled ?? true;
       await handleToggleAlerts(menuAnchor.domain.domain, alertsEnabled);
+    }
+  };
+
+  // Handle test alert from menu
+  const handleTestAlertFromMenu = async () => {
+    if (!menuAnchor) return;
+    
+    const domainName = menuAnchor.domain.domain;
+    setMenuAnchor(null);
+    
+    try {
+      const result = await testDomainAlert(domainName);
+      showSnackbar(result.message || `Test alert sent for ${domainName}`, 'success');
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error 
+        ? err.message 
+        : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
+          ? String(err.response.data.detail)
+          : 'Failed to send test alert';
+      showSnackbar(errorMsg, 'error');
     }
   };
 
@@ -945,6 +966,12 @@ const Dashboard: React.FC = () => {
               ? 'Enable Alerts'
               : 'Disable Alerts'}
           </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleTestAlertFromMenu}>
+          <ListItemIcon>
+            <BugReportIcon fontSize="small" color="primary" />
+          </ListItemIcon>
+          <ListItemText>Send Test Alert</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleDeleteFromMenu}>
           <ListItemIcon>
