@@ -198,4 +198,40 @@ export const addDomain = async (domain: string, port: number = 443) => {
   return response.data;
 };
 
+// Alert Configuration APIs
+export const getAlertConfig = async () => {
+  const response = await api.get('/api/alert-config');
+  return response.data;
+};
+
+export const updateAlertConfig = async (config: any) => {
+  const response = await api.post('/api/alert-config', config);
+  return response.data;
+};
+
+// Alerts APIs
+export const getAlerts = async (unreadOnly = false, unresolvedOnly = false, limit = 50) => {
+  const params: Record<string, boolean | number> = { limit };
+  if (unreadOnly) params.unread_only = true;
+  if (unresolvedOnly) params.unresolved_only = true;
+  
+  const response = await api.get('/api/alerts', { params });
+  return response.data;
+};
+
+export const markAlertRead = async (alertId: number) => {
+  const response = await api.patch(`/api/alerts/${alertId}/read`);
+  return response.data;
+};
+
+export const markAlertResolved = async (alertId: number) => {
+  const response = await api.patch(`/api/alerts/${alertId}/resolve`);
+  return response.data;
+};
+
+export const deleteAlert = async (alertId: number) => {
+  const response = await api.delete(`/api/alerts/${alertId}`);
+  return response.data;
+};
+
 export default api;

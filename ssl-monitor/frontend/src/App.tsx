@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AddDomain = lazy(() => import('./pages/AddDomain'));
+const AlertSettings = lazy(() => import('./pages/AlertSettings'));
 
 const theme = createTheme({
   palette: {
@@ -60,6 +61,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <AddDomain />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/alert-settings"
+                  element={
+                    <ProtectedRoute>
+                      <AlertSettings />
                     </ProtectedRoute>
                   }
                 />
