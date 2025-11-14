@@ -28,7 +28,7 @@ from starlette.requests import Request
 from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig, Monitor
 from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
 from schemas import UserRead, UserCreate, AlertConfigCreate, AlertConfigUpdate, AlertConfigRead, AlertRead, MonitorCreate, MonitorUpdate, MonitorRead
-from alert_service import process_ssl_check_alerts, get_or_create_alert_config
+from alert_service import process_ssl_check_alerts, get_or_create_alert_config, send_webhook_notification
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -747,9 +747,12 @@ async def get_monitor(
     Returns:
         Monitor configuration
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -831,9 +834,12 @@ async def update_monitor(
     Returns:
         Updated monitor
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -868,9 +874,12 @@ async def delete_monitor(
     Returns:
         Success message
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -879,7 +888,90 @@ async def delete_monitor(
     db.delete(monitor)
     db.commit()
     
-    return {"status": "success", "message": f"Monitor for {domain} deleted"}
+    return {"status": "success", "message": f"Monitor for {normalized_domain} deleted"}
+
+
+@app.post("/api/monitors/{domain}/test-alert", summary="Send test alert for a domain")
+async def test_domain_alert(
+    domain: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Send a test alert for a specific domain to simulate an expiring SSL certificate.
+    This is useful for testing the alert notification flow.
+    
+    Args:
+        domain: Domain name
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Success message with alert details
+    """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
+    # Get the monitor to verify it exists and belongs to the user
+    monitor = db.query(Monitor).filter(
+        Monitor.user_id == user.id,
+        Monitor.domain == normalized_domain
+    ).first()
+    
+    if not monitor:
+        raise HTTPException(status_code=404, detail="Monitor not found")
+    
+    # Get user's alert config
+    alert_config = get_or_create_alert_config(db, user.id, user.organization_id)
+    
+    if not alert_config.enabled:
+        raise HTTPException(
+            status_code=400,
+            detail="Alerts are disabled. Please enable alerts in alert settings first."
+        )
+    
+    # Determine webhook URL - use monitor-specific or global
+    webhook_url = monitor.webhook_url or alert_config.webhook_url
+    
+    if not webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="No webhook URL configured. Please configure a webhook URL in alert settings or monitor settings."
+        )
+    
+    # Create test alert data simulating an expiring certificate
+    test_alert_data = {
+        "type": "test_expiring_certificate",
+        "severity": "critical",
+        "domain": normalized_domain,
+        "message": f"TEST ALERT: SSL certificate for {normalized_domain} is expiring in 7 days",
+        "details": {
+            "domain": normalized_domain,
+            "days_until_expiration": 7,
+            "test": True,
+            "note": "This is a simulated alert for testing purposes",
+            "user_email": user.email,
+            "timestamp": datetime.utcnow().isoformat()
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    # Send test webhook
+    success = send_webhook_notification(webhook_url, test_alert_data)
+    
+    if success:
+        return {
+            "status": "success",
+            "message": f"Test alert sent successfully for {normalized_domain}",
+            "domain": normalized_domain,
+            "webhook_url": webhook_url,
+            "alert_data": test_alert_data
+        }
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send test alert for {normalized_domain}. Please check your webhook URL."
+        )
 
 
 @app.get("/api/alert-config", response_model=AlertConfigRead, summary="Get user's alert configuration")
@@ -933,6 +1025,60 @@ async def create_or_update_alert_config(
     db.refresh(config)
     
     return config
+
+
+@app.post("/api/alert-config/test-webhook", summary="Send a test webhook notification")
+async def test_webhook_notification(
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Send a test notification to the configured webhook URL to verify it works.
+    
+    Args:
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Success or error message
+    """
+    # Get user's alert config
+    config = get_or_create_alert_config(db, user.id, user.organization_id)
+    
+    if not config.webhook_url:
+        raise HTTPException(
+            status_code=400,
+            detail="No webhook URL configured. Please configure a webhook URL first."
+        )
+    
+    # Create test alert data
+    test_alert_data = {
+        "type": "test",
+        "severity": "info",
+        "domain": "example.com",
+        "message": "This is a test alert from SSL Monitor",
+        "details": {
+            "user_email": user.email,
+            "timestamp": datetime.utcnow().isoformat(),
+            "test": True
+        },
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    # Send test webhook
+    success = send_webhook_notification(config.webhook_url, test_alert_data)
+    
+    if success:
+        return {
+            "status": "success",
+            "message": f"Test notification sent successfully to {config.webhook_url}",
+            "webhook_url": config.webhook_url
+        }
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send test notification. Please check your webhook URL and try again."
+        )
 
 
 @app.get("/api/alerts", response_model=List[AlertRead], summary="Get user's alerts")

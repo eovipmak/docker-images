@@ -1,102 +1,5 @@
 // Translation data for the SSL Checker application
 const translations = {
-        vi: {
-        // Header
-        title: "🔒 Công cụ kiểm tra chứng chỉ SSL",
-        subtitle: "Phân tích chi tiết chứng chỉ SSL, thông tin máy chủ và vị trí địa lý của địa chỉ IP",
-        
-        // Form
-        formTitle: "Kiểm tra chứng chỉ SSL",
-        targetLabel: "Tên miền hoặc địa chỉ IP",
-        targetPlaceholder: "example.com:443, 93.184.216.34:8443, hoặc [::1]:443",
-        helpText: "Nhập tên miền hoặc địa chỉ IP (IPv4/IPv6). Cổng có thể chỉ định theo định dạng domain[:port], IP[:port] hoặc [IPv6]:port (mặc định: 443).",
-        checkButton: "Thực hiện kiểm tra",
-        
-        // Results
-        resultsTitle: "Kết quả kiểm tra",
-        result: "Kết quả",
-        
-        // Status badges
-        statusSuccess: "Thành công",
-        statusError: "Lỗi",
-        statusWarning: "Cảnh báo",
-        
-        // Sections
-        sslCertificate: "🔒 Thông tin chứng chỉ SSL",
-        serverInformation: "🖥️ Thông tin máy chủ",
-        ipGeolocation: "🌍 Thông tin vị trí IP",
-        securityAlerts: "⚠️ Cảnh báo bảo mật",
-        recommendations: "💡 Gợi ý cải thiện",
-        
-        // SSL Certificate Fields
-        subjectCN: "Tên chung (Subject CN)",
-        subjectOrganization: "Tổ chức phát hành",
-        subjectOrgUnit: "Đơn vị tổ chức",
-        subjectCountry: "Quốc gia",
-        subjectState: "Tỉnh/Bang",
-        subjectLocality: "Thành phố/Địa phương",
-        issuer: "Nhà phát hành chứng chỉ",
-        issuerOrg: "Tổ chức phát hành",
-        issuerCountry: "Quốc gia phát hành",
-        version: "Phiên bản",
-        serialNumber: "Số serial",
-        validFrom: "Hiệu lực từ",
-        validUntil: "Hiệu lực đến",
-        daysUntilExpiration: "Số ngày còn lại đến khi hết hạn",
-        tlsVersion: "Phiên bản TLS",
-        cipherSuite: "Bộ mã hóa",
-        signatureAlgorithm: "Thuật toán chữ ký",
-        subjectAltNames: "Tên thay thế (SAN)",
-        
-        // Server Information Fields
-        ipAddress: "Địa chỉ IP",
-        port: "Cổng kết nối",
-        server: "Phần mềm máy chủ",
-        
-        // IP Geolocation Fields
-        continent: "Châu lục",
-        continentCode: "Mã châu lục",
-        country: "Quốc gia",
-        countryCode: "Mã quốc gia",
-        region: "Khu vực",
-        regionName: "Tên khu vực",
-        city: "Thành phố",
-        district: "Quận/Huyện",
-        zip: "Mã bưu điện",
-        coordinates: "Tọa độ (Vĩ độ, Kinh độ)",
-        isp: "Nhà cung cấp dịch vụ Internet (ISP)",
-        org: "Tổ chức",
-        asn: "Số hệ thống tự trị (ASN)",
-        asname: "Tên hệ thống tự trị",
-        reverse: "Tên miền ngược (Reverse DNS)",
-        mobile: "Mạng di động",
-        proxy: "Máy chủ proxy",
-        hosting: "Máy chủ lưu trữ",
-        
-        // Status Fields
-        sslStatus: "Trạng thái SSL",
-        serverStatus: "Trạng thái máy chủ",
-        ipStatus: "Trạng thái IP",
-        errorType: "Loại lỗi",
-        checkedAt: "Thời điểm kiểm tra",
-        
-        // Common
-        yes: "Có",
-        no: "Không",
-        unknown: "Không xác định",
-        notAvailable: "Không có dữ liệu",
-        
-        // Errors
-        errorOccurred: "Đã xảy ra lỗi trong quá trình kiểm tra.",
-        provideDomain: "Vui lòng nhập tên miền hoặc địa chỉ IP.",
-        invalidTarget: "Tên miền hoặc địa chỉ IP không hợp lệ.",
-        checkFailed: "Không thể hoàn tất kiểm tra SSL. Vui lòng thử lại sau.",
-        
-        // Footer
-        footerText: "🔒 SSL Checker API v2.0.0",
-        builtWith: "Phát triển bằng",
-        by: "bởi"
-    },
     en: {
         // Header
         title: "🔒 SSL Certificate Checker",
@@ -196,8 +99,8 @@ const translations = {
     }
 };
 
-// Current language (default: Vietnamese)
-let currentLanguage = 'vi';
+// Current language (default: English)
+let currentLanguage = 'en';
 
 // Get translation for a key
 function t(key) {
@@ -244,12 +147,6 @@ function updatePageLanguage() {
     const resultsTitle = document.querySelector('#results .card h2');
     if (resultsTitle) {
         resultsTitle.textContent = t('resultsTitle');
-    }
-    
-    // Update language toggle button text
-    const langToggle = document.getElementById('languageToggle');
-    if (langToggle) {
-        langToggle.textContent = currentLanguage === 'vi' ? 'English' : 'Tiếng Việt';
     }
     
     // Update document lang attribute for accessibility (screen readers, search engines)

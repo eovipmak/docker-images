@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { translations } from '../utils/translations';
 
-type Language = 'en' | 'vi';
+type Language = 'en';
 
 interface LanguageContextType {
   language: Language;
@@ -14,21 +14,17 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize from localStorage
-  const savedLang = localStorage.getItem('preferredLanguage') as Language;
-  const initialLanguage = savedLang && (savedLang === 'en' || savedLang === 'vi') ? savedLang : 'vi';
-  
-  const [language, setLanguageState] = useState<Language>(initialLanguage);
+  // Always use English
+  const [language] = useState<Language>('en');
 
   // Set initial document lang on mount
   useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
+    document.documentElement.lang = 'en';
+  }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('preferredLanguage', lang);
-    document.documentElement.lang = lang;
+  const setLanguage = () => {
+    // Keep language as English only
+    console.log('Language switching is disabled. English is the only supported language.');
   };
 
   const t = (key: string): string => {

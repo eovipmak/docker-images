@@ -1,15 +1,6 @@
 // Initialize language on page load
 document.addEventListener('DOMContentLoaded', () => {
     initLanguage();
-    
-    // Setup language toggle button
-    const langToggle = document.getElementById('languageToggle');
-    if (langToggle) {
-        langToggle.addEventListener('click', () => {
-            const newLang = getCurrentLanguage() === 'vi' ? 'en' : 'vi';
-            setLanguage(newLang);
-        });
-    }
 });
 
 // Parse target input to extract domain/IP and port

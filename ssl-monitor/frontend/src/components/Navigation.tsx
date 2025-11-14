@@ -4,12 +4,10 @@ import {
   Toolbar,
   Typography,
   Button,
-  IconButton,
   Box,
   Container,
 } from '@mui/material';
 import {
-  Language as LanguageIcon,
   Dashboard as DashboardIcon,
   AddCircle as AddCircleIcon,
   Login as LoginIcon,
@@ -21,14 +19,10 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 
 const Navigation: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'vi' : 'en');
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -107,13 +101,6 @@ const Navigation: React.FC = () => {
                 {t('login')}
               </Button>
             )}
-            <IconButton
-              color="inherit"
-              onClick={toggleLanguage}
-              aria-label={`Switch to ${language === 'en' ? 'Vietnamese' : 'English'}`}
-            >
-              <LanguageIcon />
-            </IconButton>
           </Box>
         </Toolbar>
       </Container>

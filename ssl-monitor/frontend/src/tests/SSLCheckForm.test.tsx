@@ -19,23 +19,23 @@ describe('SSLCheckForm', () => {
     const mockOnResult = vi.fn();
     renderWithLanguage(<SSLCheckForm onResult={mockOnResult} />);
 
-    // Check for form elements (Vietnamese labels by default)
-    expect(screen.getByRole('textbox', { name: /tên miền hoặc địa chỉ ip/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /thực hiện kiểm tra/i })).toBeInTheDocument();
+    // Check for form elements (English labels)
+    expect(screen.getByRole('textbox', { name: /domain or ip address/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check certificate/i })).toBeInTheDocument();
   });
 
   it('displays validation error when submitting empty form', async () => {
     const mockOnResult = vi.fn();
     renderWithLanguage(<SSLCheckForm onResult={mockOnResult} />);
 
-    const submitButton = screen.getByRole('button', { name: /thực hiện kiểm tra/i });
+    const submitButton = screen.getByRole('button', { name: /check certificate/i });
     
     // Click submit without entering a domain
     fireEvent.click(submitButton);
 
-    // Wait for validation error (Vietnamese text)
+    // Wait for validation error (English text)
     await waitFor(() => {
-      expect(screen.getByText(/vui lòng nhập tên miền hoặc địa chỉ ip/i)).toBeInTheDocument();
+      expect(screen.getByText(/please provide a domain name or ip address/i)).toBeInTheDocument();
     });
 
     // Should not call onResult
@@ -47,7 +47,7 @@ describe('SSLCheckForm', () => {
     const mockOnResult = vi.fn();
     renderWithLanguage(<SSLCheckForm onResult={mockOnResult} />);
 
-    const input = screen.getByRole('textbox', { name: /tên miền hoặc địa chỉ ip/i });
+    const input = screen.getByRole('textbox', { name: /domain or ip address/i });
     
     // Type a domain name
     await user.type(input, 'example.com');
@@ -60,8 +60,8 @@ describe('SSLCheckForm', () => {
     const mockOnResult = vi.fn();
     renderWithLanguage(<SSLCheckForm onResult={mockOnResult} />);
 
-    const input = screen.getByRole('textbox', { name: /tên miền hoặc địa chỉ ip/i });
-    const button = screen.getByRole('button', { name: /thực hiện kiểm tra/i });
+    const input = screen.getByRole('textbox', { name: /domain or ip address/i });
+    const button = screen.getByRole('button', { name: /check certificate/i });
 
     // Check for aria attributes
     expect(input).toHaveAttribute('aria-label');

@@ -14,17 +14,20 @@ import {
   Grid,
   Chip,
 } from '@mui/material';
-import { Save as SaveIcon, NotificationsActive } from '@mui/icons-material';
-import { getAlertConfig, updateAlertConfig } from '../services/api';
+import { Save as SaveIcon, NotificationsActive, Send as SendIcon } from '@mui/icons-material';
+import { getAlertConfig, updateAlertConfig, testWebhook } from '../services/api';
 import type { AlertConfig, AlertConfigUpdate } from '../types';
 
 export default function AlertSettings() {
   const [config, setConfig] = useState<AlertConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testingWebhook, setTestingWebhook] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const successTimerRef = useRef<number | null>(null);
+  const webhookTestTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -33,6 +36,9 @@ export default function AlertSettings() {
     return () => {
       if (successTimerRef.current !== null) {
         window.clearTimeout(successTimerRef.current);
+      }
+      if (webhookTestTimerRef.current !== null) {
+        window.clearTimeout(webhookTestTimerRef.current);
       }
     };
   }, []);
@@ -105,6 +111,56 @@ export default function AlertSettings() {
   const handleChange = (field: keyof AlertConfig, value: string | boolean) => {
     if (!config) return;
     setConfig({ ...config, [field]: value });
+  };
+
+  const handleTestWebhook = async () => {
+    if (!config?.webhook_url) {
+      setWebhookTestResult({ 
+        success: false, 
+        message: 'Please enter a webhook URL first' 
+      });
+      return;
+    }
+
+    try {
+      setTestingWebhook(true);
+      setWebhookTestResult(null);
+      
+      // Clear any existing timer
+      if (webhookTestTimerRef.current !== null) {
+        window.clearTimeout(webhookTestTimerRef.current);
+      }
+
+      const result = await testWebhook();
+      setWebhookTestResult({ 
+        success: true, 
+        message: result.message || 'Test notification sent successfully!' 
+      });
+      
+      // Set timer with cleanup tracking
+      webhookTestTimerRef.current = window.setTimeout(() => {
+        setWebhookTestResult(null);
+        webhookTestTimerRef.current = null;
+      }, 5000);
+    } catch (err: unknown) {
+      const message = err instanceof Error 
+        ? err.message 
+        : (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data)
+          ? String(err.response.data.detail)
+          : 'Failed to send test notification';
+      setWebhookTestResult({ 
+        success: false, 
+        message 
+      });
+      
+      // Set timer with cleanup tracking
+      webhookTestTimerRef.current = window.setTimeout(() => {
+        setWebhookTestResult(null);
+        webhookTestTimerRef.current = null;
+      }, 5000);
+    } finally {
+      setTestingWebhook(false);
+    }
   };
 
   if (loading) {
@@ -321,7 +377,28 @@ export default function AlertSettings() {
             onChange={(e) => handleChange('webhook_url', e.target.value)}
             disabled={!config.enabled}
             helperText="Optional. Leave empty to disable webhook notifications."
+            sx={{ mb: 2 }}
           />
+
+          {webhookTestResult && (
+            <Alert 
+              severity={webhookTestResult.success ? 'success' : 'error'} 
+              sx={{ mb: 2 }}
+              onClose={() => setWebhookTestResult(null)}
+            >
+              {webhookTestResult.message}
+            </Alert>
+          )}
+
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={testingWebhook ? <CircularProgress size={20} /> : <SendIcon />}
+            onClick={handleTestWebhook}
+            disabled={!config.webhook_url || testingWebhook || !config.enabled}
+          >
+            {testingWebhook ? 'Sending Test...' : 'Test Webhook'}
+          </Button>
         </Box>
 
         {/* Save Button */}
