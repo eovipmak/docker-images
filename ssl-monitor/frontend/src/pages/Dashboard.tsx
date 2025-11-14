@@ -24,6 +24,12 @@ import {
   TableRow,
   useTheme,
   useMediaQuery,
+  IconButton,
+  Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -31,9 +37,14 @@ import {
   Domain as DomainIcon,
   AccessTime as AccessTimeIcon,
   Refresh as RefreshIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Settings as SettingsIcon,
+  NotificationsOff as NotificationsOffIcon,
+  Notifications as NotificationsIcon,
 } from '@mui/icons-material';
 import { useLanguage } from '../hooks/useLanguage';
-import { getStats, getHistory } from '../services/api';
+import { getStats, getHistory, deleteDomain, updateMonitor } from '../services/api';
 import AlertsDisplay from '../components/AlertsDisplay';
 
 interface Stats {
@@ -83,6 +94,11 @@ interface DomainStatus {
   ssl_status: string;
   last_checked: string;
   ssl_info: SSLInfo;
+  monitor?: {
+    alerts_enabled: boolean;
+    check_interval: number;
+    webhook_url?: string;
+  };
 }
 
 const Dashboard: React.FC = () => {
@@ -100,6 +116,7 @@ const Dashboard: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning'>('success');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; domain: DomainStatus } | null>(null);
   
   const wsRef = useRef<WebSocket | null>(null);
   const autoRefreshRef = useRef<number | null>(null);
@@ -274,6 +291,86 @@ const Dashboard: React.FC = () => {
     setSelectedDomain(null);
   };
 
+  // Handle domain delete
+  const handleDeleteDomain = async (domainName: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card click
+    
+    if (!window.confirm(`Are you sure you want to delete monitoring for ${domainName}?`)) {
+      return;
+    }
+
+    try {
+      await deleteDomain(domainName);
+      showSnackbar(`Domain ${domainName} deleted successfully`, 'success');
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete domain';
+      showSnackbar(errorMsg, 'error');
+    }
+  };
+
+  // Handle alert toggle for domain
+  const handleToggleAlerts = async (domainName: string, currentStatus: boolean) => {
+    try {
+      await updateMonitor(domainName, { alerts_enabled: !currentStatus });
+      showSnackbar(
+        `Alerts ${!currentStatus ? 'enabled' : 'disabled'} for ${domainName}`,
+        'success'
+      );
+      // Refresh data
+      await fetchDomainsStatus();
+      setMenuAnchor(null);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update alert settings';
+      showSnackbar(errorMsg, 'error');
+    }
+  };
+
+  // Handle menu open
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, domain: DomainStatus) => {
+    event.stopPropagation();
+    setMenuAnchor({ element: event.currentTarget, domain });
+  };
+
+  // Handle menu close
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+  };
+
+  // Handle delete from menu
+  const handleDeleteFromMenu = async () => {
+    if (menuAnchor) {
+      await handleDeleteDomain(menuAnchor.domain.domain);
+      setMenuAnchor(null);
+    }
+  };
+
+  // Handle toggle alerts from menu
+  const handleToggleAlertsFromMenu = async () => {
+    if (menuAnchor) {
+      const alertsEnabled = menuAnchor.domain.monitor?.alerts_enabled ?? true;
+      await handleToggleAlerts(menuAnchor.domain.domain, alertsEnabled);
+    }
+  };
+
+  // Handle domain delete
+  const handleDeleteDomain = async (domainName: string) => {
+    if (!window.confirm(`Are you sure you want to delete monitoring for ${domainName}?`)) {
+      return;
+    }
+
+    try {
+      await deleteDomain(domainName);
+      showSnackbar(`Domain ${domainName} deleted successfully`, 'success');
+      // Refresh data
+      await fetchData();
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete domain';
+      showSnackbar(errorMsg, 'error');
+    }
+  };
+
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
@@ -417,19 +514,30 @@ const Dashboard: React.FC = () => {
                 >
                   <CardActionArea onClick={() => handleDomainClick(domain)}>
                     <CardContent>
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        <DomainIcon color={statusColor} />
-                        <Typography 
-                          variant="h6" 
-                          component="div"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {domain.domain}
-                        </Typography>
+                      <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1}>
+                        <Box display="flex" alignItems="center" gap={1} flex={1} minWidth={0}>
+                          <DomainIcon color={statusColor} />
+                          <Typography 
+                            variant="h6" 
+                            component="div"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {domain.domain}
+                          </Typography>
+                        </Box>
+                        <Tooltip title="Actions">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, domain)}
+                            sx={{ ml: 1 }}
+                          >
+                            <SettingsIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                       
                       <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -450,6 +558,14 @@ const Dashboard: React.FC = () => {
                             label={`${domain.ssl_info.daysUntilExpiration}d`}
                             color={statusColor}
                             size="small"
+                          />
+                        )}
+                        {domain.monitor?.alerts_enabled === false && (
+                          <Chip
+                            icon={<NotificationsOffIcon />}
+                            label="Alerts Off"
+                            size="small"
+                            variant="outlined"
                           />
                         )}
                       </Box>
@@ -704,6 +820,34 @@ const Dashboard: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {/* Domain Actions Menu */}
+      <Menu
+        anchorEl={menuAnchor?.element}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleToggleAlertsFromMenu}>
+          <ListItemIcon>
+            {menuAnchor?.domain.monitor?.alerts_enabled === false ? (
+              <NotificationsIcon fontSize="small" />
+            ) : (
+              <NotificationsOffIcon fontSize="small" />
+            )}
+          </ListItemIcon>
+          <ListItemText>
+            {menuAnchor?.domain.monitor?.alerts_enabled === false
+              ? 'Enable Alerts'
+              : 'Disable Alerts'}
+          </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleDeleteFromMenu}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete Domain</ListItemText>
+        </MenuItem>
+      </Menu>
     </Container>
   );
 };

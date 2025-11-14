@@ -1196,6 +1196,21 @@ async def get_domains_status(
                 "cipherSuite": ssl_data.get("cipherSuite"),
             }
         
+        # Get monitor information for this domain
+        monitor = db.query(Monitor).filter(
+            Monitor.user_id == user.id,
+            Monitor.domain == check.domain
+        ).first()
+        
+        monitor_info = None
+        if monitor:
+            monitor_info = {
+                "alerts_enabled": monitor.alerts_enabled,
+                "check_interval": monitor.check_interval,
+                "webhook_url": monitor.webhook_url,
+                "status": monitor.status
+            }
+        
         domain_info = {
             "domain": check.domain,
             "ip": check.ip,
@@ -1204,6 +1219,7 @@ async def get_domains_status(
             "ssl_status": check.ssl_status,
             "last_checked": check.checked_at.isoformat(),
             "ssl_info": ssl_info,
+            "monitor": monitor_info,
         }
         domains_list.append(domain_info)
     
