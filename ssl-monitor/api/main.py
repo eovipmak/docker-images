@@ -747,9 +747,12 @@ async def get_monitor(
     Returns:
         Monitor configuration
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -831,9 +834,12 @@ async def update_monitor(
     Returns:
         Updated monitor
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -868,9 +874,12 @@ async def delete_monitor(
     Returns:
         Success message
     """
+    # Normalize domain to match database storage
+    normalized_domain = domain.strip().lower()
+    
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
-        Monitor.domain == domain
+        Monitor.domain == normalized_domain
     ).first()
     
     if not monitor:
@@ -879,7 +888,7 @@ async def delete_monitor(
     db.delete(monitor)
     db.commit()
     
-    return {"status": "success", "message": f"Monitor for {domain} deleted"}
+    return {"status": "success", "message": f"Monitor for {normalized_domain} deleted"}
 
 
 @app.get("/api/alert-config", response_model=AlertConfigRead, summary="Get user's alert configuration")
