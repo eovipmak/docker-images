@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { SSLCheckResponse, AlertConfigUpdate } from '../types';
+import type { SSLCheckResponse, AlertConfigUpdate, Alert } from '../types';
 
 // Get base path from environment or use default
 const getBasePath = () => {
@@ -210,12 +210,12 @@ export const updateAlertConfig = async (config: AlertConfigUpdate) => {
 };
 
 // Alerts APIs
-export const getAlerts = async (unreadOnly = false, unresolvedOnly = false, limit = 50) => {
+export const getAlerts = async (unreadOnly = false, unresolvedOnly = false, limit = 50): Promise<Alert[]> => {
   const params: Record<string, boolean | number> = { limit };
   if (unreadOnly) params.unread_only = true;
   if (unresolvedOnly) params.unresolved_only = true;
   
-  const response = await api.get('/api/alerts', { params });
+  const response = await api.get<Alert[]>('/api/alerts', { params });
   return response.data;
 };
 

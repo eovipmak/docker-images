@@ -137,4 +137,58 @@ describe('Dashboard', () => {
       expect(screen.getByText(/No checks found/i)).toBeInTheDocument();
     });
   });
+
+  it('handles non-array history gracefully', async () => {
+    const mockStats = {
+      stats: {
+        total_checks: 5,
+        successful_checks: 5,
+        error_checks: 0,
+        unique_domains: 2,
+      },
+    };
+
+    // Mock history with non-array value
+    const mockHistory = {
+      history: null as any,
+    };
+
+    vi.mocked(api.getStats).mockResolvedValue(mockStats);
+    vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
+
+    renderWithLanguage(<Dashboard />);
+
+    await waitFor(() => {
+      // Should display stats without crashing - check for total_checks
+      expect(screen.getAllByText('5').length).toBeGreaterThan(0);
+      // Should show "No checks found" instead of crashing
+      expect(screen.getByText(/No checks found/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles missing history property gracefully', async () => {
+    const mockStats = {
+      stats: {
+        total_checks: 7,
+        successful_checks: 6,
+        error_checks: 1,
+        unique_domains: 3,
+      },
+    };
+
+    // Mock history without history property
+    const mockHistory = {} as any;
+
+    vi.mocked(api.getStats).mockResolvedValue(mockStats);
+    vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
+
+    renderWithLanguage(<Dashboard />);
+
+    await waitFor(() => {
+      // Should display stats without crashing - check for unique value
+      expect(screen.getByText('7')).toBeInTheDocument();
+      // Should show "No checks found" instead of crashing
+      expect(screen.getByText(/No checks found/i)).toBeInTheDocument();
+    });
+  });
 });

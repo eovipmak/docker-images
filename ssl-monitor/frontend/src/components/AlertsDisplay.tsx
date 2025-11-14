@@ -45,7 +45,8 @@ export default function AlertsDisplay({ unresolvedOnly = true, limit = 20 }: Ale
       setLoading(true);
       setError(null);
       const data = await getAlerts(false, unresolvedOnly, limit);
-      setAlerts(data);
+      // Ensure data is an array before setting state
+      setAlerts(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load alerts');
     } finally {

@@ -60,7 +60,9 @@ const Dashboard: React.FC = () => {
         ]);
         
         setStats(statsResponse.stats);
-        setRecentChecks(historyResponse.history || []);
+        // Ensure history is an array before setting state
+        const history = historyResponse.history;
+        setRecentChecks(Array.isArray(history) ? history : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
