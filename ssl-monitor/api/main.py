@@ -1127,6 +1127,60 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
+def calculate_uptime_percentage(db: Session, user_id: int, domain: str, days: int = 30) -> dict:
+    """
+    Calculate uptime percentage for a domain based on SSL check history.
+    
+    Args:
+        db: Database session
+        user_id: User ID
+        domain: Domain name
+        days: Number of days to look back (default: 30)
+        
+    Returns:
+        Dictionary with uptime statistics
+    """
+    from datetime import timedelta
+    
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Get all checks for this domain in the time period
+    checks = db.query(SSLCheck).filter(
+        SSLCheck.user_id == user_id,
+        SSLCheck.domain == domain,
+        SSLCheck.checked_at >= cutoff_date
+    ).order_by(SSLCheck.checked_at.asc()).all()
+    
+    if not checks:
+        return {
+            "uptime_percentage": None,
+            "total_checks": 0,
+            "successful_checks": 0,
+            "failed_checks": 0,
+            "days_tracked": 0
+        }
+    
+    # Count successful and failed checks
+    total_checks = len(checks)
+    successful_checks = sum(1 for check in checks if check.ssl_status == "success")
+    failed_checks = total_checks - successful_checks
+    
+    # Calculate uptime percentage
+    uptime_percentage = (successful_checks / total_checks * 100) if total_checks > 0 else 0
+    
+    # Calculate actual days tracked
+    first_check_date = checks[0].checked_at
+    days_tracked = min((datetime.utcnow() - first_check_date).days, days)
+    
+    return {
+        "uptime_percentage": round(uptime_percentage, 2),
+        "total_checks": total_checks,
+        "successful_checks": successful_checks,
+        "failed_checks": failed_checks,
+        "days_tracked": days_tracked
+    }
+
+
 @app.get("/api/domains/status", summary="Get all monitored domains with latest SSL status")
 async def get_domains_status(
     limit: int = 100,
@@ -1211,6 +1265,9 @@ async def get_domains_status(
                 "status": monitor.status
             }
         
+        # Calculate uptime for the last 30 days
+        uptime_stats = calculate_uptime_percentage(db, user.id, check.domain, days=30)
+        
         domain_info = {
             "domain": check.domain,
             "ip": check.ip,
@@ -1220,6 +1277,7 @@ async def get_domains_status(
             "last_checked": check.checked_at.isoformat(),
             "ssl_info": ssl_info,
             "monitor": monitor_info,
+            "uptime": uptime_stats,
         }
         domains_list.append(domain_info)
     

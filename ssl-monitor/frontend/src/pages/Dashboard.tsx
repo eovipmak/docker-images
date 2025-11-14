@@ -30,6 +30,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  LinearProgress,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -98,6 +99,13 @@ interface DomainStatus {
     alerts_enabled: boolean;
     check_interval: number;
     webhook_url?: string;
+  };
+  uptime?: {
+    uptime_percentage: number | null;
+    total_checks: number;
+    successful_checks: number;
+    failed_checks: number;
+    days_tracked: number;
   };
 }
 
@@ -389,18 +397,37 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          {t('dashboard')}
-        </Typography>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="caption" color="text.secondary">
-            Last updated: {lastUpdate.toLocaleTimeString()}
+      {/* Header Section */}
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        mb={4}
+        sx={{
+          pb: 2,
+          borderBottom: `2px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Box>
+          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+            {t('dashboard')}
           </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Monitor SSL certificates for your domains in real-time
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Chip
+            icon={<AccessTimeIcon />}
+            label={`Updated ${lastUpdate.toLocaleTimeString()}`}
+            size="small"
+            variant="outlined"
+          />
           <Button
             startIcon={<RefreshIcon />}
             onClick={fetchData}
-            size="small"
+            variant="outlined"
+            size="medium"
           >
             Refresh
           </Button>
@@ -410,55 +437,91 @@ const Dashboard: React.FC = () => {
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card 
+            elevation={2}
+            sx={{ 
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
             <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="body2">
+              <Typography color="text.secondary" gutterBottom variant="body2" fontWeight="medium">
                 Total Checks
               </Typography>
-              <Typography variant="h4">{stats?.total_checks || 0}</Typography>
+              <Typography variant="h3" fontWeight="bold">{stats?.total_checks || 0}</Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card
+            elevation={2}
+            sx={{ 
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
             <CardContent>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <CheckCircleIcon color="success" />
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <Typography color="text.secondary" variant="body2" fontWeight="medium">
                   Successful
                 </Typography>
               </Box>
-              <Typography variant="h4" color="success.main">
+              <Typography variant="h3" color="success.main" fontWeight="bold">
                 {stats?.successful_checks || 0}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card
+            elevation={2}
+            sx={{ 
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
             <CardContent>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <ErrorIcon color="error" />
-                <Typography color="text.secondary" gutterBottom variant="body2">
+                <Typography color="text.secondary" variant="body2" fontWeight="medium">
                   Errors
                 </Typography>
               </Box>
-              <Typography variant="h4" color="error.main">
+              <Typography variant="h3" color="error.main" fontWeight="bold">
                 {stats?.error_checks || 0}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card
+            elevation={2}
+            sx={{ 
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+              }
+            }}
+          >
             <CardContent>
-              <Box display="flex" alignItems="center" gap={1}>
+              <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <DomainIcon color="primary" />
-                <Typography color="text.secondary" gutterBottom variant="body2">
-                  Unique Domains
+                <Typography color="text.secondary" variant="body2" fontWeight="medium">
+                  Monitored Domains
                 </Typography>
               </Box>
-              <Typography variant="h4" color="primary.main">
+              <Typography variant="h3" color="primary.main" fontWeight="bold">
                 {stats?.unique_domains || 0}
               </Typography>
             </CardContent>
@@ -466,10 +529,15 @@ const Dashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Monitored Domains with SSL Status */}
-      <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 2 }}>
-        Monitored Domains
-      </Typography>
+      {/* Monitored Domains Section */}
+      <Box mb={3}>
+        <Typography variant="h5" gutterBottom fontWeight="bold">
+          Monitored Domains
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Real-time SSL certificate monitoring for your domains
+        </Typography>
+      </Box>
       
       {domains.length === 0 ? (
         <Alert severity="info" sx={{ mb: 4 }}>
@@ -501,6 +569,7 @@ const Dashboard: React.FC = () => {
                 key={`${domain.domain}-${index}`}
               >
                 <Card 
+                  elevation={2}
                   sx={{ 
                     height: '100%',
                     borderLeft: `4px solid ${
@@ -510,6 +579,11 @@ const Dashboard: React.FC = () => {
                         ? theme.palette.warning.main 
                         : theme.palette.error.main
                     }`,
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 6,
+                    }
                   }}
                 >
                   <CardActionArea onClick={() => handleDomainClick(domain)}>
@@ -574,6 +648,51 @@ const Dashboard: React.FC = () => {
                         <Typography variant="caption" color="text.secondary" display="block" mt={1}>
                           Issuer: {domain.ssl_info.issuer.organizationName}
                         </Typography>
+                      )}
+                      
+                      {/* Uptime Bar */}
+                      {domain.uptime && domain.uptime.uptime_percentage !== null && (
+                        <Box mt={2}>
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                            <Typography variant="caption" color="text.secondary">
+                              Uptime (30d)
+                            </Typography>
+                            <Typography 
+                              variant="caption" 
+                              fontWeight="bold"
+                              color={
+                                domain.uptime.uptime_percentage >= 99 
+                                  ? 'success.main' 
+                                  : domain.uptime.uptime_percentage >= 95 
+                                  ? 'warning.main' 
+                                  : 'error.main'
+                              }
+                            >
+                              {domain.uptime.uptime_percentage.toFixed(2)}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={domain.uptime.uptime_percentage} 
+                            sx={{
+                              height: 6,
+                              borderRadius: 3,
+                              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 3,
+                                backgroundColor: 
+                                  domain.uptime.uptime_percentage >= 99 
+                                    ? theme.palette.success.main 
+                                    : domain.uptime.uptime_percentage >= 95 
+                                    ? theme.palette.warning.main 
+                                    : theme.palette.error.main
+                              }
+                            }}
+                          />
+                          <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                            {domain.uptime.successful_checks}/{domain.uptime.total_checks} checks successful
+                          </Typography>
+                        </Box>
                       )}
                     </CardContent>
                   </CardActionArea>
