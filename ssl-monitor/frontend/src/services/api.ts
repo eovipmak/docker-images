@@ -21,7 +21,7 @@ const api = axios.create({
 // Global flag to prevent multiple simultaneous redirects (race condition guard)
 let isRedirecting = false;
 
-// Add request interceptor to include auth token
+// Add request interceptor to include auth token and normalize URLs
 api.interceptors.request.use(
   (config) => {
     // WARNING: localStorage is vulnerable to XSS attacks
@@ -31,6 +31,13 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Remove trailing slashes from URLs to prevent 405 errors on redirects
+    // This ensures DELETE and PATCH requests work correctly
+    if (config.url && config.url !== '/' && config.url.endsWith('/')) {
+      config.url = config.url.replace(/\/+$/, '');
+    }
+    
     return config;
   },
   (error) => {
@@ -38,11 +45,26 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle 401 errors and auto-refresh
+// Add response interceptor to handle 401 errors, 307 redirects, and auto-refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // Handle 307 redirects manually for DELETE/PATCH to prevent method change
+    // Some browsers may not correctly follow 307 redirects for non-GET methods
+    if (error.response?.status === 307 && !originalRequest._redirected) {
+      const redirectUrl = error.response.headers.location;
+      if (redirectUrl) {
+        originalRequest._redirected = true;
+        originalRequest.url = redirectUrl;
+        // Remove trailing slash from the redirect URL as well
+        if (originalRequest.url !== '/' && originalRequest.url.endsWith('/')) {
+          originalRequest.url = originalRequest.url.replace(/\/+$/, '');
+        }
+        return api(originalRequest);
+      }
+    }
     
     // If 401 and we haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry) {
