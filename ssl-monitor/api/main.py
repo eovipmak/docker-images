@@ -10,7 +10,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import requests
 from fastapi import FastAPI, Depends, HTTPException
@@ -20,9 +20,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
-from database import init_db, get_db, SSLCheck, User
+from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig
 from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
-from schemas import UserRead, UserCreate
+from schemas import UserRead, UserCreate, AlertConfigCreate, AlertConfigUpdate, AlertConfigRead, AlertRead
+from alert_service import process_ssl_check_alerts, get_or_create_alert_config
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -283,6 +284,7 @@ async def check_ssl(
     """
     Check SSL certificate by calling ssl-checker service and save result to database.
     Results are associated with the authenticated user for data isolation.
+    Automatically processes alerts based on user's alert configuration.
     
     Args:
         domain: Domain name to check
@@ -337,8 +339,18 @@ async def check_ssl(
         db.commit()
         db.refresh(ssl_check)
         
-        # Add check ID to response
+        # Process alerts based on user's configuration
+        alert_config = get_or_create_alert_config(db, user.id, user.organization_id)
+        alerts_created = process_ssl_check_alerts(
+            db, user.id, user.organization_id,
+            domain or data.get("domain", ""),
+            result,
+            alert_config
+        )
+        
+        # Add check ID and alerts to response
         result["check_id"] = ssl_check.id
+        result["alerts_created"] = len(alerts_created)
         
         return result
         
@@ -593,6 +605,189 @@ async def add_domain(
             status_code=500,
             detail=f"An error occurred: {str(e)}"
         )
+
+
+@app.get("/api/alert-config", response_model=AlertConfigRead, summary="Get user's alert configuration")
+async def get_alert_config(
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Get the current user's alert configuration.
+    Creates a default configuration if none exists.
+    
+    Args:
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        User's alert configuration
+    """
+    config = get_or_create_alert_config(db, user.id, user.organization_id)
+    return config
+
+
+@app.post("/api/alert-config", response_model=AlertConfigRead, summary="Create or update alert configuration")
+async def create_or_update_alert_config(
+    config_data: AlertConfigUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Create or update the user's alert configuration.
+    
+    Args:
+        config_data: Alert configuration data
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Updated alert configuration
+    """
+    # Get or create config
+    config = get_or_create_alert_config(db, user.id, user.organization_id)
+    
+    # Update fields that are provided
+    update_data = config_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(config, field, value)
+    
+    config.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(config)
+    
+    return config
+
+
+@app.get("/api/alerts", response_model=List[AlertRead], summary="Get user's alerts")
+async def get_alerts(
+    unread_only: bool = False,
+    unresolved_only: bool = False,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Get alerts for the current user.
+    
+    Args:
+        unread_only: Filter for unread alerts only
+        unresolved_only: Filter for unresolved alerts only
+        limit: Maximum number of alerts to return (default: 50)
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        List of alerts for the current user
+    """
+    query = db.query(Alert).filter(Alert.user_id == user.id)
+    
+    if unread_only:
+        query = query.filter(Alert.is_read == False)
+    
+    if unresolved_only:
+        query = query.filter(Alert.is_resolved == False)
+    
+    alerts = query.order_by(Alert.created_at.desc()).limit(limit).all()
+    
+    return alerts
+
+
+@app.patch("/api/alerts/{alert_id}/read", response_model=AlertRead, summary="Mark alert as read")
+async def mark_alert_read(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Mark an alert as read.
+    
+    Args:
+        alert_id: Alert ID
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Updated alert
+    """
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.user_id == user.id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    alert.is_read = True
+    db.commit()
+    db.refresh(alert)
+    
+    return alert
+
+
+@app.patch("/api/alerts/{alert_id}/resolve", response_model=AlertRead, summary="Mark alert as resolved")
+async def mark_alert_resolved(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Mark an alert as resolved.
+    
+    Args:
+        alert_id: Alert ID
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Updated alert
+    """
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.user_id == user.id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    alert.is_resolved = True
+    alert.resolved_at = datetime.utcnow()
+    db.commit()
+    db.refresh(alert)
+    
+    return alert
+
+
+@app.delete("/api/alerts/{alert_id}", summary="Delete an alert")
+async def delete_alert(
+    alert_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(current_active_user)
+):
+    """
+    Delete an alert.
+    
+    Args:
+        alert_id: Alert ID
+        db: Database session
+        user: Current authenticated user
+        
+    Returns:
+        Success message
+    """
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.user_id == user.id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    db.delete(alert)
+    db.commit()
+    
+    return {"status": "success", "message": "Alert deleted"}
 
 
 # Catch-all route for React Router (must be last)

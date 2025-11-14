@@ -27,6 +27,7 @@ class Organization(Base):
     monitors = relationship("Monitor", back_populates="organization", cascade="all, delete-orphan")
     ssl_checks = relationship("SSLCheck", back_populates="organization", cascade="all, delete-orphan")
     alerts = relationship("Alert", back_populates="organization", cascade="all, delete-orphan")
+    alert_configs = relationship("AlertConfig", back_populates="organization", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Organization(name={self.name})>"
@@ -50,6 +51,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     monitors = relationship("Monitor", back_populates="user", cascade="all, delete-orphan")
     ssl_checks = relationship("SSLCheck", back_populates="user", cascade="all, delete-orphan")
     alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")
+    alert_configs = relationship("AlertConfig", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User(email={self.email}, is_verified={self.is_verified})>"
@@ -123,6 +125,43 @@ class Alert(Base):
     
     def __repr__(self):
         return f"<Alert(domain={self.domain}, type={self.alert_type}, severity={self.severity})>"
+
+
+class AlertConfig(Base):
+    """Model for storing user-specific alert configuration"""
+    __tablename__ = "alert_configs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
+    
+    # Alert settings
+    enabled = Column(Boolean, default=True)
+    webhook_url = Column(String, nullable=True)
+    
+    # Certificate expiration thresholds (in days)
+    alert_30_days = Column(Boolean, default=True)
+    alert_7_days = Column(Boolean, default=True)
+    alert_1_day = Column(Boolean, default=True)
+    
+    # Alert types
+    alert_ssl_errors = Column(Boolean, default=True)
+    alert_geo_changes = Column(Boolean, default=False)
+    alert_cert_expired = Column(Boolean, default=True)
+    
+    # Notification preferences
+    email_notifications = Column(Boolean, default=False)
+    email_address = Column(String, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="alert_configs")
+    organization = relationship("Organization", back_populates="alert_configs")
+    
+    def __repr__(self):
+        return f"<AlertConfig(user_id={self.user_id}, enabled={self.enabled})>"
 
 
 # Database setup - Synchronous for main app
