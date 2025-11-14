@@ -64,11 +64,14 @@ class Monitor(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
     domain = Column(String, nullable=False, index=True)
+    port = Column(Integer, default=443)  # Port to monitor
     check_interval = Column(Integer, default=3600)  # in seconds, default 1 hour
     webhook_url = Column(String, nullable=True)
+    alerts_enabled = Column(Boolean, default=True)  # Enable/disable alerts for this domain
     last_check = Column(DateTime, nullable=True)
     status = Column(String, default="active")  # active, paused, error
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="monitors")

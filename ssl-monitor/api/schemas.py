@@ -109,3 +109,46 @@ class AlertRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class MonitorCreate(BaseModel):
+    """Schema for creating a monitor"""
+    domain: str = Field(..., description="Domain name to monitor", min_length=1, max_length=255)
+    port: int = Field(default=443, description="Port number to check", ge=1, le=65535)
+    check_interval: int = Field(default=3600, description="Check interval in seconds", ge=60)
+    alerts_enabled: bool = Field(default=True, description="Enable alerts for this domain")
+    webhook_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonitorUpdate(BaseModel):
+    """Schema for updating a monitor"""
+    port: Optional[int] = Field(None, ge=1, le=65535)
+    check_interval: Optional[int] = Field(None, ge=60)
+    alerts_enabled: Optional[bool] = None
+    webhook_url: Optional[str] = None
+    status: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MonitorRead(BaseModel):
+    """Schema for reading a monitor"""
+    id: int
+    user_id: int
+    organization_id: Optional[int] = None
+    domain: str
+    port: int
+    check_interval: int
+    alerts_enabled: bool
+    webhook_url: Optional[str] = None
+    last_check: Optional[datetime] = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

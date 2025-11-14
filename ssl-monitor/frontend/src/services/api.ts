@@ -198,6 +198,50 @@ export const addDomain = async (domain: string, port: number = 443) => {
   return response.data;
 };
 
+// Delete a domain from monitoring
+export const deleteDomain = async (domain: string) => {
+  const response = await api.delete(`/api/domains/${encodeURIComponent(domain)}`);
+  return response.data;
+};
+
+// Monitor Configuration APIs
+export const getMonitors = async () => {
+  const response = await api.get('/api/monitors');
+  return response.data;
+};
+
+export const getMonitor = async (domain: string) => {
+  const response = await api.get(`/api/monitors/${encodeURIComponent(domain)}`);
+  return response.data;
+};
+
+export const createOrUpdateMonitor = async (monitor: {
+  domain: string;
+  port?: number;
+  check_interval?: number;
+  alerts_enabled?: boolean;
+  webhook_url?: string | null;
+}) => {
+  const response = await api.post('/api/monitors', monitor);
+  return response.data;
+};
+
+export const updateMonitor = async (domain: string, updates: {
+  port?: number;
+  check_interval?: number;
+  alerts_enabled?: boolean;
+  webhook_url?: string | null;
+  status?: string;
+}) => {
+  const response = await api.patch(`/api/monitors/${encodeURIComponent(domain)}`, updates);
+  return response.data;
+};
+
+export const deleteMonitor = async (domain: string) => {
+  const response = await api.delete(`/api/monitors/${encodeURIComponent(domain)}`);
+  return response.data;
+};
+
 // Alert Configuration APIs
 export const getAlertConfig = async () => {
   const response = await api.get('/api/alert-config');
