@@ -9,3 +9,4 @@ fastapi-users[sqlalchemy]==13.0.0
 python-jose[cryptography]==3.5.0
 aiosmtplib==3.0.2
 aiosqlite==0.21.0
+websockets==13.1
