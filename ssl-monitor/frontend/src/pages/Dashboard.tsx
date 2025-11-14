@@ -410,7 +410,7 @@ const Dashboard: React.FC = () => {
       >
         <Box>
           <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            {t('dashboard')}
+            SSL Monitor Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Monitor SSL certificates for your domains in real-time
@@ -419,7 +419,7 @@ const Dashboard: React.FC = () => {
         <Box display="flex" alignItems="center" gap={2}>
           <Chip
             icon={<AccessTimeIcon />}
-            label={`Updated ${lastUpdate.toLocaleTimeString()}`}
+            label={`Last updated ${lastUpdate.toLocaleTimeString()}`}
             size="small"
             variant="outlined"
           />
@@ -429,7 +429,7 @@ const Dashboard: React.FC = () => {
             variant="outlined"
             size="medium"
           >
-            Refresh
+            Refresh Data
           </Button>
         </Box>
       </Box>
@@ -449,7 +449,7 @@ const Dashboard: React.FC = () => {
           >
             <CardContent>
               <Typography color="text.secondary" gutterBottom variant="body2" fontWeight="medium">
-                Total Checks
+                Total SSL Checks
               </Typography>
               <Typography variant="h3" fontWeight="bold">{stats?.total_checks || 0}</Typography>
             </CardContent>
@@ -470,7 +470,7 @@ const Dashboard: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <CheckCircleIcon color="success" />
                 <Typography color="text.secondary" variant="body2" fontWeight="medium">
-                  Successful
+                  Valid Certificates
                 </Typography>
               </Box>
               <Typography variant="h3" color="success.main" fontWeight="bold">
@@ -494,7 +494,7 @@ const Dashboard: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <ErrorIcon color="error" />
                 <Typography color="text.secondary" variant="body2" fontWeight="medium">
-                  Errors
+                  Certificate Errors
                 </Typography>
               </Box>
               <Typography variant="h3" color="error.main" fontWeight="bold">
@@ -623,13 +623,13 @@ const Dashboard: React.FC = () => {
                       
                       <Box display="flex" gap={1} flexWrap="wrap" mt={2}>
                         <Chip
-                          label={domain.ssl_status === 'success' ? 'Valid' : 'Error'}
+                          label={domain.ssl_status === 'success' ? 'Valid SSL' : 'SSL Error'}
                           color={domain.ssl_status === 'success' ? 'success' : 'error'}
                           size="small"
                         />
                         {domain.ssl_info?.daysUntilExpiration !== undefined && (
                           <Chip
-                            label={`${domain.ssl_info.daysUntilExpiration}d`}
+                            label={`${domain.ssl_info.daysUntilExpiration} days left`}
                             color={statusColor}
                             size="small"
                           />
@@ -637,16 +637,17 @@ const Dashboard: React.FC = () => {
                         {domain.monitor?.alerts_enabled === false && (
                           <Chip
                             icon={<NotificationsOffIcon />}
-                            label="Alerts Off"
+                            label="Alerts Disabled"
                             size="small"
                             variant="outlined"
+                            color="warning"
                           />
                         )}
                       </Box>
                       
                       {domain.ssl_info?.issuer?.organizationName && (
                         <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                          Issuer: {domain.ssl_info.issuer.organizationName}
+                          Certificate Issuer: {domain.ssl_info.issuer.organizationName}
                         </Typography>
                       )}
                       
@@ -654,8 +655,8 @@ const Dashboard: React.FC = () => {
                       {domain.uptime && domain.uptime.uptime_percentage !== null && (
                         <Box mt={2}>
                           <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                            <Typography variant="caption" color="text.secondary">
-                              Uptime (30d)
+                            <Typography variant="caption" color="text.secondary" fontWeight="medium">
+                              30-Day Uptime
                             </Typography>
                             <Typography 
                               variant="caption" 
@@ -690,7 +691,7 @@ const Dashboard: React.FC = () => {
                             }}
                           />
                           <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                            {domain.uptime.successful_checks}/{domain.uptime.total_checks} checks successful
+                            {domain.uptime.successful_checks} of {domain.uptime.total_checks} checks successful
                           </Typography>
                         </Box>
                       )}
@@ -772,10 +773,15 @@ const Dashboard: React.FC = () => {
       >
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={1}>
-            <DomainIcon />
-            <Typography variant="h6">
-              {selectedDomain?.domain}
-            </Typography>
+            <DomainIcon color="primary" />
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                SSL Certificate Details
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedDomain?.domain}
+              </Typography>
+            </Box>
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -785,7 +791,7 @@ const Dashboard: React.FC = () => {
                 <TableBody>
                   <TableRow>
                     <TableCell component="th" scope="row">
-                      <strong>Status</strong>
+                      <strong>Certificate Status</strong>
                     </TableCell>
                     <TableCell>
                       <Chip
