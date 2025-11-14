@@ -234,7 +234,9 @@ npm run test:e2e:ui
 npm run test:e2e -- domain-deletion.spec.ts
 ```
 
-**IMPORTANT:** E2E tests auto-start dev server via `webServer` config in `playwright.config.ts`.
+**IMPORTANT:** 
+- E2E tests auto-start dev server via `webServer` config in `playwright.config.ts`
+- **ALWAYS take screenshots** when running E2E tests or testing UI changes to document visual state and verify functionality
 
 ---
 
@@ -281,6 +283,7 @@ Located in `.github/workflows/`:
    npm run build       # Must succeed
    npm test -- --run   # All 22 tests must pass
    ```
+   **IMPORTANT:** Take screenshots of UI changes after testing to show visual impact
 
 4. **Full integration test:**
    ```bash
@@ -314,6 +317,7 @@ Located in `.github/workflows/`:
 - **Frontend Unit:** Vitest + React Testing Library
 - **Frontend E2E:** Playwright (Chromium only)
 - **Backend:** Manual testing or pytest (not configured by default)
+- **REQUIRED:** Always take screenshots when testing UI changes or running E2E tests to document the visual impact of changes
 
 ### Known Issues & Workarounds
 
@@ -380,3 +384,4 @@ docker build -t test -f ssl-checker/Dockerfile ssl-checker  # Backend
 - When in doubt, use Docker builds—they are the source of truth
 - Database migrations run automatically in Docker via `entrypoint.sh`
 - Frontend E2E tests auto-start the dev server—no manual startup needed
+- **SCREENSHOTS REQUIRED:** Always take screenshots when testing UI changes, running E2E tests, or verifying visual functionality. This helps document changes and catch visual regressions
