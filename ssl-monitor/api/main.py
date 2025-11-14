@@ -377,6 +377,13 @@ async def check_ssl(
             alert_config
         )
         
+        # Broadcast WebSocket update to all connected clients
+        await manager.broadcast({
+            "type": "update",
+            "action": "domain_checked",
+            "domain": domain or data.get("domain", "")
+        })
+        
         # Add check ID and alerts to response
         result["check_id"] = ssl_check.id
         result["alerts_created"] = len(alerts_created)
@@ -606,6 +613,13 @@ async def add_domain(
         db.add(ssl_check)
         db.commit()
         db.refresh(ssl_check)
+        
+        # Broadcast WebSocket update to all connected clients
+        await manager.broadcast({
+            "type": "update",
+            "action": "domain_added",
+            "domain": validated_domain
+        })
         
         # Return the check result
         return {

@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useLanguage } from '../hooks/useLanguage';
-import { checkSSL } from '../services/api';
+import { addDomain, parseTarget } from '../services/api';
 import type { SSLCheckResponse } from '../types';
 
 interface SSLCheckFormProps {
@@ -34,8 +34,20 @@ const SSLCheckForm: React.FC<SSLCheckFormProps> = ({ onResult }) => {
     setLoading(true);
 
     try {
-      const result = await checkSSL(target);
-      onResult(result);
+      const parsed = parseTarget(target);
+      if (!parsed) {
+        throw new Error('Invalid target');
+      }
+
+      const result = await addDomain(parsed.host, parsed.port);
+      
+      // Transform the response to match SSLCheckResponse format
+      const sslCheckResponse: SSLCheckResponse = {
+        status: result.status === 'success' ? 'success' : 'error',
+        data: result.data?.check_result?.data,
+      };
+      
+      onResult(sslCheckResponse);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('checkFailed');
       setError(errorMessage);
