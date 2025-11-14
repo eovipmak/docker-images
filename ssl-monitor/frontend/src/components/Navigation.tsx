@@ -14,6 +14,7 @@ import {
   AddCircle as AddCircleIcon,
   Login as LoginIcon,
   Logout as LogoutIcon,
+  NotificationsActive as NotificationsActiveIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../hooks/useLanguage';
@@ -72,6 +73,17 @@ const Navigation: React.FC = () => {
                   aria-label={t('addDomain')}
                 >
                   {t('addDomain')}
+                </Button>
+                <Button
+                  color="inherit"
+                  startIcon={<NotificationsActiveIcon />}
+                  onClick={() => navigate('/alert-settings')}
+                  sx={{
+                    backgroundColor: isActive('/alert-settings') ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  }}
+                  aria-label={t('alertSettings')}
+                >
+                  {t('alerts')}
                 </Button>
                 <Button
                   color="inherit"

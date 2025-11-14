@@ -2,8 +2,9 @@
 User schemas for FastAPI Users
 """
 from typing import Optional
+from datetime import datetime
 from fastapi_users import schemas
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRead(schemas.BaseUser[int]):
@@ -34,3 +35,77 @@ class UserUpdate(schemas.BaseUserUpdate):
     is_active: Optional[bool] = None
     is_superuser: Optional[bool] = None
     is_verified: Optional[bool] = None
+
+
+class AlertConfigCreate(BaseModel):
+    """Schema for creating alert configuration"""
+    enabled: bool = True
+    webhook_url: Optional[str] = None
+    alert_30_days: bool = True
+    alert_7_days: bool = True
+    alert_1_day: bool = True
+    alert_ssl_errors: bool = True
+    alert_geo_changes: bool = False
+    alert_cert_expired: bool = True
+    email_notifications: bool = False
+    email_address: Optional[EmailStr] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AlertConfigUpdate(BaseModel):
+    """Schema for updating alert configuration"""
+    enabled: Optional[bool] = None
+    webhook_url: Optional[str] = None
+    alert_30_days: Optional[bool] = None
+    alert_7_days: Optional[bool] = None
+    alert_1_day: Optional[bool] = None
+    alert_ssl_errors: Optional[bool] = None
+    alert_geo_changes: Optional[bool] = None
+    alert_cert_expired: Optional[bool] = None
+    email_notifications: Optional[bool] = None
+    email_address: Optional[EmailStr] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AlertConfigRead(BaseModel):
+    """Schema for reading alert configuration"""
+    id: int
+    user_id: int
+    organization_id: Optional[int] = None
+    enabled: bool
+    webhook_url: Optional[str] = None
+    alert_30_days: bool
+    alert_7_days: bool
+    alert_1_day: bool
+    alert_ssl_errors: bool
+    alert_geo_changes: bool
+    alert_cert_expired: bool
+    email_notifications: bool
+    email_address: Optional[EmailStr] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AlertRead(BaseModel):
+    """Schema for reading alert"""
+    id: int
+    user_id: int
+    organization_id: Optional[int] = None
+    domain: str
+    alert_type: str
+    severity: str
+    message: str
+    is_read: bool
+    is_resolved: bool
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
