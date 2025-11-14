@@ -180,10 +180,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add trailing slash redirect middleware (must be before CORS)
+# Add trailing slash redirect middleware
+# Note: Middleware executes in LIFO order (last added runs first on requests)
 app.add_middleware(TrailingSlashMiddleware)
 
 # Add CORS middleware to allow frontend to access the API
+# CORS runs before TrailingSlash on requests, ensuring OPTIONS preflight works correctly
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with specific origins
