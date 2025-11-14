@@ -6,7 +6,8 @@ WORKDIR /app
 
 # Copy requirements and install dependencies
 COPY api/requirements.txt .
-RUN pip install --no-cache-dir --timeout=100 -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --timeout=100 -r requirements.txt
 
 # Copy application files
 COPY api ./api
