@@ -115,10 +115,10 @@ docker compose logs -f ssl-monitor
 ```
 
 **Service URLs after `docker compose up`:**
-- SSL Checker: http://localhost:8000
-- SSL Checker API docs: http://localhost:8000/docs
-- SSL Monitor: http://localhost:8001
-- SSL Monitor API docs: http://localhost:8001/docs
+- SSL Checker: `http://localhost:8000`
+- SSL Checker API docs: `http://localhost:8000/docs`
+- SSL Monitor: `http://localhost:8001`
+- SSL Monitor API docs: `http://localhost:8001/docs`
 
 ### ssl-checker Local Development
 
