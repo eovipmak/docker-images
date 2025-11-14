@@ -1,8 +1,41 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import Dashboard from '../pages/Dashboard';
 import { LanguageProvider } from '../hooks/useLanguage';
 import * as api from '../services/api';
+
+// Mock WebSocket
+class MockWebSocket {
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  
+  send = vi.fn();
+  close = vi.fn();
+  
+  constructor(public url: string) {
+    setTimeout(() => {
+      if (this.onopen) {
+        this.onopen(new Event('open'));
+      }
+    }, 0);
+  }
+}
+
+global.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+
+// Mock fetch for /api/domains/status
+global.fetch = vi.fn();
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+global.localStorage = localStorageMock as Storage;
 
 // Mock the API module
 vi.mock('../services/api', () => ({
@@ -17,6 +50,15 @@ const renderWithLanguage = (component: React.ReactElement) => {
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorageMock.getItem.mockReturnValue('mock-token');
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ domains: [] }),
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
   });
 
   it('displays loading state initially', () => {
@@ -68,6 +110,80 @@ describe('Dashboard', () => {
     });
   });
 
+  it('displays monitored domains with color-coded status', async () => {
+    const mockStats = {
+      stats: {
+        total_checks: 10,
+        successful_checks: 8,
+        error_checks: 2,
+        unique_domains: 3,
+      },
+    };
+
+    const mockHistory = {
+      history: [],
+    };
+
+    const mockDomains = {
+      domains: [
+        {
+          domain: 'example.com',
+          ip: '93.184.216.34',
+          port: 443,
+          status: 'success',
+          ssl_status: 'success',
+          last_checked: '2024-01-15T10:30:00Z',
+          ssl_info: {
+            daysUntilExpiration: 45,
+            issuer: {
+              organizationName: 'Let\'s Encrypt',
+            },
+          },
+        },
+        {
+          domain: 'warning.com',
+          ip: '1.2.3.4',
+          port: 443,
+          status: 'success',
+          ssl_status: 'success',
+          last_checked: '2024-01-15T10:30:00Z',
+          ssl_info: {
+            daysUntilExpiration: 15,
+          },
+        },
+        {
+          domain: 'critical.com',
+          ip: '5.6.7.8',
+          port: 443,
+          status: 'success',
+          ssl_status: 'success',
+          last_checked: '2024-01-15T10:30:00Z',
+          ssl_info: {
+            daysUntilExpiration: 3,
+          },
+        },
+      ],
+    };
+
+    vi.mocked(api.getStats).mockResolvedValue(mockStats);
+    vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => mockDomains,
+    });
+
+    renderWithLanguage(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText('example.com')).toBeInTheDocument();
+      expect(screen.getByText('warning.com')).toBeInTheDocument();
+      expect(screen.getByText('critical.com')).toBeInTheDocument();
+      expect(screen.getByText('45 days')).toBeInTheDocument();
+      expect(screen.getByText('15 days')).toBeInTheDocument();
+      expect(screen.getByText('3 days')).toBeInTheDocument();
+    });
+  });
+
   it('displays recent checks from API', async () => {
     const mockStats = {
       stats: {
@@ -110,11 +226,10 @@ describe('Dashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('example.com')).toBeInTheDocument();
       expect(screen.getByText('test.com')).toBeInTheDocument();
-      expect(screen.getByText('45 days')).toBeInTheDocument();
     });
   });
 
-  it('displays message when no checks are available', async () => {
+  it('displays message when no domains are being monitored', async () => {
     const mockStats = {
       stats: {
         total_checks: 0,
@@ -130,11 +245,15 @@ describe('Dashboard', () => {
 
     vi.mocked(api.getStats).mockResolvedValue(mockStats);
     vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ domains: [] }),
+    });
 
     renderWithLanguage(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText(/No checks found/i)).toBeInTheDocument();
+      expect(screen.getByText(/No domains are being monitored/i)).toBeInTheDocument();
     });
   });
 
@@ -150,11 +269,11 @@ describe('Dashboard', () => {
 
     // Mock history with non-array value
     const mockHistory = {
-      history: null as any,
+      history: null as unknown,
     };
 
     vi.mocked(api.getStats).mockResolvedValue(mockStats);
-    vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
+    vi.mocked(api.getHistory).mockResolvedValue(mockHistory as typeof mockHistory & { history: unknown[] });
 
     renderWithLanguage(<Dashboard />);
 
@@ -177,7 +296,7 @@ describe('Dashboard', () => {
     };
 
     // Mock history without history property
-    const mockHistory = {} as any;
+    const mockHistory = {} as { history: unknown[] };
 
     vi.mocked(api.getStats).mockResolvedValue(mockStats);
     vi.mocked(api.getHistory).mockResolvedValue(mockHistory);
