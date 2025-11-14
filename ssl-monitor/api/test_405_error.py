@@ -40,19 +40,20 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def auth_token():
     """Register and login a user, return auth token"""
-    # Register user
+    # Try to register user (may fail if already exists)
     response = client.post(
         "/auth/register",
         json={"email": "testuser405@example.com", "password": "testpass123"}
     )
-    assert response.status_code == 201
+    # Accept either 201 (created) or 400 (already exists)
+    assert response.status_code in [201, 400], f"Register failed with {response.status_code}: {response.text}"
     
     # Login
     response = client.post(
         "/auth/jwt/login",
         data={"username": "testuser405@example.com", "password": "testpass123"}
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, f"Login failed: {response.text}"
     return response.json()["access_token"]
 
 
