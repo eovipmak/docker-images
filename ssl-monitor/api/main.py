@@ -747,8 +747,8 @@ async def get_monitor(
     Returns:
         Monitor configuration
     """
-    # Normalize domain to match database storage
-    normalized_domain = domain.strip().lower()
+    # Validate and normalize domain
+    normalized_domain = validate_domain(domain)
     
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
@@ -824,6 +824,7 @@ async def update_monitor(
 ):
     """
     Update monitor configuration for a domain.
+    Creates the monitor if it doesn't exist (upsert behavior).
     
     Args:
         domain: Domain name
@@ -832,29 +833,51 @@ async def update_monitor(
         user: Current authenticated user
         
     Returns:
-        Updated monitor
+        Updated or created monitor
     """
-    # Normalize domain to match database storage
-    normalized_domain = domain.strip().lower()
-    
-    monitor = db.query(Monitor).filter(
-        Monitor.user_id == user.id,
-        Monitor.domain == normalized_domain
-    ).first()
-    
-    if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
-    
-    # Update fields that are provided
-    update_data = monitor_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(monitor, field, value)
-    
-    monitor.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(monitor)
-    
-    return monitor
+    try:
+        # Validate and normalize domain
+        normalized_domain = validate_domain(domain)
+        
+        monitor = db.query(Monitor).filter(
+            Monitor.user_id == user.id,
+            Monitor.domain == normalized_domain
+        ).first()
+        
+        # Update fields that are provided
+        update_data = monitor_data.model_dump(exclude_unset=True)
+        
+        if not monitor:
+            # Create monitor if it doesn't exist
+            monitor = Monitor(
+                user_id=user.id,
+                organization_id=user.organization_id,
+                domain=normalized_domain,
+                port=update_data.get('port', 443),
+                check_interval=update_data.get('check_interval', 3600),
+                alerts_enabled=update_data.get('alerts_enabled', True),
+                webhook_url=update_data.get('webhook_url'),
+                status=update_data.get('status', 'active')
+            )
+            db.add(monitor)
+        else:
+            # Update existing monitor with provided fields
+            for field, value in update_data.items():
+                if hasattr(monitor, field):
+                    setattr(monitor, field, value)
+        
+        monitor.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(monitor)
+        
+        return monitor
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update monitor: {str(e)}"
+        )
 
 
 @app.delete("/api/monitors/{domain}", summary="Delete monitor configuration")
@@ -874,8 +897,8 @@ async def delete_monitor(
     Returns:
         Success message
     """
-    # Normalize domain to match database storage
-    normalized_domain = domain.strip().lower()
+    # Validate and normalize domain
+    normalized_domain = validate_domain(domain)
     
     monitor = db.query(Monitor).filter(
         Monitor.user_id == user.id,
@@ -909,68 +932,83 @@ async def test_domain_alert(
     Returns:
         Success message with alert details
     """
-    # Normalize domain to match database storage
-    normalized_domain = domain.strip().lower()
-    
-    # Get the monitor to verify it exists and belongs to the user
-    monitor = db.query(Monitor).filter(
-        Monitor.user_id == user.id,
-        Monitor.domain == normalized_domain
-    ).first()
-    
-    if not monitor:
-        raise HTTPException(status_code=404, detail="Monitor not found")
-    
-    # Get user's alert config
-    alert_config = get_or_create_alert_config(db, user.id, user.organization_id)
-    
-    if not alert_config.enabled:
-        raise HTTPException(
-            status_code=400,
-            detail="Alerts are disabled. Please enable alerts in alert settings first."
-        )
-    
-    # Determine webhook URL - use monitor-specific or global
-    webhook_url = monitor.webhook_url or alert_config.webhook_url
-    
-    if not webhook_url:
-        raise HTTPException(
-            status_code=400,
-            detail="No webhook URL configured. Please configure a webhook URL in alert settings or monitor settings."
-        )
-    
-    # Create test alert data simulating an expiring certificate
-    test_alert_data = {
-        "type": "test_expiring_certificate",
-        "severity": "critical",
-        "domain": normalized_domain,
-        "message": f"TEST ALERT: SSL certificate for {normalized_domain} is expiring in 7 days",
-        "details": {
+    try:
+        # Validate and normalize domain
+        normalized_domain = validate_domain(domain)
+        
+        # Get the monitor if it exists (optional)
+        monitor = db.query(Monitor).filter(
+            Monitor.user_id == user.id,
+            Monitor.domain == normalized_domain
+        ).first()
+        
+        # Get user's alert config
+        alert_config = get_or_create_alert_config(db, user.id, user.organization_id)
+        
+        if not alert_config.enabled:
+            raise HTTPException(
+                status_code=400,
+                detail="Alerts are disabled. Please enable alerts in alert settings first."
+            )
+        
+        # Determine webhook URL - use monitor-specific or global
+        webhook_url = None
+        if monitor and monitor.webhook_url:
+            webhook_url = monitor.webhook_url
+        elif alert_config.webhook_url:
+            webhook_url = alert_config.webhook_url
+        
+        if not webhook_url:
+            raise HTTPException(
+                status_code=400,
+                detail="No webhook URL configured. Please configure a webhook URL in alert settings or monitor settings."
+            )
+        
+        # Create test alert data simulating an expiring certificate
+        test_alert_data = {
+            "type": "test_expiring_certificate",
+            "severity": "critical",
             "domain": normalized_domain,
-            "days_until_expiration": 7,
-            "test": True,
-            "note": "This is a simulated alert for testing purposes",
-            "user_email": user.email,
+            "message": f"TEST ALERT: SSL certificate for {normalized_domain} is expiring in 7 days",
+            "details": {
+                "domain": normalized_domain,
+                "days_until_expiration": 7,
+                "test": True,
+                "note": "This is a simulated alert for testing purposes",
+                "user_email": user.email,
+                "timestamp": datetime.utcnow().isoformat()
+            },
             "timestamp": datetime.utcnow().isoformat()
-        },
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    # Send test webhook
-    success = send_webhook_notification(webhook_url, test_alert_data)
-    
-    if success:
-        return {
-            "status": "success",
-            "message": f"Test alert sent successfully for {normalized_domain}",
-            "domain": normalized_domain,
-            "webhook_url": webhook_url,
-            "alert_data": test_alert_data
         }
-    else:
+        
+        # Send test webhook with proper error handling
+        try:
+            success = send_webhook_notification(webhook_url, test_alert_data)
+            
+            if success:
+                return {
+                    "status": "success",
+                    "message": f"Test alert sent successfully for {normalized_domain}",
+                    "domain": normalized_domain,
+                    "webhook_url": webhook_url,
+                    "alert_data": test_alert_data
+                }
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to send test alert for {normalized_domain}. The webhook URL may be invalid or unreachable. Please check your webhook URL."
+                )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send test alert: {str(e)}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to send test alert for {normalized_domain}. Please check your webhook URL."
+            detail=f"An error occurred while testing alert: {str(e)}"
         )
 
 
@@ -1042,42 +1080,56 @@ async def test_webhook_notification(
     Returns:
         Success or error message
     """
-    # Get user's alert config
-    config = get_or_create_alert_config(db, user.id, user.organization_id)
-    
-    if not config.webhook_url:
-        raise HTTPException(
-            status_code=400,
-            detail="No webhook URL configured. Please configure a webhook URL first."
-        )
-    
-    # Create test alert data
-    test_alert_data = {
-        "type": "test",
-        "severity": "info",
-        "domain": "example.com",
-        "message": "This is a test alert from SSL Monitor",
-        "details": {
-            "user_email": user.email,
-            "timestamp": datetime.utcnow().isoformat(),
-            "test": True
-        },
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    
-    # Send test webhook
-    success = send_webhook_notification(config.webhook_url, test_alert_data)
-    
-    if success:
-        return {
-            "status": "success",
-            "message": f"Test notification sent successfully to {config.webhook_url}",
-            "webhook_url": config.webhook_url
+    try:
+        # Get user's alert config
+        config = get_or_create_alert_config(db, user.id, user.organization_id)
+        
+        if not config.webhook_url:
+            raise HTTPException(
+                status_code=400,
+                detail="No webhook URL configured. Please configure a webhook URL first."
+            )
+        
+        # Create test alert data
+        test_alert_data = {
+            "type": "test",
+            "severity": "info",
+            "domain": "example.com",
+            "message": "This is a test alert from SSL Monitor",
+            "details": {
+                "user_email": user.email,
+                "timestamp": datetime.utcnow().isoformat(),
+                "test": True
+            },
+            "timestamp": datetime.utcnow().isoformat()
         }
-    else:
+        
+        # Send test webhook with proper error handling
+        try:
+            success = send_webhook_notification(config.webhook_url, test_alert_data)
+            
+            if success:
+                return {
+                    "status": "success",
+                    "message": f"Test notification sent successfully to {config.webhook_url}",
+                    "webhook_url": config.webhook_url
+                }
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to send test notification. The webhook URL may be invalid or unreachable. Please check your webhook URL and try again."
+                )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send test notification: {str(e)}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail="Failed to send test notification. Please check your webhook URL and try again."
+            detail=f"An error occurred while testing webhook: {str(e)}"
         )
 
 
