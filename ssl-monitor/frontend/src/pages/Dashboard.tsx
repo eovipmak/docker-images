@@ -24,7 +24,6 @@ import {
   useTheme,
   useMediaQuery,
   IconButton,
-  Tooltip,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -47,12 +46,10 @@ import {
   NotificationsOff as NotificationsOffIcon,
   Notifications as NotificationsIcon,
   BugReport as BugReportIcon,
-  TrendingUp as TrendingUpIcon,
   Security as SecurityIcon,
   Schedule as ScheduleIcon,
   FiberManualRecord as FiberManualRecordIcon,
 } from '@mui/icons-material';
-import { useLanguage } from '../hooks/useLanguage';
 import { getStats, getHistory, deleteDomain, updateMonitor, testDomainAlert } from '../services/api';
 import AlertsDisplay from '../components/AlertsDisplay';
 
@@ -118,7 +115,6 @@ interface DomainStatus {
 }
 
 const Dashboard: React.FC = () => {
-  const { t } = useLanguage();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
