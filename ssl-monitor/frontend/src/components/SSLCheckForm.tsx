@@ -61,8 +61,18 @@ const SSLCheckForm: React.FC<SSLCheckFormProps> = ({ onResult }) => {
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 3 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 4,
+        borderRadius: 3,
+        background: 'white',
+        border: '1px solid',
+        borderColor: 'divider',
+        mb: 3,
+      }}
+    >
+      <Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
         {t('formTitle')}
       </Typography>
       <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -80,6 +90,11 @@ const SSLCheckForm: React.FC<SSLCheckFormProps> = ({ onResult }) => {
             'aria-label': t('targetLabel'),
             'aria-required': 'true',
           }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            }
+          }}
         />
         <Button
           type="submit"
@@ -89,7 +104,13 @@ const SSLCheckForm: React.FC<SSLCheckFormProps> = ({ onResult }) => {
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SearchIcon />}
           disabled={loading}
           fullWidth
-          sx={{ mt: 2 }}
+          sx={{ 
+            mt: 3,
+            py: 1.5,
+            borderRadius: 2,
+            fontSize: '1rem',
+            fontWeight: 600,
+          }}
           aria-label={t('checkButton')}
         >
           {loading ? t('loading') : t('checkButton')}

@@ -180,14 +180,53 @@ export default function AlertSettings() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Box display="flex" alignItems="center" mb={3}>
-          <NotificationsActive sx={{ mr: 2, fontSize: 32 }} color="primary" />
-          <Typography variant="h4" component="h1">
-            Alert Settings
-          </Typography>
-        </Box>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        pb: 4,
+      }}
+    >
+      <Container maxWidth="md" sx={{ pt: 4 }}>
+        <Paper 
+          elevation={0}
+          sx={{ 
+            p: 4,
+            borderRadius: 3,
+            background: 'white',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Box display="flex" alignItems="center" mb={4}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mr: 2,
+              }}
+            >
+              <NotificationsActive sx={{ fontSize: 28 }} />
+            </Box>
+            <Typography 
+              variant="h4" 
+              component="h1"
+              fontWeight="bold"
+              sx={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Alert Settings
+            </Typography>
+          </Box>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -416,12 +455,13 @@ export default function AlertSettings() {
         </Box>
 
         {/* Configuration Info */}
-        <Box mt={3} p={2} bgcolor="grey.100" borderRadius={1}>
-          <Typography variant="caption" color="text.secondary">
+        <Box mt={3} p={2} bgcolor="grey.50" borderRadius={2} border="1px solid" borderColor="divider">
+          <Typography variant="caption" color="text.secondary" fontWeight={500}>
             Last updated: {new Date(config.updated_at).toLocaleString()}
           </Typography>
         </Box>
       </Paper>
     </Container>
+    </Box>
   );
 }

@@ -6,7 +6,6 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActionArea,
   Box,
   Chip,
   CircularProgress,
@@ -34,6 +33,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Fade,
+  Zoom,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -46,6 +47,10 @@ import {
   NotificationsOff as NotificationsOffIcon,
   Notifications as NotificationsIcon,
   BugReport as BugReportIcon,
+  TrendingUp as TrendingUpIcon,
+  Security as SecurityIcon,
+  Schedule as ScheduleIcon,
+  FiberManualRecord as FiberManualRecordIcon,
 } from '@mui/icons-material';
 import { useLanguage } from '../hooks/useLanguage';
 import { getStats, getHistory, deleteDomain, updateMonitor, testDomainAlert } from '../services/api';
@@ -141,11 +146,11 @@ const Dashboard: React.FC = () => {
       return 'error';
     }
     if (daysUntilExpiration > 30) {
-      return 'success'; // Green
+      return 'success';
     } else if (daysUntilExpiration >= 7) {
-      return 'warning'; // Yellow
+      return 'warning';
     } else {
-      return 'error'; // Red
+      return 'error';
     }
   };
 
@@ -198,7 +203,6 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Fetch stats, history, and domain status in parallel
       const [statsResponse, historyResponse] = await Promise.all([
         getStats(),
         getHistory(undefined, 5)
@@ -208,7 +212,6 @@ const Dashboard: React.FC = () => {
       const history = historyResponse.history;
       setRecentChecks(Array.isArray(history) ? history : []);
       
-      // Fetch domain status
       await fetchDomainsStatus();
       
     } catch (err) {
@@ -234,7 +237,6 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    // Create WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/domains`;
     
@@ -244,7 +246,6 @@ const Dashboard: React.FC = () => {
 
       ws.onopen = () => {
         console.log('WebSocket connected');
-        // Send authentication or heartbeat
         ws.send(JSON.stringify({ type: 'ping' }));
       };
 
@@ -252,7 +253,6 @@ const Dashboard: React.FC = () => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'update') {
-            // Handle domain updates
             fetchDomainsStatus();
           }
         } catch (err) {
@@ -266,7 +266,7 @@ const Dashboard: React.FC = () => {
 
       ws.onclose = () => {
         console.log('WebSocket disconnected');
-      };
+      }
     } catch (err) {
       console.error('Failed to create WebSocket:', err);
     }
@@ -278,15 +278,13 @@ const Dashboard: React.FC = () => {
     };
   }, [fetchDomainsStatus]);
 
-  // Setup auto-refresh (every 30 seconds)
+  // Setup auto-refresh
   useEffect(() => {
-    // Initial fetch
     fetchData();
 
-    // Setup auto-refresh
     autoRefreshRef.current = window.setInterval(() => {
       fetchDomainsStatus();
-    }, 30000); // 30 seconds
+    }, 30000);
 
     return () => {
       if (autoRefreshRef.current) {
@@ -305,7 +303,7 @@ const Dashboard: React.FC = () => {
     setSelectedDomain(null);
   };
 
-  // Handle alert toggle for domain
+  // Handle alert toggle
   const handleToggleAlerts = async (domainName: string, currentStatus: boolean) => {
     try {
       await updateMonitor(domainName, { alerts_enabled: !currentStatus });
@@ -313,7 +311,6 @@ const Dashboard: React.FC = () => {
         `Alerts ${!currentStatus ? 'enabled' : 'disabled'} for ${domainName}`,
         'success'
       );
-      // Refresh data
       await fetchDomainsStatus();
       setMenuAnchor(null);
     } catch (err) {
@@ -394,7 +391,6 @@ const Dashboard: React.FC = () => {
       showSnackbar(`Settings updated for ${settingsDomain.domain}`, 'success');
       setSettingsDialogOpen(false);
       setSettingsDomain(null);
-      // Refresh data
       await fetchData();
     } catch (err: unknown) {
       const errorMsg = err instanceof Error 
@@ -415,7 +411,6 @@ const Dashboard: React.FC = () => {
     try {
       await deleteDomain(domainName);
       showSnackbar(`Domain ${domainName} deleted successfully`, 'success');
-      // Refresh data
       await fetchData();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to delete domain';
@@ -425,655 +420,729 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </Container>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+        sx={{
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        }}
+      >
+        <Box textAlign="center">
+          <CircularProgress size={64} sx={{ color: '#6366f1', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            Loading dashboard...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error">{error}</Alert>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      {/* Header Section */}
-      <Box 
-        display="flex" 
-        justifyContent="space-between" 
-        alignItems="center" 
-        mb={4}
-        sx={{
-          pb: 2,
-          borderBottom: `2px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-            SSL Monitor Dashboard
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Monitor SSL certificates for your domains in real-time
-          </Typography>
-        </Box>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Chip
-            icon={<AccessTimeIcon />}
-            label={`Last updated ${lastUpdate.toLocaleTimeString()}`}
-            size="small"
-            variant="outlined"
-          />
-          <Button
-            startIcon={<RefreshIcon />}
-            onClick={fetchData}
-            variant="outlined"
-            size="medium"
-          >
-            Refresh Data
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card 
-            elevation={2}
-            sx={{ 
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        pb: 4,
+      }}
+    >
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        {/* Header Section */}
+        <Fade in={true} timeout={500}>
+          <Box 
+            display="flex" 
+            justifyContent="space-between" 
+            alignItems="center" 
+            mb={4}
+            sx={{
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
             }}
           >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom variant="body2" fontWeight="medium">
-                Total SSL Checks
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">{stats?.total_checks || 0}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{ 
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <CheckCircleIcon color="success" />
-                <Typography color="text.secondary" variant="body2" fontWeight="medium">
-                  Valid Certificates
-                </Typography>
-              </Box>
-              <Typography variant="h3" color="success.main" fontWeight="bold">
-                {stats?.successful_checks || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{ 
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <ErrorIcon color="error" />
-                <Typography color="text.secondary" variant="body2" fontWeight="medium">
-                  Certificate Errors
-                </Typography>
-              </Box>
-              <Typography variant="h3" color="error.main" fontWeight="bold">
-                {stats?.error_checks || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={2}
-            sx={{ 
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: 4,
-              }
-            }}
-          >
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <DomainIcon color="primary" />
-                <Typography color="text.secondary" variant="body2" fontWeight="medium">
-                  Monitored Domains
-                </Typography>
-              </Box>
-              <Typography variant="h3" color="primary.main" fontWeight="bold">
-                {stats?.unique_domains || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Monitored Domains Section */}
-      <Box mb={3}>
-        <Typography variant="h5" gutterBottom fontWeight="bold">
-          Monitored Domains
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Real-time SSL certificate monitoring for your domains
-        </Typography>
-      </Box>
-      
-      {domains.length === 0 ? (
-        <Alert severity="info" sx={{ mb: 4 }}>
-          No domains are being monitored. Add a domain to get started.
-        </Alert>
-      ) : (
-        <Grid 
-          container 
-          spacing={3} 
-          sx={{ 
-            mb: 4,
-            // Responsive grid breakpoints
-            '@media (max-width: 480px)': {
-              spacing: 2,
-            },
-          }}
-        >
-          {domains.map((domain, index) => {
-            const statusColor = getStatusColor(domain.ssl_info?.daysUntilExpiration);
-            const countdown = formatCountdown(domain.ssl_info?.daysUntilExpiration);
-            
-            return (
-              <Grid 
-                item 
-                xs={12} 
-                sm={6} 
-                md={4} 
-                lg={3}
-                key={`${domain.domain}-${index}`}
+            <Box>
+              <Typography 
+                variant="h3" 
+                component="h1" 
+                fontWeight="bold" 
+                gutterBottom
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
               >
-                <Card 
-                  elevation={2}
-                  sx={{ 
-                    height: '100%',
-                    borderLeft: `4px solid ${
-                      statusColor === 'success' 
-                        ? theme.palette.success.main 
-                        : statusColor === 'warning' 
-                        ? theme.palette.warning.main 
-                        : theme.palette.error.main
-                    }`,
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 6,
-                    }
-                  }}
-                >
-                  <CardActionArea onClick={() => handleDomainClick(domain)}>
-                    <CardContent>
-                      <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={1}>
-                        <Box display="flex" alignItems="center" gap={1} flex={1} minWidth={0}>
-                          <DomainIcon color={statusColor} />
-                          <Typography 
-                            variant="h6" 
-                            component="div"
-                            sx={{
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {domain.domain}
-                          </Typography>
-                        </Box>
-                        <Tooltip title="Actions">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, domain)}
-                            sx={{ ml: 1 }}
-                          >
-                            <SettingsIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                      
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        <AccessTimeIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {countdown}
-                        </Typography>
-                      </Box>
-                      
-                      <Box display="flex" gap={1} flexWrap="wrap" mt={2}>
-                        <Chip
-                          label={domain.ssl_status === 'success' ? 'Valid SSL' : 'SSL Error'}
-                          color={domain.ssl_status === 'success' ? 'success' : 'error'}
-                          size="small"
-                        />
-                        {domain.ssl_info?.daysUntilExpiration !== undefined && (
-                          <Chip
-                            label={`${domain.ssl_info.daysUntilExpiration} days left`}
-                            color={statusColor}
-                            size="small"
-                          />
-                        )}
-                        {domain.monitor?.alerts_enabled === false && (
-                          <Chip
-                            icon={<NotificationsOffIcon />}
-                            label="Alerts Disabled"
-                            size="small"
-                            variant="outlined"
-                            color="warning"
-                          />
-                        )}
-                      </Box>
-                      
-                      {domain.ssl_info?.issuer?.organizationName && (
-                        <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                          Certificate Issuer: {domain.ssl_info.issuer.organizationName}
-                        </Typography>
-                      )}
-                      
-                      {/* Uptime Bar */}
-                      {domain.uptime && domain.uptime.uptime_percentage !== null && (
-                        <Box mt={2}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                            <Typography variant="caption" color="text.secondary" fontWeight="medium">
-                              30-Day Uptime
-                            </Typography>
-                            <Typography 
-                              variant="caption" 
-                              fontWeight="bold"
-                              color={
-                                domain.uptime.uptime_percentage >= 99 
-                                  ? 'success.main' 
-                                  : domain.uptime.uptime_percentage >= 95 
-                                  ? 'warning.main' 
-                                  : 'error.main'
-                              }
-                            >
-                              {domain.uptime.uptime_percentage.toFixed(2)}%
-                            </Typography>
-                          </Box>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={domain.uptime.uptime_percentage} 
-                            sx={{
-                              height: 6,
-                              borderRadius: 3,
-                              backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                              '& .MuiLinearProgress-bar': {
-                                borderRadius: 3,
-                                backgroundColor: 
-                                  domain.uptime.uptime_percentage >= 99 
-                                    ? theme.palette.success.main 
-                                    : domain.uptime.uptime_percentage >= 95 
-                                    ? theme.palette.warning.main 
-                                    : theme.palette.error.main
-                              }
-                            }}
-                          />
-                          <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                            {domain.uptime.successful_checks} of {domain.uptime.total_checks} checks successful
-                          </Typography>
-                        </Box>
-                      )}
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
-
-      {/* Recent Checks and Alerts */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <AlertsDisplay unresolvedOnly={true} limit={10} />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper elevation={2} sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Recent SSL Checks
-            </Typography>
-            {recentChecks.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No checks found. Start by adding a domain to monitor.
+                SSL Monitor Dashboard
               </Typography>
-            ) : (
-              <Grid container spacing={2}>
-                {recentChecks.map((check) => (
-                  <Grid item xs={12} key={check.id}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-                          <Box display="flex" alignItems="center" gap={2}>
-                            {check.status === 'success' ? (
-                              <CheckCircleIcon color="success" />
-                            ) : (
-                              <ErrorIcon color="error" />
-                            )}
-                            <Box>
-                              <Typography variant="h6">{check.domain || 'N/A'}</Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {t('checkedAt')}: {new Date(check.checked_at).toLocaleString()}
+              <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FiberManualRecordIcon sx={{ fontSize: 8, color: '#10b981' }} className="animate-pulse" />
+                Live monitoring • Last updated {lastUpdate.toLocaleTimeString()}
+              </Typography>
+            </Box>
+            <Button
+              startIcon={<RefreshIcon />}
+              onClick={fetchData}
+              variant="contained"
+              size="large"
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1.5,
+              }}
+            >
+              Refresh
+            </Button>
+          </Box>
+        </Fade>
+
+        {/* Stats Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Zoom in={true} timeout={300} style={{ transitionDelay: '0ms' }}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  color: 'white',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.3), 0 10px 10px -5px rgba(99, 102, 241, 0.2)',
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <SecurityIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                    <Typography variant="h4" fontWeight="bold">
+                      {stats?.total_checks || 0}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Total SSL Checks
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Zoom in={true} timeout={300} style={{ transitionDelay: '100ms' }}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                  color: 'white',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.3), 0 10px 10px -5px rgba(16, 185, 129, 0.2)',
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <CheckCircleIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                    <Typography variant="h4" fontWeight="bold">
+                      {stats?.successful_checks || 0}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Valid Certificates
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Zoom in={true} timeout={300} style={{ transitionDelay: '200ms' }}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)',
+                  color: 'white',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.3), 0 10px 10px -5px rgba(239, 68, 68, 0.2)',
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <ErrorIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                    <Typography variant="h4" fontWeight="bold">
+                      {stats?.error_checks || 0}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Certificate Errors
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Zoom in={true} timeout={300} style={{ transitionDelay: '300ms' }}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+                  color: 'white',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: '0 20px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.2)',
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                    <DomainIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                    <Typography variant="h4" fontWeight="bold">
+                      {stats?.unique_domains || 0}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                    Monitored Domains
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+        </Grid>
+
+        {/* Monitored Domains Section */}
+        <Fade in={true} timeout={600}>
+          <Box mb={3}>
+            <Typography variant="h5" gutterBottom fontWeight="bold" sx={{ mb: 1 }}>
+              Monitored Domains
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Real-time SSL certificate monitoring for your domains
+            </Typography>
+          </Box>
+        </Fade>
+        
+        {domains.length === 0 ? (
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mb: 4, 
+              borderRadius: 3,
+              '& .MuiAlert-icon': {
+                fontSize: 28,
+              }
+            }}
+          >
+            No domains are being monitored. Add a domain to get started.
+          </Alert>
+        ) : (
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {domains.map((domain, index) => {
+              const statusColor = getStatusColor(domain.ssl_info?.daysUntilExpiration);
+              const countdown = formatCountdown(domain.ssl_info?.daysUntilExpiration);
+              
+              return (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={`${domain.domain}-${index}`}>
+                  <Fade in={true} timeout={400} style={{ transitionDelay: `${index * 50}ms` }}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        borderLeft: `4px solid ${
+                          statusColor === 'success' 
+                            ? '#10b981'
+                            : statusColor === 'warning' 
+                            ? '#f59e0b'
+                            : '#ef4444'
+                        }`,
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        }
+                      }}
+                      onClick={() => handleDomainClick(domain)}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={2}>
+                          <Box display="flex" alignItems="center" gap={1.5} flex={1} minWidth={0}>
+                            <Box
+                              sx={{
+                                p: 1,
+                                borderRadius: 2,
+                                bgcolor: statusColor === 'success' 
+                                  ? 'rgba(16, 185, 129, 0.1)'
+                                  : statusColor === 'warning'
+                                  ? 'rgba(245, 158, 11, 0.1)'
+                                  : 'rgba(239, 68, 68, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <DomainIcon 
+                                sx={{ 
+                                  fontSize: 24,
+                                  color: statusColor === 'success' 
+                                    ? '#10b981'
+                                    : statusColor === 'warning'
+                                    ? '#f59e0b'
+                                    : '#ef4444',
+                                }} 
+                              />
+                            </Box>
+                            <Box flex={1} minWidth={0}>
+                              <Typography 
+                                variant="h6" 
+                                component="div"
+                                sx={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {domain.domain}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Port {domain.port}
                               </Typography>
                             </Box>
                           </Box>
-                          <Box display="flex" gap={1} flexWrap="wrap">
-                            <Chip
-                              label={check.status === 'success' ? t('statusSuccess') : t('statusError')}
-                              color={check.status === 'success' ? 'success' : 'error'}
-                              size="small"
-                            />
-                            {check.status === 'success' && check.data?.ssl?.daysUntilExpiration != null && (
-                              <Chip
-                                label={`${check.data.ssl.daysUntilExpiration} days`}
-                                color={getStatusColor(check.data.ssl.daysUntilExpiration)}
-                                size="small"
-                              />
-                            )}
-                          </Box>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMenuOpen(e, domain);
+                            }}
+                            sx={{ 
+                              ml: 1,
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              }
+                            }}
+                          >
+                            <SettingsIcon fontSize="small" />
+                          </IconButton>
                         </Box>
+                        
+                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                          <AccessTimeIcon fontSize="small" color="action" />
+                          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                            {countdown}
+                          </Typography>
+                        </Box>
+                        
+                        <Box display="flex" gap={1} flexWrap="wrap" mb={2}>
+                          <Chip
+                            label={domain.ssl_status === 'success' ? 'Valid SSL' : 'SSL Error'}
+                            color={domain.ssl_status === 'success' ? 'success' : 'error'}
+                            size="small"
+                            sx={{ fontWeight: 500 }}
+                          />
+                          {domain.ssl_info?.daysUntilExpiration !== undefined && (
+                            <Chip
+                              label={`${domain.ssl_info.daysUntilExpiration}d left`}
+                              color={statusColor}
+                              size="small"
+                              sx={{ fontWeight: 500 }}
+                            />
+                          )}
+                        </Box>
+                        
+                        {domain.uptime && domain.uptime.uptime_percentage !== null && (
+                          <Box>
+                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                30-Day Uptime
+                              </Typography>
+                              <Typography 
+                                variant="caption" 
+                                fontWeight="bold"
+                                sx={{
+                                  color: domain.uptime.uptime_percentage >= 99 
+                                    ? '#10b981'
+                                    : domain.uptime.uptime_percentage >= 95 
+                                    ? '#f59e0b'
+                                    : '#ef4444'
+                                }}
+                              >
+                                {domain.uptime.uptime_percentage.toFixed(2)}%
+                              </Typography>
+                            </Box>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={domain.uptime.uptime_percentage} 
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                '& .MuiLinearProgress-bar': {
+                                  borderRadius: 4,
+                                  bgcolor: domain.uptime.uptime_percentage >= 99 
+                                    ? '#10b981'
+                                    : domain.uptime.uptime_percentage >= 95 
+                                    ? '#f59e0b'
+                                    : '#ef4444'
+                                }
+                              }}
+                            />
+                          </Box>
+                        )}
                       </CardContent>
                     </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+                  </Fade>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
 
-      {/* Certificate Details Modal */}
-      <Dialog 
-        open={!!selectedDomain} 
-        onClose={handleCloseModal}
-        maxWidth="md"
-        fullWidth
-        fullScreen={isMobile}
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <DomainIcon color="primary" />
-            <Box>
-              <Typography variant="h6" fontWeight="bold">
-                SSL Certificate Details
-              </Typography>
+        {/* Recent Checks and Alerts */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            <Fade in={true} timeout={800}>
+              <AlertsDisplay unresolvedOnly={true} limit={10} />
+            </Fade>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Fade in={true} timeout={800}>
+              <Paper 
+                elevation={0}
+                sx={{ 
+                  p: 3,
+                  borderRadius: 3,
+                  background: 'white',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1.5} mb={3}>
+                  <ScheduleIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
+                    Recent SSL Checks
+                  </Typography>
+                </Box>
+                {recentChecks.length === 0 ? (
+                  <Box textAlign="center" py={4}>
+                    <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1, opacity: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No checks found. Start by adding a domain to monitor.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    {recentChecks.map((check) => (
+                      <Card 
+                        key={check.id}
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 2,
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            boxShadow: 2,
+                            transform: 'translateX(4px)',
+                          }
+                        }}
+                      >
+                        <CardContent sx={{ p: 2 }}>
+                          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                            <Box display="flex" alignItems="center" gap={2}>
+                              {check.status === 'success' ? (
+                                <CheckCircleIcon color="success" />
+                              ) : (
+                                <ErrorIcon color="error" />
+                              )}
+                              <Box>
+                                <Typography variant="body1" fontWeight={600}>
+                                  {check.domain || 'N/A'}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {new Date(check.checked_at).toLocaleString()}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Chip
+                              label={check.status === 'success' ? 'Success' : 'Error'}
+                              color={check.status === 'success' ? 'success' : 'error'}
+                              size="small"
+                              sx={{ fontWeight: 500 }}
+                            />
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Box>
+                )}
+              </Paper>
+            </Fade>
+          </Grid>
+        </Grid>
+
+        {/* Certificate Details Modal */}
+        <Dialog 
+          open={!!selectedDomain} 
+          onClose={handleCloseModal}
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+            }
+          }}
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SecurityIcon />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight="bold">
+                  SSL Certificate Details
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedDomain?.domain}
+                </Typography>
+              </Box>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            {selectedDomain && (
+              <TableContainer>
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        Certificate Status
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={selectedDomain.ssl_status === 'success' ? 'Valid' : 'Error'}
+                          color={selectedDomain.ssl_status === 'success' ? 'success' : 'error'}
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        Domain
+                      </TableCell>
+                      <TableCell>{selectedDomain.domain}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        IP Address
+                      </TableCell>
+                      <TableCell>{selectedDomain.ip || 'N/A'}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        Port
+                      </TableCell>
+                      <TableCell>{selectedDomain.port}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        Days Until Expiration
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography>
+                            {formatCountdown(selectedDomain.ssl_info?.daysUntilExpiration)}
+                          </Typography>
+                          {selectedDomain.ssl_info?.daysUntilExpiration !== undefined && (
+                            <Chip
+                              label={`${selectedDomain.ssl_info.daysUntilExpiration}d`}
+                              color={getStatusColor(selectedDomain.ssl_info.daysUntilExpiration)}
+                              size="small"
+                            />
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                    {selectedDomain.ssl_info?.notAfter && (
+                      <TableRow>
+                        <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                          Expires On
+                        </TableCell>
+                        <TableCell>
+                          {new Date(selectedDomain.ssl_info.notAfter).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {selectedDomain.ssl_info?.issuer?.organizationName && (
+                      <TableRow>
+                        <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                          Issuer
+                        </TableCell>
+                        <TableCell>
+                          {selectedDomain.ssl_info.issuer.organizationName || selectedDomain.ssl_info.issuer.commonName}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    <TableRow>
+                      <TableCell component="th" scope="row" sx={{ fontWeight: 600 }}>
+                        Last Checked
+                      </TableCell>
+                      <TableCell>
+                        {new Date(selectedDomain.last_checked).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseModal} variant="outlined">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Monitor Settings Dialog */}
+        <Dialog
+          open={settingsDialogOpen}
+          onClose={handleCloseSettingsDialog}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+            }
+          }}
+        >
+          <DialogTitle>
+            <Typography variant="h6" fontWeight="bold">
+              Monitor Settings
+            </Typography>
+            {settingsDomain && (
               <Typography variant="body2" color="text.secondary">
-                {selectedDomain?.domain}
+                {settingsDomain.domain}
+              </Typography>
+            )}
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ pt: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel id="check-interval-label">Check Interval</InputLabel>
+                <Select
+                  labelId="check-interval-label"
+                  value={settingsCheckInterval}
+                  label="Check Interval"
+                  onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
+                >
+                  <MenuItem value={3600}>1 hour</MenuItem>
+                  <MenuItem value={10800}>3 hours</MenuItem>
+                  <MenuItem value={43200}>12 hours</MenuItem>
+                  <MenuItem value={86400}>24 hours (1 day)</MenuItem>
+                </Select>
+              </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                How often to check the SSL certificate status
               </Typography>
             </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {selectedDomain && (
-            <TableContainer>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>Certificate Status</strong>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={selectedDomain.ssl_status === 'success' ? 'Valid' : 'Error'}
-                        color={selectedDomain.ssl_status === 'success' ? 'success' : 'error'}
-                        size="small"
-                      />
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>Domain</strong>
-                    </TableCell>
-                    <TableCell>{selectedDomain.domain}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>IP Address</strong>
-                    </TableCell>
-                    <TableCell>{selectedDomain.ip || 'N/A'}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>Port</strong>
-                    </TableCell>
-                    <TableCell>{selectedDomain.port}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>Days Until Expiration</strong>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography>
-                          {formatCountdown(selectedDomain.ssl_info?.daysUntilExpiration)}
-                        </Typography>
-                        {selectedDomain.ssl_info?.daysUntilExpiration !== undefined && (
-                          <Chip
-                            label={`${selectedDomain.ssl_info.daysUntilExpiration}d`}
-                            color={getStatusColor(selectedDomain.ssl_info.daysUntilExpiration)}
-                            size="small"
-                          />
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                  {selectedDomain.ssl_info?.notAfter && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Expires On</strong>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(selectedDomain.ssl_info.notAfter).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.notBefore && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Valid From</strong>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(selectedDomain.ssl_info.notBefore).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.issuer?.commonName && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Issuer</strong>
-                      </TableCell>
-                      <TableCell>
-                        {selectedDomain.ssl_info.issuer.organizationName || selectedDomain.ssl_info.issuer.commonName}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.subject?.commonName && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Subject</strong>
-                      </TableCell>
-                      <TableCell>{selectedDomain.ssl_info.subject.commonName}</TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.serialNumber && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Serial Number</strong>
-                      </TableCell>
-                      <TableCell sx={{ wordBreak: 'break-all' }}>
-                        {selectedDomain.ssl_info.serialNumber}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.signatureAlgorithm && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Signature Algorithm</strong>
-                      </TableCell>
-                      <TableCell>{selectedDomain.ssl_info.signatureAlgorithm}</TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.tlsVersion && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>TLS Version</strong>
-                      </TableCell>
-                      <TableCell>{selectedDomain.ssl_info.tlsVersion}</TableCell>
-                    </TableRow>
-                  )}
-                  {selectedDomain.ssl_info?.cipherSuite && (
-                    <TableRow>
-                      <TableCell component="th" scope="row">
-                        <strong>Cipher Suite</strong>
-                      </TableCell>
-                      <TableCell sx={{ wordBreak: 'break-all' }}>
-                        {selectedDomain.ssl_info.cipherSuite}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  <TableRow>
-                    <TableCell component="th" scope="row">
-                      <strong>Last Checked</strong>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(selectedDomain.last_checked).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal}>Close</Button>
-        </DialogActions>
-      </Dialog>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={handleCloseSettingsDialog} variant="outlined">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveSettings} variant="contained">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Monitor Settings Dialog */}
-      <Dialog
-        open={settingsDialogOpen}
-        onClose={handleCloseSettingsDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Monitor Settings
-          {settingsDomain && (
-            <Typography variant="body2" color="text.secondary">
-              {settingsDomain.domain}
-            </Typography>
-          )}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel id="check-interval-label">Check Interval</InputLabel>
-              <Select
-                labelId="check-interval-label"
-                value={settingsCheckInterval}
-                label="Check Interval"
-                onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
-              >
-                <MenuItem value={3600}>1 hour</MenuItem>
-                <MenuItem value={10800}>3 hours</MenuItem>
-                <MenuItem value={43200}>12 hours</MenuItem>
-                <MenuItem value={86400}>24 hours (1 day)</MenuItem>
-              </Select>
-            </FormControl>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              How often to check the SSL certificate status
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseSettingsDialog}>Cancel</Button>
-          <Button onClick={handleSaveSettings} variant="contained" color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={() => setSnackbarOpen(false)} 
-          severity={snackbarSeverity}
-          sx={{ width: '100%' }}
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+          <Alert 
+            onClose={() => setSnackbarOpen(false)} 
+            severity={snackbarSeverity}
+            sx={{ 
+              width: '100%',
+              borderRadius: 2,
+            }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
 
-      {/* Domain Actions Menu */}
-      <Menu
-        anchorEl={menuAnchor?.element}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleToggleAlertsFromMenu}>
-          <ListItemIcon>
-            {menuAnchor?.domain.monitor?.alerts_enabled === false ? (
-              <NotificationsIcon fontSize="small" />
-            ) : (
-              <NotificationsOffIcon fontSize="small" />
-            )}
-          </ListItemIcon>
-          <ListItemText>
-            {menuAnchor?.domain.monitor?.alerts_enabled === false
-              ? 'Enable Alerts'
-              : 'Disable Alerts'}
-          </ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleSettingsFromMenu}>
-          <ListItemIcon>
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Monitor Settings</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleTestAlertFromMenu}>
-          <ListItemIcon>
-            <BugReportIcon fontSize="small" color="primary" />
-          </ListItemIcon>
-          <ListItemText>Send Test Alert</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleDeleteFromMenu}>
-          <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Delete Domain</ListItemText>
-        </MenuItem>
-      </Menu>
-    </Container>
+        {/* Domain Actions Menu */}
+        <Menu
+          anchorEl={menuAnchor?.element}
+          open={Boolean(menuAnchor)}
+          onClose={handleMenuClose}
+          PaperProps={{
+            sx: {
+              borderRadius: 2,
+              mt: 1,
+            }
+          }}
+        >
+          <MenuItem onClick={handleToggleAlertsFromMenu}>
+            <ListItemIcon>
+              {menuAnchor?.domain.monitor?.alerts_enabled === false ? (
+                <NotificationsIcon fontSize="small" />
+              ) : (
+                <NotificationsOffIcon fontSize="small" />
+              )}
+            </ListItemIcon>
+            <ListItemText>
+              {menuAnchor?.domain.monitor?.alerts_enabled === false
+                ? 'Enable Alerts'
+                : 'Disable Alerts'}
+            </ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleSettingsFromMenu}>
+            <ListItemIcon>
+              <SettingsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Monitor Settings</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleTestAlertFromMenu}>
+            <ListItemIcon>
+              <BugReportIcon fontSize="small" color="primary" />
+            </ListItemIcon>
+            <ListItemText>Send Test Alert</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleDeleteFromMenu}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete Domain</ListItemText>
+          </MenuItem>
+        </Menu>
+      </Container>
+    </Box>
   );
 };
 

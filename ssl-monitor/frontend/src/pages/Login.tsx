@@ -10,7 +10,14 @@ import {
   Alert,
   Tabs,
   Tab,
+  Fade,
+  Zoom,
 } from '@mui/material';
+import {
+  Security as SecurityIcon,
+  Lock as LockIcon,
+  Email as EmailIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../hooks/useLanguage';
 
@@ -36,7 +43,7 @@ const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess(''); // Clear success message before login attempt
+    setSuccess('');
     setLoading(true);
 
     try {
@@ -71,7 +78,6 @@ const Login: React.FC = () => {
       return;
     }
 
-    // Check password complexity
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasDigit = /[0-9]/.test(password);
@@ -107,7 +113,6 @@ const Login: React.FC = () => {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      // Switch to login tab
       setTab(0);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -121,103 +126,261 @@ const Login: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Paper elevation={2} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          SSL Monitor
-        </Typography>
-        
-        <Tabs value={tab} onChange={handleTabChange} centered sx={{ mb: 3 }}>
-          <Tab label={t('login')} />
-          <Tab label="Register" />
-        </Tabs>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-
-        {tab === 0 ? (
-          <Box component="form" onSubmit={handleLogin}>
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              margin="normal"
-              required
-              autoFocus
-            />
-            <TextField
-              fullWidth
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              margin="normal"
-              required
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3 }}
-              disabled={loading}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          background: 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+        }
+      }}
+    >
+      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
+        <Fade in={true} timeout={600}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 5,
+              borderRadius: 4,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <Box textAlign="center" mb={4}>
+              <Zoom in={true} timeout={400}>
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    p: 2,
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    color: 'white',
+                    mb: 2,
+                  }}
+                >
+                  <SecurityIcon sx={{ fontSize: 40 }} />
+                </Box>
+              </Zoom>
+              <Typography 
+                variant="h3" 
+                component="h1" 
+                gutterBottom 
+                fontWeight="bold"
+                sx={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                SSL Monitor
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Secure SSL certificate monitoring platform
+              </Typography>
+            </Box>
+            
+            <Tabs 
+              value={tab} 
+              onChange={handleTabChange} 
+              centered 
+              sx={{ 
+                mb: 4,
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                },
+                '& .Mui-selected': {
+                  color: '#6366f1',
+                },
+                '& .MuiTabs-indicator': {
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  height: 3,
+                  borderRadius: 2,
+                }
+              }}
             >
-              {loading ? 'Logging in...' : t('login')}
-            </Button>
-          </Box>
-        ) : (
-          <Box component="form" onSubmit={handleRegister}>
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              margin="normal"
-              required
-              autoFocus
-            />
-            <TextField
-              fullWidth
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Confirm Password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              margin="normal"
-              required
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3 }}
-              disabled={loading}
-            >
-              {loading ? 'Registering...' : 'Register'}
-            </Button>
-          </Box>
-        )}
-      </Paper>
-    </Container>
+              <Tab label={t('login')} />
+              <Tab label="Register" />
+            </Tabs>
+
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
+
+            {success && (
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                }}
+                onClose={() => setSuccess('')}
+              >
+                {success}
+              </Alert>
+            )}
+
+            {tab === 0 ? (
+              <Box component="form" onSubmit={handleLogin}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  margin="normal"
+                  required
+                  autoFocus
+                  InputProps={{
+                    startAdornment: (
+                      <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading}
+                  sx={{ 
+                    mt: 3,
+                    py: 1.5,
+                    borderRadius: 2,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {loading ? 'Logging in...' : t('login')}
+                </Button>
+              </Box>
+            ) : (
+              <Box component="form" onSubmit={handleRegister}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  margin="normal"
+                  required
+                  autoFocus
+                  InputProps={{
+                    startAdornment: (
+                      <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+                <TextField
+                  fullWidth
+                  label="Confirm Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  margin="normal"
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading}
+                  sx={{ 
+                    mt: 3,
+                    py: 1.5,
+                    borderRadius: 2,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {loading ? 'Registering...' : 'Register'}
+                </Button>
+              </Box>
+            )}
+          </Paper>
+        </Fade>
+      </Container>
+    </Box>
   );
 };
 

@@ -129,15 +129,26 @@ export default function AlertsDisplay({ unresolvedOnly = true, limit = 20 }: Ale
   }
 
   return (
-    <Paper elevation={2} sx={{ p: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 3,
+        borderRadius: 3,
+        background: 'white',
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h6" fontWeight="bold">
           {unresolvedOnly ? 'Active Alerts' : 'All Alerts'}
         </Typography>
         <Button
           size="small"
           startIcon={<Refresh />}
           onClick={loadAlerts}
+          variant="outlined"
+          sx={{ borderRadius: 2 }}
         >
           Refresh
         </Button>
@@ -164,9 +175,14 @@ export default function AlertsDisplay({ unresolvedOnly = true, limit = 20 }: Ale
               sx={{
                 border: 1,
                 borderColor: 'divider',
-                borderRadius: 1,
-                mb: 1,
-                bgcolor: alert.is_read ? 'background.paper' : 'action.hover',
+                borderRadius: 2,
+                mb: 1.5,
+                bgcolor: alert.is_read ? 'background.paper' : 'rgba(99, 102, 241, 0.05)',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  boxShadow: 2,
+                  transform: 'translateX(4px)',
+                }
               }}
               secondaryAction={
                 <Box>
