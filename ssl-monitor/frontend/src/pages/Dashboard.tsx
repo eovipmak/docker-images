@@ -1026,6 +1026,8 @@ const Dashboard: React.FC = () => {
           onClose={handleCloseSettingsDialog}
           maxWidth="sm"
           fullWidth
+          disableEnforceFocus
+          disableAutoFocus
           PaperProps={{
             sx: {
               borderRadius: 3,
@@ -1053,11 +1055,20 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
                   MenuProps={{
                     disableScrollLock: true,
+                    disablePortal: true,
                     PaperProps: {
                       sx: {
                         maxHeight: 300,
                       }
-                    }
+                    },
+                    anchorOrigin: {
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    },
+                    transformOrigin: {
+                      vertical: 'top',
+                      horizontal: 'left',
+                    },
                   }}
                 >
                   <MenuItem value={3600}>1 hour</MenuItem>
