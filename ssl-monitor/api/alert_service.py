@@ -238,18 +238,26 @@ def create_alert(
 
 
 def _is_private_ip(ip_str: str) -> bool:
-    """Check if IP address is private, loopback, or reserved"""
-    try:
-        ip = ipaddress.ip_address(ip_str)
-        return (
-            ip.is_private or
-            ip.is_loopback or
-            ip.is_link_local or
-            ip.is_reserved or
-            ip.is_multicast
-        )
-    except ValueError:
-        return True  # Treat invalid IPs as private for safety
+    """
+    Check if IP address is private, loopback, or reserved
+    
+    Args:
+        ip_str: String representation of an IP address
+        
+    Returns:
+        True if IP is private/reserved, False if public
+        
+    Raises:
+        ValueError: If ip_str is not a valid IP address
+    """
+    ip = ipaddress.ip_address(ip_str)  # Raises ValueError if not a valid IP
+    return (
+        ip.is_private or
+        ip.is_loopback or
+        ip.is_link_local or
+        ip.is_reserved or
+        ip.is_multicast
+    )
 
 
 def _validate_webhook_url(webhook_url: str) -> bool:
@@ -301,19 +309,21 @@ def _validate_webhook_url(webhook_url: str) -> bool:
         return False
 
 
-def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> bool:
+def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> tuple[bool, Optional[str]]:
     """
     Send alert notification to webhook URL with SSRF protection
     
     Returns:
-        True if successful, False otherwise
+        Tuple of (success: bool, error_message: Optional[str])
+        - (True, None) if successful
+        - (False, error_message) if failed with reason
     """
     if not webhook_url:
-        return False
+        return False, "No webhook URL provided"
     
     # Validate URL to prevent SSRF
     if not _validate_webhook_url(webhook_url):
-        return False
+        return False, "Invalid webhook URL or URL failed security validation (e.g., private/local IPs not allowed)"
     
     try:
         response = requests.post(
@@ -322,9 +332,16 @@ def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> b
             headers={'Content-Type': 'application/json'},
             timeout=10
         )
-        return response.status_code in [200, 201, 202, 204]
-    except requests.RequestException:
-        return False
+        if response.status_code in [200, 201, 202, 204]:
+            return True, None
+        else:
+            return False, f"Webhook returned HTTP {response.status_code}. Expected 200, 201, 202, or 204"
+    except requests.Timeout:
+        return False, "Request timed out after 10 seconds. The webhook endpoint may be slow or unreachable"
+    except requests.ConnectionError:
+        return False, "Could not connect to webhook URL. Please verify the URL is correct and accessible"
+    except requests.RequestException as e:
+        return False, f"Request failed: {str(e)}"
 
 
 def process_ssl_check_alerts(
@@ -412,7 +429,7 @@ def process_ssl_check_alerts(
                 'message': alert.message,
                 'created_at': alert.created_at.isoformat()
             }
-            send_webhook_notification(webhook_url, alert_data)
+            send_webhook_notification(webhook_url, alert_data)  # Fire and forget, ignore result
     
     return created_alerts
 

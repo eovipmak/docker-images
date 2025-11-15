@@ -957,7 +957,7 @@ async def test_domain_alert(
     }
     
     # Send test webhook
-    success = send_webhook_notification(webhook_url, test_alert_data)
+    success, error_msg = send_webhook_notification(webhook_url, test_alert_data)
     
     if success:
         return {
@@ -969,8 +969,8 @@ async def test_domain_alert(
         }
     else:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to send test alert for {normalized_domain}. Please check your webhook URL."
+            status_code=400,
+            detail=f"Failed to send test alert for {normalized_domain}. {error_msg}"
         )
 
 
@@ -1066,7 +1066,7 @@ async def test_webhook_notification(
     }
     
     # Send test webhook
-    success = send_webhook_notification(config.webhook_url, test_alert_data)
+    success, error_msg = send_webhook_notification(config.webhook_url, test_alert_data)
     
     if success:
         return {
@@ -1076,8 +1076,8 @@ async def test_webhook_notification(
         }
     else:
         raise HTTPException(
-            status_code=500,
-            detail="Failed to send test notification. Please check your webhook URL and try again."
+            status_code=400,
+            detail=f"Failed to send test notification. {error_msg}"
         )
 
 
