@@ -1051,6 +1051,14 @@ const Dashboard: React.FC = () => {
                   value={settingsCheckInterval}
                   label="Check Interval"
                   onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
+                  MenuProps={{
+                    disableScrollLock: true,
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 300,
+                      }
+                    }
+                  }}
                 >
                   <MenuItem value={3600}>1 hour</MenuItem>
                   <MenuItem value={10800}>3 hours</MenuItem>
