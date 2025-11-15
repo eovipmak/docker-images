@@ -308,12 +308,31 @@ def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> b
     Returns:
         True if successful, False otherwise
     """
+    result = send_webhook_notification_detailed(webhook_url, alert_data)
+    return result['success']
+
+
+def send_webhook_notification_detailed(webhook_url: str, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Send alert notification to webhook URL with SSRF protection and detailed error reporting
+    
+    Returns:
+        Dict with 'success' (bool), 'error' (str or None), 'status_code' (int or None)
+    """
     if not webhook_url:
-        return False
+        return {
+            'success': False,
+            'error': 'No webhook URL provided',
+            'status_code': None
+        }
     
     # Validate URL to prevent SSRF
     if not _validate_webhook_url(webhook_url):
-        return False
+        return {
+            'success': False,
+            'error': 'Invalid or unsafe webhook URL. URL must use http/https scheme and cannot point to private/local IP addresses.',
+            'status_code': None
+        }
     
     try:
         response = requests.post(
@@ -322,9 +341,30 @@ def send_webhook_notification(webhook_url: str, alert_data: Dict[str, Any]) -> b
             headers={'Content-Type': 'application/json'},
             timeout=10
         )
-        return response.status_code in [200, 201, 202, 204]
-    except requests.RequestException:
-        return False
+        success = response.status_code in [200, 201, 202, 204]
+        return {
+            'success': success,
+            'error': None if success else f'Webhook returned status code {response.status_code}',
+            'status_code': response.status_code
+        }
+    except requests.Timeout:
+        return {
+            'success': False,
+            'error': 'Webhook request timed out after 10 seconds',
+            'status_code': None
+        }
+    except requests.ConnectionError as e:
+        return {
+            'success': False,
+            'error': f'Failed to connect to webhook URL: {str(e)}',
+            'status_code': None
+        }
+    except requests.RequestException as e:
+        return {
+            'success': False,
+            'error': f'Failed to send webhook: {str(e)}',
+            'status_code': None
+        }
 
 
 def process_ssl_check_alerts(

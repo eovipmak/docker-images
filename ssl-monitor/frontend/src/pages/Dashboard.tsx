@@ -1028,6 +1028,7 @@ const Dashboard: React.FC = () => {
           fullWidth
           disableEnforceFocus
           disableAutoFocus
+          disableRestoreFocus
           PaperProps={{
             sx: {
               borderRadius: 3,
@@ -1055,7 +1056,8 @@ const Dashboard: React.FC = () => {
                   onChange={(e) => setSettingsCheckInterval(Number(e.target.value))}
                   MenuProps={{
                     disableScrollLock: true,
-                    disablePortal: true,
+                    disablePortal: false,
+                    disableAutoFocusItem: true,
                     PaperProps: {
                       sx: {
                         maxHeight: 300,

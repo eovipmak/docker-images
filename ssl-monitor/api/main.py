@@ -28,7 +28,7 @@ from starlette.requests import Request
 from database import init_db, get_db, SSLCheck, User, Alert, AlertConfig, Monitor
 from auth import fastapi_users, auth_backend, current_active_user, get_refresh_jwt_strategy
 from schemas import UserRead, UserCreate, AlertConfigCreate, AlertConfigUpdate, AlertConfigRead, AlertRead, MonitorCreate, MonitorUpdate, MonitorRead
-from alert_service import process_ssl_check_alerts, get_or_create_alert_config, send_webhook_notification
+from alert_service import process_ssl_check_alerts, get_or_create_alert_config, send_webhook_notification, send_webhook_notification_detailed
 
 # Get the absolute path to directories
 BASE_DIR = Path(__file__).resolve().parent
@@ -983,9 +983,9 @@ async def test_domain_alert(
         
         # Send test webhook with proper error handling
         try:
-            success = send_webhook_notification(webhook_url, test_alert_data)
+            result = send_webhook_notification_detailed(webhook_url, test_alert_data)
             
-            if success:
+            if result['success']:
                 return {
                     "status": "success",
                     "message": f"Test alert sent successfully for {normalized_domain}",
@@ -996,8 +996,10 @@ async def test_domain_alert(
             else:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Failed to send test alert for {normalized_domain}. The webhook URL may be invalid or unreachable. Please check your webhook URL."
+                    detail=result['error'] or f"Failed to send test alert for {normalized_domain}. The webhook URL may be invalid or unreachable."
                 )
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=500,
@@ -1106,9 +1108,9 @@ async def test_webhook_notification(
         
         # Send test webhook with proper error handling
         try:
-            success = send_webhook_notification(config.webhook_url, test_alert_data)
+            result = send_webhook_notification_detailed(config.webhook_url, test_alert_data)
             
-            if success:
+            if result['success']:
                 return {
                     "status": "success",
                     "message": f"Test notification sent successfully to {config.webhook_url}",
@@ -1117,7 +1119,7 @@ async def test_webhook_notification(
             else:
                 raise HTTPException(
                     status_code=500,
-                    detail="Failed to send test notification. The webhook URL may be invalid or unreachable. Please check your webhook URL and try again."
+                    detail=result['error'] or "Failed to send test notification. The webhook URL may be invalid or unreachable."
                 )
         except Exception as e:
             raise HTTPException(
