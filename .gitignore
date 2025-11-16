@@ -1,0 +1,32 @@
+# Environment files
+.env
+
+# Backend
+backend/tmp/
+backend/build-errors.log
+
+# Worker
+worker/tmp/
+worker/build-errors.log
+
+# Frontend
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
