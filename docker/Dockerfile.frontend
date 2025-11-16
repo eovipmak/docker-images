@@ -14,5 +14,13 @@ COPY . .
 # Expose port
 EXPOSE 3000
 
+# Create entrypoint script to generate .env file at runtime
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'echo "PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8080}" > /app/.env' >> /entrypoint.sh && \
+    echo 'exec "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Start development server with hot-reload
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
