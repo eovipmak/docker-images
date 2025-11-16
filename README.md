@@ -108,6 +108,45 @@ All services support hot-reload in development mode:
 └── .env.example        # Environment variables template
 ```
 
+## Deployment
+
+### Deploying to a VPS
+
+When deploying to a VPS with a public IP address, you need to configure the environment variables properly:
+
+1. **Copy and edit the environment file**:
+```bash
+cp .env.example .env
+```
+
+2. **Update the following variables in `.env`**:
+
+```bash
+# Replace 1.2.3.4 with your actual VPS IP address
+
+# Backend API - accessible from browser
+PUBLIC_API_URL=http://1.2.3.4:8080
+
+# CORS - must include the frontend URL that users will access
+# Include both IP and localhost for flexibility
+CORS_ALLOWED_ORIGINS=http://1.2.3.4:3000,http://localhost:3000,http://127.0.0.1:3000
+```
+
+3. **Start the services**:
+```bash
+make up
+```
+
+4. **Access the application**:
+- Frontend: `http://YOUR_VPS_IP:3000`
+- Backend API: `http://YOUR_VPS_IP:8080`
+
+**Important Notes**:
+- The `PUBLIC_API_URL` is used by the frontend (browser) to make API requests
+- The `CORS_ALLOWED_ORIGINS` must match the URL where users access the frontend
+- For production with a domain name, update both variables to use `https://` and your domain
+- Never use `*` for CORS in production
+
 ## License
 
 MIT
