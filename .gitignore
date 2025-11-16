@@ -5,6 +5,8 @@
 backend/tmp/
 backend/build-errors.log
 backend/bin/
+backend/api
+backend/cmd/api/api
 
 # Worker
 worker/tmp/
