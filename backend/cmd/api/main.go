@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/config"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,7 +28,7 @@ func main() {
 	router := gin.Default()
 
 	// Configure CORS middleware
-	router.Use(corsMiddleware())
+	router.Use(setupCORSMiddleware())
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -51,38 +53,29 @@ func main() {
 	}
 }
 
-// corsMiddleware configures CORS based on environment
-func corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Get allowed origins from environment
-		corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
-		if corsOrigins == "" {
-			// Default to safe local development origins
-			corsOrigins = "http://localhost:3000,http://127.0.0.1:3000"
-		}
-
-		// Parse comma-separated origins
-		allowedOrigins := strings.Split(corsOrigins, ",")
-		originMap := make(map[string]bool)
-		for _, origin := range allowedOrigins {
-			originMap[strings.TrimSpace(origin)] = true
-		}
-
-		// Check if request origin is allowed
-		origin := c.Request.Header.Get("Origin")
-		if originMap[origin] {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-			c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
-			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		}
-
-		// Handle preflight requests
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
+// setupCORSMiddleware configures CORS using gin-contrib/cors based on environment
+func setupCORSMiddleware() gin.HandlerFunc {
+	// Get allowed origins from environment
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		// Default to safe local development origins
+		corsOrigins = "http://localhost:3000,http://127.0.0.1:3000"
 	}
+
+	// Parse comma-separated origins
+	allowedOrigins := strings.Split(corsOrigins, ",")
+	for i := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
+	}
+
+	// Configure CORS
+	config := cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour, // Cache preflight requests for 12 hours
+	}
+
+	return cors.New(config)
 }
