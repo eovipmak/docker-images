@@ -11,6 +11,8 @@ backend/cmd/api/api
 # Worker
 worker/tmp/
 worker/build-errors.log
+worker/bin/
+worker/cmd/worker/worker
 
 # Frontend
 frontend/node_modules/
