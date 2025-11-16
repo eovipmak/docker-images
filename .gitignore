@@ -4,6 +4,7 @@
 # Backend
 backend/tmp/
 backend/build-errors.log
+backend/bin/
 
 # Worker
 worker/tmp/
