@@ -75,7 +75,7 @@ services:
     container_name: v-insight-frontend
     environment:
       - NODE_ENV=development
-      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8080}
+      - BACKEND_API_URL=http://backend:8080
     ports:
       - "3000:3000"
     volumes:

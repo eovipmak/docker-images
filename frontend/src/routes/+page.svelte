@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { env } from '$env/dynamic/public';
 
 	let apiStatus = 'Checking...';
 	let apiVersion = '';
 
 	onMount(async () => {
 		try {
-			const apiUrl = env.PUBLIC_API_URL || 'http://localhost:8080';
-			const response = await fetch(`${apiUrl}/api/v1`);
+			const response = await fetch('/api/v1');
 			if (response.ok) {
 				const data = await response.json();
 				apiStatus = 'Connected ✓';

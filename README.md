@@ -4,10 +4,19 @@ A Docker-based multi-tenant monitoring SaaS platform built with Go and SvelteKit
 
 ## Architecture
 
-- **Backend API** (Go, Fiber): REST API service on port 8080
+- **Backend API** (Go, Gin): REST API service on port 8080
 - **Worker** (Go): Background job processing service on port 8081
-- **Frontend** (SvelteKit): Web interface on port 3000
+- **Frontend** (SvelteKit): Web interface on port 3000 with built-in API proxy
 - **PostgreSQL 15**: Database on port 5432
+
+### CORS-Free Architecture
+
+This application uses a proxy architecture that completely eliminates CORS:
+- The frontend (SvelteKit) runs on port 3000 and serves the web interface
+- All API requests from the browser go to the same origin (localhost:3000/api/*)
+- SvelteKit's server-side proxy forwards these requests to the backend (port 8080)
+- No cross-origin requests occur, so CORS is never triggered
+- No CORS headers or middleware are needed anywhere in the codebase
 
 ## Quick Start
 
@@ -112,22 +121,17 @@ All services support hot-reload in development mode:
 
 ### Deploying to a VPS
 
-When deploying to a VPS with a public IP address, you need to configure the environment variables properly:
+When deploying to a VPS with a public IP address:
 
 1. **Copy and edit the environment file**:
 ```bash
 cp .env.example .env
 ```
 
-2. **Update the following variables in `.env`**:
+2. **Update the environment in `.env` if needed**:
 
 ```bash
-# Replace 1.2.3.4 with your actual VPS IP address
-
-# Backend API - accessible from browser
-PUBLIC_API_URL=http://1.2.3.4:8080
-
-# Environment - set to production for deployment
+# Set to production for deployment
 ENV=production
 ```
 
@@ -138,11 +142,12 @@ make up
 
 4. **Access the application**:
 - Frontend: `http://YOUR_VPS_IP:3000`
-- Backend API: `http://YOUR_VPS_IP:8080`
+- Backend API (internal): `http://YOUR_VPS_IP:8080`
 
 **Important Notes**:
-- The `PUBLIC_API_URL` is used by the frontend (browser) to make API requests
-- For production with a domain name, update the variable to use `https://` and your domain
+- All API requests from the browser are automatically proxied through the frontend server
+- The backend does not need to be directly accessible from the browser
+- No CORS configuration is needed since all requests appear to come from the same origin
 
 ## License
 
