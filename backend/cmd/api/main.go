@@ -6,63 +6,83 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/eovipmak/v-insight/backend/internal/config"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	app := fiber.New(fiber.Config{
-		AppName: "V-Insight Backend API",
-	})
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
-	// Middleware
-	app.Use(logger.New())
-	
-	// Configure CORS based on environment
-	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
-	if corsOrigins == "" {
-		// Default to safe local development origins
-		corsOrigins = "http://localhost:3000,http://127.0.0.1:3000"
+	// Set Gin mode based on environment
+	if cfg.Server.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
 	}
-	
-	// Parse comma-separated origins
-	allowedOrigins := strings.Split(corsOrigins, ",")
-	for i := range allowedOrigins {
-		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
-	}
-	
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: strings.Join(allowedOrigins, ","),
-		AllowHeaders: "Origin, Content-Type, Accept",
-	}))
+
+	// Initialize Gin router
+	router := gin.Default()
+
+	// Configure CORS middleware
+	router.Use(corsMiddleware())
 
 	// Health check endpoint
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":  "ok",
-			"service": "backend-api",
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
 		})
 	})
 
 	// API routes
-	api := app.Group("/api/v1")
-	api.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
+	api := router.Group("/api/v1")
+	api.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
 			"message": "V-Insight API v1",
 			"version": "1.0.0",
 		})
 	})
 
-	// Get port from environment or use default
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
 	// Start server
-	log.Printf("Starting backend API on port %s", port)
-	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
+	log.Printf("Starting backend API on port %s", cfg.Server.Port)
+	if err := router.Run(fmt.Sprintf(":%s", cfg.Server.Port)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+// corsMiddleware configures CORS based on environment
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get allowed origins from environment
+		corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+		if corsOrigins == "" {
+			// Default to safe local development origins
+			corsOrigins = "http://localhost:3000,http://127.0.0.1:3000"
+		}
+
+		// Parse comma-separated origins
+		allowedOrigins := strings.Split(corsOrigins, ",")
+		originMap := make(map[string]bool)
+		for _, origin := range allowedOrigins {
+			originMap[strings.TrimSpace(origin)] = true
+		}
+
+		// Check if request origin is allowed
+		origin := c.Request.Header.Get("Origin")
+		if originMap[origin] {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		}
+
+		// Handle preflight requests
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
 	}
 }
