@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -17,8 +18,22 @@ func main() {
 
 	// Middleware
 	app.Use(logger.New())
+	
+	// Configure CORS based on environment
+	corsOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if corsOrigins == "" {
+		// Default to safe local development origins
+		corsOrigins = "http://localhost:3000,http://127.0.0.1:3000"
+	}
+	
+	// Parse comma-separated origins
+	allowedOrigins := strings.Split(corsOrigins, ",")
+	for i := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
+	}
+	
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+		AllowOrigins: strings.Join(allowedOrigins, ","),
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
