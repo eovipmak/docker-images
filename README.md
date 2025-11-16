@@ -85,6 +85,21 @@ All services support hot-reload in development mode:
 - **Backend & Worker**: Using Air for automatic Go code reloading
 - **Frontend**: Using Vite's built-in hot module replacement (HMR)
 
+### CORS Configuration in Development
+
+By default, the development environment allows all origins (`*`) for CORS, making it easy to develop and debug from any frontend location.
+
+**Environment Variables:**
+- `ENV=development` - Sets the environment mode
+- `CORS_ALLOWED_ORIGINS=*` - Allows all origins (default in development)
+- `CORS_ALLOWED_ORIGINS=` - Empty value also allows all origins in development
+
+**Alternative Configurations:**
+- Specific origins: `CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000`
+- Custom domain: `CORS_ALLOWED_ORIGINS=http://192.168.1.100:3000`
+
+**Important:** The wildcard (`*`) CORS setting is automatically disabled in production mode for security.
+
 ### Project Structure
 
 ```
@@ -127,6 +142,9 @@ cp .env.example .env
 # Backend API - accessible from browser
 PUBLIC_API_URL=http://1.2.3.4:8080
 
+# Environment - set to production for deployment
+ENV=production
+
 # CORS - must include the frontend URL that users will access
 # Include both IP and localhost for flexibility
 CORS_ALLOWED_ORIGINS=http://1.2.3.4:3000,http://localhost:3000,http://127.0.0.1:3000
@@ -145,7 +163,8 @@ make up
 - The `PUBLIC_API_URL` is used by the frontend (browser) to make API requests
 - The `CORS_ALLOWED_ORIGINS` must match the URL where users access the frontend
 - For production with a domain name, update both variables to use `https://` and your domain
-- Never use `*` for CORS in production
+- The wildcard (`*`) for CORS is only allowed in development mode (`ENV=development`)
+- In production mode, wildcard is automatically replaced with safe default origins
 
 ## License
 
