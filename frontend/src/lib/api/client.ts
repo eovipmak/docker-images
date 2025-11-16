@@ -1,13 +1,10 @@
-import { env } from '$env/dynamic/public';
-
-const BASE_URL = env.PUBLIC_API_URL || 'http://localhost:8080';
-
 interface FetchOptions extends RequestInit {
 	token?: string;
 }
 
 /**
  * Wrapper around fetch API with Bearer Token support
+ * All API requests are proxied through SvelteKit server to avoid CORS issues
  * @param endpoint - API endpoint (e.g., '/api/v1/users')
  * @param options - Fetch options including optional Bearer token
  * @returns Promise with the fetch response
@@ -24,17 +21,8 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
 		headers['Authorization'] = `Bearer ${token}`;
 	}
 
-	const url = `${BASE_URL}${endpoint}`;
-
-	return fetch(url, {
+	return fetch(endpoint, {
 		...fetchOptions,
 		headers
 	});
-}
-
-/**
- * Get the base API URL
- */
-export function getBaseURL(): string {
-	return BASE_URL;
 }
