@@ -74,8 +74,8 @@ jobs:
       - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          port: ${{ secrets.SSH_PORT }}
+          host: ${{ secrets.STAGING_SERVER_HOST }}
+          #port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
