@@ -95,18 +95,21 @@ jobs:
       - name: Load and push Backend image
         run: |
           docker load -i backend.tar
+          docker tag ${{ env.IMAGE_NAME_BACKEND }}:${{ needs.build.outputs.date_stamp }} ${{ env.IMAGE_NAME_BACKEND }}:staging
           docker push ${{ env.IMAGE_NAME_BACKEND }}:${{ needs.build.outputs.date_stamp }}
           docker push ${{ env.IMAGE_NAME_BACKEND }}:staging
 
       - name: Load and push Worker image
         run: |
           docker load -i worker.tar
+          docker tag ${{ env.IMAGE_NAME_WORKER }}:${{ needs.build.outputs.date_stamp }} ${{ env.IMAGE_NAME_WORKER }}:staging
           docker push ${{ env.IMAGE_NAME_WORKER }}:${{ needs.build.outputs.date_stamp }}
           docker push ${{ env.IMAGE_NAME_WORKER }}:staging
 
       - name: Load and push Frontend image
         run: |
           docker load -i frontend.tar
+          docker tag ${{ env.IMAGE_NAME_FRONTEND }}:${{ needs.build.outputs.date_stamp }} ${{ env.IMAGE_NAME_FRONTEND }}:staging
           docker push ${{ env.IMAGE_NAME_FRONTEND }}:${{ needs.build.outputs.date_stamp }}
           docker push ${{ env.IMAGE_NAME_FRONTEND }}:staging
 
