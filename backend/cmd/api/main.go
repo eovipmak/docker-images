@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -25,9 +26,9 @@ func main() {
 		Password:        cfg.Database.Password,
 		DBName:          cfg.Database.DBName,
 		SSLMode:         cfg.Database.SSLMode,
-		MaxOpenConns:    25,
-		MaxIdleConns:    5,
-		ConnMaxLifetime: 5 * time.Minute,
+		MaxOpenConns:    cfg.Database.MaxOpenConns,
+		MaxIdleConns:    cfg.Database.MaxIdleConns,
+		ConnMaxLifetime: cfg.Database.ConnMaxLifetime,
 	}
 
 	db, err := database.New(dbCfg)
@@ -46,8 +47,12 @@ func main() {
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
+		// Create context with timeout for health check
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+
 		// Check database health
-		if err := db.Health(); err != nil {
+		if err := db.HealthContext(ctx); err != nil {
 			c.JSON(503, gin.H{
 				"status": "error",
 				"error":  "database unhealthy",

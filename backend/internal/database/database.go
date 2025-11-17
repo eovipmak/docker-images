@@ -100,3 +100,12 @@ func (db *DB) Health() error {
 
 	return nil
 }
+
+// HealthContext checks the health of the database connection with provided context
+func (db *DB) HealthContext(ctx context.Context) error {
+	if err := db.DB.PingContext(ctx); err != nil {
+		return fmt.Errorf("database health check failed: %w", err)
+	}
+
+	return nil
+}

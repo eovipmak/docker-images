@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -20,12 +22,15 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
+	Host            string
+	Port            string
+	User            string
+	Password        string
+	DBName          string
+	SSLMode         string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
 }
 
 type JWTConfig struct {
@@ -44,12 +49,15 @@ func Load() (*Config, error) {
 			Env:  getEnv("ENV", "development"),
 		},
 		Database: DatabaseConfig{
-			Host:     getEnv("POSTGRES_HOST", "localhost"),
-			Port:     getEnv("POSTGRES_PORT", "5432"),
-			User:     getEnv("POSTGRES_USER", "postgres"),
-			Password: getEnv("POSTGRES_PASSWORD", "postgres"),
-			DBName:   getEnv("POSTGRES_DB", "v_insight"),
-			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
+			Host:            getEnv("POSTGRES_HOST", "localhost"),
+			Port:            getEnv("POSTGRES_PORT", "5432"),
+			User:            getEnv("POSTGRES_USER", "postgres"),
+			Password:        getEnv("POSTGRES_PASSWORD", "postgres"),
+			DBName:          getEnv("POSTGRES_DB", "v_insight"),
+			SSLMode:         getEnv("POSTGRES_SSLMODE", "disable"),
+			MaxOpenConns:    getEnvInt("POSTGRES_MAX_OPEN_CONNS", 25),
+			MaxIdleConns:    getEnvInt("POSTGRES_MAX_IDLE_CONNS", 5),
+			ConnMaxLifetime: getEnvDuration("POSTGRES_CONN_MAX_LIFETIME", 5*time.Minute),
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -79,4 +87,31 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// getEnvInt gets environment variable as integer or returns default value
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return intValue
+}
+
+// getEnvDuration gets environment variable as duration or returns default value
+// Accepts values like "5m", "30s", "1h", etc.
+func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil {
+		return defaultValue
+	}
+	return duration
 }
