@@ -54,7 +54,7 @@ jobs:
 
       - name: Build and push Backend image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest -f docker/Dockerfile.backend ./backend
+          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest -f docker/Dockerfile.backend .
           docker push ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }}
           docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
 
