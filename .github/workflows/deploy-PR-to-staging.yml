@@ -1,4 +1,4 @@
-name: Deploy Copilot Branch to Staging
+name: Deploy branch to Staging
 
 on:
   workflow_dispatch:
