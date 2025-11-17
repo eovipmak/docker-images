@@ -1,7 +1,14 @@
-.PHONY: up down logs rebuild clean help
+.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version
 
 # Default target
 .DEFAULT_GOAL := help
+
+# Load environment variables from .env file
+include .env
+export
+
+# Construct DATABASE_URL for migrations
+DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
 
 ## up: Start all services
 up:
@@ -67,3 +74,39 @@ restart:
 help:
 	@echo "Available commands:"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
+
+## migrate-up: Run database migrations up
+migrate-up:
+	@echo "Running database migrations..."
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" up
+	@echo "Migrations completed!"
+
+## migrate-down: Rollback database migrations
+migrate-down:
+	@echo "Rolling back database migrations..."
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" down
+	@echo "Rollback completed!"
+
+## migrate-create: Create a new migration file (usage: make migrate-create name=<migration_name>)
+migrate-create:
+	@if [ -z "$(name)" ]; then \
+		echo "Error: migration name is required. Usage: make migrate-create name=<migration_name>"; \
+		exit 1; \
+	fi
+	@echo "Creating migration: $(name)"
+	docker compose exec backend migrate create -ext sql -dir /app/migrations -seq $(name)
+	@echo "Migration files created!"
+
+## migrate-force: Force migration version (usage: make migrate-force version=<version>)
+migrate-force:
+	@if [ -z "$(version)" ]; then \
+		echo "Error: version is required. Usage: make migrate-force version=<version>"; \
+		exit 1; \
+	fi
+	@echo "Forcing migration to version $(version)..."
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" force $(version)
+	@echo "Migration forced to version $(version)!"
+
+## migrate-version: Show current migration version
+migrate-version:
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" version
