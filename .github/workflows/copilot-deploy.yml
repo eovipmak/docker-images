@@ -34,7 +34,7 @@ jobs:
 
       - name: Branch Deploy
         if: github.event_name != 'workflow_dispatch'
-        uses: github/branch-deploy@v9.2.1
+        uses: github/branch-deploy@v11.1.1
         id: branch-deploy
         with:
           trigger: "/deploy"
