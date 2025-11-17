@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,7 +86,8 @@ func TestDB_Ping(t *testing.T) {
 	require.NoError(t, err)
 	defer mockDB.Close()
 
-	db := &DB{mockDB}
+	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+	db := &DB{sqlxDB}
 
 	// Test successful ping
 	mock.ExpectPing().WillReturnError(nil)
@@ -104,7 +106,8 @@ func TestDB_Close(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	require.NoError(t, err)
 
-	db := &DB{mockDB}
+	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+	db := &DB{sqlxDB}
 
 	// ExpectClose is called when Close() is invoked
 	mock.ExpectClose()
@@ -118,7 +121,8 @@ func TestDB_Health(t *testing.T) {
 	require.NoError(t, err)
 	defer mockDB.Close()
 
-	db := &DB{mockDB}
+	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+	db := &DB{sqlxDB}
 
 	// Test successful health check
 	mock.ExpectPing().WillReturnError(nil)
@@ -139,7 +143,8 @@ func TestDB_HealthContext(t *testing.T) {
 	require.NoError(t, err)
 	defer mockDB.Close()
 
-	db := &DB{mockDB}
+	sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+	db := &DB{sqlxDB}
 
 	// Test successful health check with context
 	ctx := context.Background()

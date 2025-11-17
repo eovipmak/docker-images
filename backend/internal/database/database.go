@@ -2,17 +2,17 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 // DB wraps the database connection
 type DB struct {
-	*sql.DB
+	*sqlx.DB
 }
 
 // Config holds database connection configuration
@@ -40,7 +40,7 @@ func New(cfg Config) (*DB, error) {
 		cfg.SSLMode,
 	)
 
-	db, err := sql.Open("postgres", dsn)
+	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
