@@ -55,21 +55,21 @@ jobs:
 
       - name: Build and push Backend image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_BACKEND }}:latest -f docker/Dockerfile.backend .
+          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_BACKEND }}:staging -f docker/Dockerfile.backend .
           docker push ${{ env.IMAGE_NAME_BACKEND }}:${{ env.DATE_STAMP }}
-          docker push ${{ env.IMAGE_NAME_BACKEND }}:latest
+          docker push ${{ env.IMAGE_NAME_BACKEND }}:staging
 
       - name: Build and push Worker image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_WORKER }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_WORKER }}:latest -f docker/Dockerfile.worker ./worker
+          docker build -t ${{ env.IMAGE_NAME_WORKER }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_WORKER }}:staging -f docker/Dockerfile.worker ./worker
           docker push ${{ env.IMAGE_NAME_WORKER }}:${{ env.DATE_STAMP }}
-          docker push ${{ env.IMAGE_NAME_WORKER }}:latest
+          docker push ${{ env.IMAGE_NAME_WORKER }}:staging
 
       - name: Build and push Frontend image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_FRONTEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_FRONTEND }}:latest -f docker/Dockerfile.frontend ./frontend
+          docker build -t ${{ env.IMAGE_NAME_FRONTEND }}:${{ env.DATE_STAMP }} -t ${{ env.IMAGE_NAME_FRONTEND }}:staging -f docker/Dockerfile.frontend ./frontend
           docker push ${{ env.IMAGE_NAME_FRONTEND }}:${{ env.DATE_STAMP }}
-          docker push ${{ env.IMAGE_NAME_FRONTEND }}:latest
+          docker push ${{ env.IMAGE_NAME_FRONTEND }}:staging
 
       - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v1.0.3
