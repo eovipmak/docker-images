@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/config"
+	"github.com/eovipmak/v-insight/backend/internal/database"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +16,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
+
+	// Initialize database connection
+	dbCfg := database.Config{
+		Host:            cfg.Database.Host,
+		Port:            cfg.Database.Port,
+		User:            cfg.Database.User,
+		Password:        cfg.Database.Password,
+		DBName:          cfg.Database.DBName,
+		SSLMode:         cfg.Database.SSLMode,
+		MaxOpenConns:    25,
+		MaxIdleConns:    5,
+		ConnMaxLifetime: 5 * time.Minute,
+	}
+
+	db, err := database.New(dbCfg)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
 
 	// Set Gin mode based on environment
 	if cfg.Server.Env == "production" {
@@ -25,8 +46,18 @@ func main() {
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
+		// Check database health
+		if err := db.Health(); err != nil {
+			c.JSON(503, gin.H{
+				"status": "error",
+				"error":  "database unhealthy",
+			})
+			return
+		}
+
 		c.JSON(200, gin.H{
-			"status": "ok",
+			"status":   "ok",
+			"database": "connected",
 		})
 	})
 
