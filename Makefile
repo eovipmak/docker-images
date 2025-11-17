@@ -1,4 +1,4 @@
-.PHONY: up down logs rebuild clean help
+.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version
 
 # Default target
 .DEFAULT_GOAL := help
@@ -6,6 +6,9 @@
 # Load environment variables from .env file
 include .env
 export
+
+# Construct DATABASE_URL for migrations
+DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
 
 ## up: Start all services
 up:
@@ -75,13 +78,13 @@ help:
 ## migrate-up: Run database migrations up
 migrate-up:
 	@echo "Running database migrations..."
-	docker compose exec backend migrate -path=/app/migrations -database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable" up
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" up
 	@echo "Migrations completed!"
 
 ## migrate-down: Rollback database migrations
 migrate-down:
 	@echo "Rolling back database migrations..."
-	docker compose exec backend migrate -path=/app/migrations -database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable" down
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" down
 	@echo "Rollback completed!"
 
 ## migrate-create: Create a new migration file (usage: make migrate-create name=<migration_name>)
@@ -101,9 +104,9 @@ migrate-force:
 		exit 1; \
 	fi
 	@echo "Forcing migration to version $(version)..."
-	docker compose exec backend migrate -path=/app/migrations -database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable" force $(version)
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" force $(version)
 	@echo "Migration forced to version $(version)!"
 
 ## migrate-version: Show current migration version
 migrate-version:
-	docker compose exec backend migrate -path=/app/migrations -database "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable" version
+	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" version

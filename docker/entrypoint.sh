@@ -1,5 +1,10 @@
 #!/bin/sh
 set -e
+set -u
+set -o pipefail
+
+# Construct DATABASE_URL from environment variables
+DATABASE_URL="postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable"
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
@@ -10,8 +15,11 @@ done
 
 echo "PostgreSQL is up - running migrations"
 
-# Run migrations
-migrate -path=/app/migrations -database "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB?sslmode=disable" up
+# Run migrations with error handling
+if ! migrate -path=/app/migrations -database "$DATABASE_URL" up; then
+  echo "Migration failed"
+  exit 1
+fi
 
 echo "Migrations completed - starting application"
 
