@@ -49,11 +49,11 @@ jobs:
 
       - name: Build Backend image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }} -t ${{ env.IMAGE_NAME_BACKEND }}:staging -f docker/Dockerfile.backend .
+          docker build --target development -t ${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }} -t ${{ env.IMAGE_NAME_BACKEND }}:staging -f docker/Dockerfile.backend .
 
       - name: Build Worker image
         run: |
-          docker build -t ${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }} -t ${{ env.IMAGE_NAME_WORKER }}:staging -f docker/Dockerfile.worker ./worker
+          docker build --target development -t ${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }} -t ${{ env.IMAGE_NAME_WORKER }}:staging -f docker/Dockerfile.worker ./worker
 
       - name: Build Frontend image
         run: |
@@ -128,4 +128,5 @@ jobs:
             cd v-insight  # Adjust to your actual path on VPS
             docker compose down
             docker compose pull
+
             docker compose up -d
