@@ -1,4 +1,4 @@
-name: Deploy Copilot Branch to VPS
+name: Deploy Copilot Branch to Staging
 
 on:
   workflow_dispatch:
