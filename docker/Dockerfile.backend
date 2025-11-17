@@ -55,7 +55,7 @@ EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Run air for hot-reload
-CMD ["air", "-c", ".air.toml"]
+CMD ["/go/bin/air", "-c", ".air.toml"]
 
 # Production stage
 FROM alpine:3.22 AS production
