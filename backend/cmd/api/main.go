@@ -6,8 +6,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/eovipmak/v-insight/backend/internal/api/handlers"
+	"github.com/eovipmak/v-insight/backend/internal/api/middleware"
 	"github.com/eovipmak/v-insight/backend/internal/config"
 	"github.com/eovipmak/v-insight/backend/internal/database"
+	"github.com/eovipmak/v-insight/backend/internal/domain/service"
+	"github.com/eovipmak/v-insight/backend/internal/repository/postgres"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,6 +49,20 @@ func main() {
 	// Initialize Gin router
 	router := gin.Default()
 
+	// Initialize repositories
+	userRepo := postgres.NewUserRepository(db.DB)
+	tenantRepo := postgres.NewTenantRepository(db.DB)
+	tenantUserRepo := postgres.NewTenantUserRepository(db.DB)
+
+	// Initialize services
+	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
+
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authService, userRepo)
+
+	// Initialize middleware
+	authMiddleware := middleware.NewAuthMiddleware(authService)
+
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		// Create context with timeout for health check
@@ -74,6 +92,14 @@ func main() {
 			"version": "1.0.0",
 		})
 	})
+
+	// Auth routes (public)
+	auth := api.Group("/auth")
+	{
+		auth.POST("/register", authHandler.Register)
+		auth.POST("/login", authHandler.Login)
+		auth.GET("/me", authMiddleware.AuthRequired(), authHandler.Me)
+	}
 
 	// Start server
 	log.Printf("Starting backend API on port %s", cfg.Server.Port)
