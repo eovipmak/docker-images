@@ -1,3 +1,6 @@
+# Production Docker Compose Example
+# This file shows the recommended configuration for production deployments
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -19,13 +22,10 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-      target: development
+    image: ghcr.io/eovipmak/v-insight/backend:latest
     container_name: v-insight-backend
     environment:
-      - ENV=development
+      - ENV=production
       - PORT=8080
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -34,8 +34,6 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-v_insight}
     ports:
       - "8080:8080"
-    volumes:
-      - ./backend:/app
     networks:
       - v-insight-network
     depends_on:
@@ -47,16 +45,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    command: air -c .air.toml
 
   worker:
-    build:
-      context: ./worker
-      dockerfile: ../docker/Dockerfile.worker
-      target: development
+    image: ghcr.io/eovipmak/v-insight/worker:latest
     container_name: v-insight-worker
     environment:
-      - ENV=development
+      - ENV=production
       - PORT=8081
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -65,29 +59,22 @@ services:
       - DB_NAME=${POSTGRES_DB:-v_insight}
     ports:
       - "8081:8081"
-    volumes:
-      - ./worker:/app
     networks:
       - v-insight-network
-    command: air -c .air.toml
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: ../docker/Dockerfile.frontend
+    image: ghcr.io/eovipmak/v-insight/frontend:latest
     container_name: v-insight-frontend
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - BACKEND_API_URL=http://backend:8080
+      # IMPORTANT: Add your domain here when using reverse proxy
+      # Example: VITE_ALLOWED_HOSTS=localhost,127.0.0.1,monit.24-7.top,yourdomain.com
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - v-insight-network
-    command: npm run dev -- --host 0.0.0.0 --port 3000
 
 networks:
   v-insight-network:

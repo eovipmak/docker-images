@@ -79,6 +79,16 @@ VITE_ALLOWED_HOSTS=localhost,127.0.0.1,monit.24-7.top
 
 This allows the dev server to accept requests from the specified domains. Multiple hosts should be comma-separated.
 
+**Important for Production:** When deploying with Docker Compose, make sure to pass the `VITE_ALLOWED_HOSTS` environment variable to the frontend container:
+
+```yaml
+frontend:
+  environment:
+    - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
+```
+
+See `docker-compose.prod.yml` for a complete production configuration example.
+
 ### Playwright Test Configuration
 
 Test configuration is in `playwright.config.ts`:
