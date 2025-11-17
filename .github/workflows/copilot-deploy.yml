@@ -38,6 +38,7 @@ jobs:
         id: branch-deploy
         with:
           trigger: "/deploy"
+          environment: "staging"
           update_branch: "disabled"
           draft_pr: true
 
