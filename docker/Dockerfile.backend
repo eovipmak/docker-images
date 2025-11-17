@@ -44,6 +44,9 @@ COPY backend/go.mod backend/go.sum* ./
 # Download dependencies
 RUN go mod download
 
+# Copy source code
+COPY backend/ ./
+
 # Copy entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
