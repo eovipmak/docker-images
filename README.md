@@ -148,7 +148,3 @@ make up
 - All API requests from the browser are automatically proxied through the frontend server
 - The backend does not need to be directly accessible from the browser
 - No CORS configuration is needed since all requests appear to come from the same origin
-
-## License
-
-MIT
