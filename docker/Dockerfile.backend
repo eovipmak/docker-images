@@ -35,6 +35,9 @@ RUN go install github.com/cosmtrek/air@v1.49.0 && \
     chmod +x /usr/local/bin/migrate && \
     rm migrate.tar.gz
 
+# Set PATH to include Go binaries
+ENV PATH="/go/bin:$PATH"
+
 # Copy go mod files
 COPY backend/go.mod backend/go.sum* ./
 

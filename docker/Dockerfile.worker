@@ -26,6 +26,9 @@ WORKDIR /app
 # Install air for hot-reload and other dev tools
 RUN go install github.com/cosmtrek/air@v1.49.0
 
+# Set PATH to include Go binaries
+ENV PATH="/go/bin:$PATH"
+
 # Copy go mod files
 COPY go.mod go.sum* ./
 
