@@ -35,14 +35,13 @@ jobs:
           ref: ${{ github.event.inputs.branch || github.head_ref }}
 
       - name: Branch Deploy
-        if: github.event_name != 'workflow_dispatch'
+        if: github.event_name == 'issue_comment'
         uses: github/branch-deploy@v11.1.1
         id: branch-deploy
         with:
           trigger: "/deploy"
           environment: "staging"
           update_branch: "disabled"
-          draft_pr: true
 
       - name: Set Docker tag
         id: date
