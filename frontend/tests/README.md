@@ -68,6 +68,19 @@ tests/
 
 ## Configuration
 
+### Vite Server Configuration
+
+The Vite dev server's allowed hosts can be configured via environment variable:
+
+```bash
+# In .env file
+VITE_ALLOWED_HOSTS=localhost,127.0.0.1,monit.24-7.top
+```
+
+This allows the dev server to accept requests from the specified domains. Multiple hosts should be comma-separated.
+
+### Playwright Test Configuration
+
 Test configuration is in `playwright.config.ts`:
 - Base URL: `http://localhost:3000`
 - Browser: Chromium
