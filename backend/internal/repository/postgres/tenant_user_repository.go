@@ -32,3 +32,21 @@ func (r *tenantUserRepository) AddUserToTenant(tenantUser *entities.TenantUser) 
 
 	return nil
 }
+
+// HasAccess checks if a user has access to a tenant
+func (r *tenantUserRepository) HasAccess(userID, tenantID int) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM tenant_users
+			WHERE user_id = $1 AND tenant_id = $2
+		)
+	`
+
+	var hasAccess bool
+	err := r.db.Get(&hasAccess, query, userID, tenantID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check user tenant access: %w", err)
+	}
+
+	return hasAccess, nil
+}
