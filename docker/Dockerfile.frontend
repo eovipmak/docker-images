@@ -11,6 +11,9 @@ RUN npm install
 # Copy source code
 COPY . ./
 
+# Generate SvelteKit files
+RUN npm run check
+
 # Expose port
 EXPOSE 3000
 
