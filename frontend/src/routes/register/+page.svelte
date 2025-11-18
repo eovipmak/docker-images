@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { isAuthenticated } from '$lib/stores/auth';
+
 	let email = '';
 	let password = '';
 	let confirmPassword = '';
@@ -45,7 +47,7 @@
 
 			// Store the token
 			if (data.token) {
-				localStorage.setItem('auth_token', data.token);
+				isAuthenticated.login(data.token);
 				// Redirect to dashboard
 				window.location.href = '/dashboard';
 			}
