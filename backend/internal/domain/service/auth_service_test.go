@@ -92,6 +92,11 @@ func (m *MockTenantUserRepository) AddUserToTenant(tenantUser *entities.TenantUs
 	return args.Error(0)
 }
 
+func (m *MockTenantUserRepository) HasAccess(userID, tenantID int) (bool, error) {
+	args := m.Called(userID, tenantID)
+	return args.Bool(0), args.Error(1)
+}
+
 func TestAuthService_Register_Success(t *testing.T) {
 	userRepo := new(MockUserRepository)
 	tenantRepo := new(MockTenantRepository)
