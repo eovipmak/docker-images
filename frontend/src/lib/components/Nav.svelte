@@ -1,14 +1,29 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { isAuthenticated } from '$lib/stores/auth';
+	import { onMount } from 'svelte';
 
-	const navItems = [
+	// Check authentication status on mount
+	onMount(() => {
+		isAuthenticated.checkAuth();
+	});
+
+	const publicNavItems = [
+		{ href: '/login', label: 'Login' }
+	];
+
+	const authenticatedNavItems = [
 		{ href: '/', label: 'Home' },
-		{ href: '/login', label: 'Login' },
 		{ href: '/dashboard', label: 'Dashboard' },
 		{ href: '/domains', label: 'Domains' },
 		{ href: '/alerts', label: 'Alerts' },
 		{ href: '/settings', label: 'Settings' }
 	];
+
+	function handleLogout() {
+		isAuthenticated.logout();
+		window.location.href = '/login';
+	}
 </script>
 
 <nav class="bg-blue-600 text-white shadow-lg">
@@ -18,17 +33,37 @@
 				<span class="text-xl font-bold">V-Insight</span>
 			</div>
 			<div class="flex space-x-4">
-				{#each navItems as item}
-					<a
-						href={item.href}
-						class="px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url
-							.pathname === item.href
-							? 'bg-blue-700'
-							: 'hover:bg-blue-500'}"
+				{#if $isAuthenticated}
+					{#each authenticatedNavItems as item}
+						<a
+							href={item.href}
+							class="px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url
+								.pathname === item.href
+								? 'bg-blue-700'
+								: 'hover:bg-blue-500'}"
+						>
+							{item.label}
+						</a>
+					{/each}
+					<button
+						on:click={handleLogout}
+						class="px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-500"
 					>
-						{item.label}
-					</a>
-				{/each}
+						Logout
+					</button>
+				{:else}
+					{#each publicNavItems as item}
+						<a
+							href={item.href}
+							class="px-3 py-2 rounded-md text-sm font-medium transition-colors {$page.url
+								.pathname === item.href
+								? 'bg-blue-700'
+								: 'hover:bg-blue-500'}"
+						>
+							{item.label}
+						</a>
+					{/each}
+				{/if}
 			</div>
 		</div>
 	</div>
