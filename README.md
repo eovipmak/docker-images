@@ -49,6 +49,8 @@ Or without Make:
 docker-compose up -d
 ```
 
+**Note:** Database migrations run automatically on startup, creating all necessary tables (users, tenants, etc.).
+
 ### Available Make Commands
 
 - `make up` - Start all services
@@ -85,6 +87,8 @@ docker-compose up -d
 - User: `postgres`
 - Password: `postgres`
 
+**Migrations:** The backend service automatically runs database migrations on startup using the `migrate` tool. Migration files are located in `backend/migrations/`.
+
 ## Development
 
 ### Hot Reload
@@ -93,6 +97,29 @@ All services support hot-reload in development mode:
 
 - **Backend & Worker**: Using Air for automatic Go code reloading
 - **Frontend**: Using Vite's built-in hot module replacement (HMR)
+
+### Database Migrations
+
+Database migrations are automatically applied when the backend service starts. For manual migration management, use these commands:
+
+```bash
+# Check current migration version
+make migrate-version
+
+# Manually run migrations (usually not needed)
+make migrate-up
+
+# Rollback migrations
+make migrate-down
+
+# Create a new migration
+make migrate-create name=your_migration_name
+
+# Force migration to a specific version
+make migrate-force version=<version_number>
+```
+
+Migration files are located in `backend/migrations/` and use the [golang-migrate](https://github.com/golang-migrate/migrate) tool.
 
 ### Project Structure
 
@@ -139,6 +166,8 @@ ENV=production
 ```bash
 make up
 ```
+
+The backend service will automatically run database migrations on startup.
 
 4. **Access the application**:
 - Frontend: `http://YOUR_VPS_IP:3000`
