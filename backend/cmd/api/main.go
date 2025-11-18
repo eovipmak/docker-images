@@ -62,6 +62,7 @@ func main() {
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
+	tenantMiddleware := middleware.NewTenantMiddleware(tenantUserRepo)
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -99,6 +100,21 @@ func main() {
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
 		auth.GET("/me", authMiddleware.AuthRequired(), authHandler.Me)
+	}
+
+	// Protected routes requiring authentication and tenant context
+	protected := api.Group("/")
+	protected.Use(authMiddleware.AuthRequired(), tenantMiddleware.TenantRequired())
+	{
+		// Example protected endpoints - placeholder for future tenant-specific routes
+		protected.GET("/tenant/info", func(c *gin.Context) {
+			// Get tenant ID from context
+			tenantIDValue, _ := c.Get("tenant_id")
+			c.JSON(200, gin.H{
+				"message":   "Tenant context established",
+				"tenant_id": tenantIDValue,
+			})
+		})
 	}
 
 	// Start server
