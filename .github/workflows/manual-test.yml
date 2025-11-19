@@ -37,6 +37,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Fix frontend permissions
+        run: sudo chown -R $USER:$USER frontend/
+
       - name: Install frontend dependencies
         run: |
           cd frontend
