@@ -8,7 +8,8 @@
 	let error = '';
 	let isLoading = false;
 
-	async function handleSubmit() {
+	async function handleSubmit(event: Event) {
+		event.preventDefault();
 		error = '';
 		
 		// Validate passwords match
@@ -50,6 +51,8 @@
 				isAuthenticated.login(data.token);
 				// Redirect to dashboard
 				window.location.href = '/dashboard';
+			} else {
+				error = 'Registration failed - no token received';
 			}
 		} catch (err) {
 			error = 'An error occurred. Please try again.';
@@ -76,7 +79,7 @@
 				</div>
 			{/if}
 
-			<form class="space-y-4" on:submit|preventDefault={handleSubmit}>
+			<form class="space-y-4" on:submit={handleSubmit}>
 				<div>
 					<label for="email" class="block text-sm font-medium text-gray-700 mb-1">
 						Email Address
