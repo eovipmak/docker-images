@@ -7,12 +7,17 @@ test.describe('UI Authentication Tests', () => {
     const password = 'testpassword123';
     const tenantName = `Test Tenant ${timestamp}`;
 
+    // Listen to console and errors for debugging
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
+
     // Navigate to register page
     await page.goto('/register');
 
     // Fill register form
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
+    await page.fill('input[name="confirm_password"]', password);
     await page.fill('input[name="tenant_name"]', tenantName);
 
     // Take screenshot before submit
