@@ -1,15 +1,16 @@
-name: Manual Test Workflow
+name: Manual Test
 
 on:
   workflow_dispatch:
   issue_comment:
     types: [created]
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
 
 jobs:
-  setup-services:
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.issue.pull_request && contains(github.event.comment.body, '/test'))
+  test-services:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || (github.event.issue.pull_request && contains(github.event.comment.body, '/test'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,13 +32,6 @@ jobs:
           curl -f http://localhost:8081/health || exit 1
           curl -f http://localhost:3000 || exit 1
 
-  run-tests:
-    needs: setup-services
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -53,13 +47,6 @@ jobs:
           cd frontend
           npx playwright install --with-deps
           npm run test:e2e tests/e2e/ui-auth.spec.ts
-
-  upload-results:
-    needs: run-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Upload test results and screenshots
         uses: actions/upload-artifact@v4
