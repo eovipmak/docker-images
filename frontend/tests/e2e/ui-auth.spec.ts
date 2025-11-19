@@ -24,7 +24,7 @@ test.describe('UI Authentication Tests', () => {
     await page.screenshot({ path: `register-form-${timestamp}.png` });
 
     // Submit
-    await page.click('button[type="submit"]');
+    await page.click('button[type="button"]');
 
     // Wait for navigation or success
     await page.waitForURL('/dashboard');
