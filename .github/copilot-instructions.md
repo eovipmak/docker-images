@@ -29,18 +29,19 @@ make up          # Start all services
 
 ## Testing
 
-**Backend:** Tests in `backend/internal/config/config_test.go` and `backend/cmd/api/main_test.go`. Run: `cd backend && go test ./...`
-**Frontend:** No test suite. Use `npm run check` for type validation.
+**Backend:** Tests in `backend/internal/config/config_test.go`, `backend/cmd/api/main_test.go`, and other test files. Run: `cd backend && go test ./...`
+**Frontend:** TypeScript/Svelte validation with `npm run check`. E2E tests with Playwright: `npm run test:e2e`, `npm run test:e2e:ui`.
 **Expected:** All backend tests pass (~5-10s with dependency downloads).
 
 ## Project Structure
 
 ```
 /
-├── .github/workflows/           # Manual workflows (ssl-checker.yml, ssl-monitor.yml)
+├── .github/workflows/           # Manual workflows (manual-test.yml)
 ├── backend/
 │   ├── cmd/api/main.go          # Entry point, Gin setup, routes
 │   ├── internal/config/         # Config loader (config.go, config_test.go)
+│   ├── migrations/              # Database migrations
 │   ├── .air.toml                # Hot-reload config
 │   └── go.mod                   # Go 1.23.0, gin-gonic/gin, lib/pq, godotenv
 ├── worker/
@@ -53,9 +54,10 @@ make up          # Start all services
 │   │   ├── +layout.svelte, +page.svelte
 │   │   ├── login/, dashboard/, domains/, alerts/, settings/
 │   │   └── lib/api/client.ts, lib/components/Nav.svelte
-│   ├── package.json             # Node 20, SvelteKit v2, Vite v5, Tailwind v3
+│   ├── package.json             # SvelteKit v2, Vite v5, Tailwind v3, Playwright
 │   ├── svelte.config.js         # Uses adapter-node
-│   └── vite.config.js           # Port 3000, usePolling: true (for Docker)
+│   ├── vite.config.js           # Port 3000, usePolling: true (for Docker)
+│   └── tests/                   # E2E tests with Playwright
 ├── docker/                      # Dockerfile.{backend,worker,frontend}
 ├── docker-compose.yml           # All services with health checks
 ├── Makefile                     # Convenience commands
@@ -73,7 +75,7 @@ make up          # Start all services
 Default `.env.example` values work for local dev. Service environment mappings:
 - **Backend:** `POSTGRES_HOST` (default: localhost, Docker: postgres), `POSTGRES_PORT` (5432), `PORT` (8080), `ENV` (development/production)
 - **Worker:** `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT` (8081)
-- **Frontend:** `NODE_ENV` (development), `BACKEND_API_URL` (http://backend:8080)
+- **Frontend:** `NODE_ENV` (development), `BACKEND_API_URL` (http://backend:8080), `VITE_ALLOWED_HOSTS` (comma-separated hosts for Vite dev server)
 
 ## Common Issues & Solutions
 
@@ -108,4 +110,4 @@ git status                                     # Ensure no bin/, tmp/, node_modu
 3. **Docker is primary dev method** - Use local builds only as fallback
 4. **PostgreSQL startup:** ~10s health check delay
 5. **`.env` is REQUIRED** - Copy from `.env.example` before starting
-6. **GitHub workflows are manual-only** - ssl-checker.yml and ssl-monitor.yml not triggered on push/PR
+6. **GitHub workflows are manual-only** - manual-test.yml not triggered on push/PR
