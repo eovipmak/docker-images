@@ -84,6 +84,7 @@
 					<input
 						type="email"
 						id="email"
+						name="email"
 						bind:value={email}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="you@example.com"
@@ -99,6 +100,7 @@
 					<input
 						type="text"
 						id="tenantName"
+						name="tenant_name"
 						bind:value={tenantName}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="Your Company"
@@ -114,6 +116,7 @@
 					<input
 						type="password"
 						id="password"
+						name="password"
 						bind:value={password}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						placeholder="••••••••"
