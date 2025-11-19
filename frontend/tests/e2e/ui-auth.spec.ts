@@ -10,6 +10,8 @@ test.describe('UI Authentication Tests', () => {
     // Listen to console and errors for debugging
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
     page.on('pageerror', err => console.log('PAGE ERROR:', err.message));
+    page.on('request', req => console.log('REQUEST:', req.url(), req.method()));
+    page.on('response', res => console.log('RESPONSE:', res.url(), res.status()));
 
     // Navigate to register page
     await page.goto('/register');
