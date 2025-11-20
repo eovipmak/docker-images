@@ -30,6 +30,7 @@ type Incident struct {
 	ResolvedAt   sql.NullTime `db:"resolved_at"`
 	Status       string       `db:"status"`
 	TriggerValue string       `db:"trigger_value"`
+	NotifiedAt   sql.NullTime `db:"notified_at"`
 	CreatedAt    time.Time    `db:"created_at"`
 }
 
