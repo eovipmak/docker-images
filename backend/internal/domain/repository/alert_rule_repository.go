@@ -33,4 +33,7 @@ type AlertRuleRepository interface {
 
 	// GetAllWithChannelsByTenantID retrieves all alert rules with channels for a tenant
 	GetAllWithChannelsByTenantID(tenantID int) ([]*entities.AlertRuleWithChannels, error)
+
+	// GetAllEnabled retrieves all enabled alert rules across all tenants
+	GetAllEnabled() ([]*entities.AlertRule, error)
 }
