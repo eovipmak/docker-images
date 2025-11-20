@@ -49,7 +49,8 @@ func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 	monitor := &entities.Monitor{}
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, created_at, updated_at
+		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
+		       last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE id = $1
 	`
@@ -69,7 +70,8 @@ func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 func (r *monitorRepository) GetByTenantID(tenantID int) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, created_at, updated_at
+		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
+		       last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE tenant_id = $1
 		ORDER BY created_at DESC
