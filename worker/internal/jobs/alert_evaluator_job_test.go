@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"database/sql"
 	"testing"
 )
 
@@ -59,10 +60,7 @@ func TestEvaluateRule_SlowResponse_Triggered(t *testing.T) {
 
 	check := &MonitorCheck{
 		Success: true,
-		ResponseTimeMs: struct {
-			Int64 int64
-			Valid bool
-		}{
+		ResponseTimeMs: sql.NullInt64{
 			Int64: 5000,
 			Valid: true,
 		},
@@ -88,10 +86,7 @@ func TestEvaluateRule_SlowResponse_NotTriggered(t *testing.T) {
 
 	check := &MonitorCheck{
 		Success: true,
-		ResponseTimeMs: struct {
-			Int64 int64
-			Valid bool
-		}{
+		ResponseTimeMs: sql.NullInt64{
 			Int64: 100,
 			Valid: true,
 		},
