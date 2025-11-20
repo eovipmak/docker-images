@@ -14,13 +14,15 @@ import (
 type AlertRuleHandler struct {
 	alertRuleRepo    repository.AlertRuleRepository
 	alertChannelRepo repository.AlertChannelRepository
+	monitorRepo      repository.MonitorRepository
 }
 
 // NewAlertRuleHandler creates a new alert rule handler
-func NewAlertRuleHandler(alertRuleRepo repository.AlertRuleRepository, alertChannelRepo repository.AlertChannelRepository) *AlertRuleHandler {
+func NewAlertRuleHandler(alertRuleRepo repository.AlertRuleRepository, alertChannelRepo repository.AlertChannelRepository, monitorRepo repository.MonitorRepository) *AlertRuleHandler {
 	return &AlertRuleHandler{
 		alertRuleRepo:    alertRuleRepo,
 		alertChannelRepo: alertChannelRepo,
+		monitorRepo:      monitorRepo,
 	}
 }
 
@@ -80,15 +82,29 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 		}
 	}
 
+	// Validate monitor ID belongs to the tenant if provided
+	var monitorID sql.NullString
+	if req.MonitorID != nil && *req.MonitorID != "" {
+		monitor, err := h.monitorRepo.GetByID(*req.MonitorID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "monitor not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate monitor"})
+			return
+		}
+		if monitor.TenantID != tenantID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
+			return
+		}
+		monitorID = sql.NullString{String: *req.MonitorID, Valid: true}
+	}
+
 	// Set defaults
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
-	}
-
-	var monitorID sql.NullString
-	if req.MonitorID != nil && *req.MonitorID != "" {
-		monitorID = sql.NullString{String: *req.MonitorID, Valid: true}
 	}
 
 	rule := &entities.AlertRule{
@@ -107,14 +123,14 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 
 	// Attach channels if provided
 	if len(req.ChannelIDs) > 0 {
-		if err := h.alertRuleRepo.AttachChannels(rule.ID, req.ChannelIDs); err != nil {
+		if err := h.alertRuleRepo.AttachChannels(tenantID, rule.ID, req.ChannelIDs); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to attach channels"})
 			return
 		}
 	}
 
 	// Return rule with channels
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(rule.ID)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, rule.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve created rule"})
 		return
@@ -165,25 +181,13 @@ func (h *AlertRuleHandler) GetByID(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
-	rule, err := h.alertRuleRepo.GetByID(id)
+	// Get rule with channels (tenant-scoped)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rule"})
-		return
-	}
-
-	// Verify that the alert rule belongs to the current tenant
-	if rule.TenantID != tenantID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-		return
-	}
-
-	// Get rule with channels
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(id)
-	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rule with channels"})
 		return
 	}
@@ -214,20 +218,14 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
-	// Get existing rule
-	rule, err := h.alertRuleRepo.GetByID(id)
+	// Get existing rule (tenant-scoped)
+	rule, err := h.alertRuleRepo.GetByID(tenantID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rule"})
-		return
-	}
-
-	// Verify that the alert rule belongs to the current tenant
-	if rule.TenantID != tenantID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 
@@ -255,6 +253,20 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 		if *req.MonitorID == "" {
 			rule.MonitorID = sql.NullString{Valid: false}
 		} else {
+			// Validate monitor ID belongs to the tenant
+			monitor, err := h.monitorRepo.GetByID(*req.MonitorID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "monitor not found"})
+					return
+				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate monitor"})
+				return
+			}
+			if monitor.TenantID != tenantID {
+				c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
+				return
+			}
 			rule.MonitorID = sql.NullString{String: *req.MonitorID, Valid: true}
 		}
 	}
@@ -279,7 +291,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	// Update channels if provided (replace all)
 	if req.ChannelIDs != nil {
 		// Get current channels
-		currentChannels, err := h.alertRuleRepo.GetChannelsByRuleID(id)
+		currentChannels, err := h.alertRuleRepo.GetChannelsByRuleID(tenantID, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get current channels"})
 			return
@@ -287,7 +299,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 
 		// Detach all current channels
 		if len(currentChannels) > 0 {
-			if err := h.alertRuleRepo.DetachChannels(id, currentChannels); err != nil {
+			if err := h.alertRuleRepo.DetachChannels(tenantID, id, currentChannels); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to detach channels"})
 				return
 			}
@@ -295,7 +307,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 
 		// Attach new channels
 		if len(req.ChannelIDs) > 0 {
-			if err := h.alertRuleRepo.AttachChannels(id, req.ChannelIDs); err != nil {
+			if err := h.alertRuleRepo.AttachChannels(tenantID, id, req.ChannelIDs); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to attach channels"})
 				return
 			}
@@ -303,7 +315,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	}
 
 	// Return updated rule with channels
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(id)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated rule"})
 		return
@@ -329,24 +341,12 @@ func (h *AlertRuleHandler) Delete(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
-	// Get existing rule to verify ownership
-	rule, err := h.alertRuleRepo.GetByID(id)
-	if err != nil {
+	// Delete rule (tenant-scoped)
+	if err := h.alertRuleRepo.Delete(tenantID, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rule"})
-		return
-	}
-
-	// Verify that the alert rule belongs to the current tenant
-	if rule.TenantID != tenantID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-		return
-	}
-
-	if err := h.alertRuleRepo.Delete(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete alert rule"})
 		return
 	}

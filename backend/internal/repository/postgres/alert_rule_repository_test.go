@@ -63,13 +63,13 @@ func TestAlertRuleRepository_GetByID(t *testing.T) {
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"id", "tenant_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
-		AddRow(expectedRule.ID, expectedRule.TenantID, expectedRule.MonitorID, expectedRule.Name, expectedRule.TriggerType, expectedRule.ThresholdValue, expectedRule.Enabled, now, now)
+		AddRow(expectedRule.ID, expectedRule.TenantID, "monitor-uuid", expectedRule.Name, expectedRule.TriggerType, expectedRule.ThresholdValue, expectedRule.Enabled, now, now)
 
-	mock.ExpectQuery(`SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE id`).
-		WithArgs("rule-uuid").
+	mock.ExpectQuery(`SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE`).
+		WithArgs(1, "rule-uuid").
 		WillReturnRows(rows)
 
-	rule, err := repo.GetByID("rule-uuid")
+	rule, err := repo.GetByID(1, "rule-uuid")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRule.Name, rule.Name)
 	assert.Equal(t, expectedRule.TriggerType, rule.TriggerType)
@@ -87,8 +87,8 @@ func TestAlertRuleRepository_GetByTenantID(t *testing.T) {
 
 	now := time.Now()
 	rows := sqlmock.NewRows([]string{"id", "tenant_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
-		AddRow("rule-1", 1, sql.NullString{}, "Rule 1", "down", 3, true, now, now).
-		AddRow("rule-2", 1, sql.NullString{}, "Rule 2", "ssl_expiry", 7, true, now, now)
+		AddRow("rule-1", 1, nil, "Rule 1", "down", 3, true, now, now).
+		AddRow("rule-2", 1, nil, "Rule 2", "ssl_expiry", 7, true, now, now)
 
 	mock.ExpectQuery(`SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE tenant_id`).
 		WithArgs(1).
@@ -140,11 +140,11 @@ func TestAlertRuleRepository_Delete(t *testing.T) {
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	repo := NewAlertRuleRepository(sqlxDB)
 
-	mock.ExpectExec(`DELETE FROM alert_rules WHERE id`).
-		WithArgs("rule-uuid").
+	mock.ExpectExec(`DELETE FROM alert_rules WHERE`).
+		WithArgs(1, "rule-uuid").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	err = repo.Delete("rule-uuid")
+	err = repo.Delete(1, "rule-uuid")
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -158,18 +158,19 @@ func TestAlertRuleRepository_AttachChannels(t *testing.T) {
 	repo := NewAlertRuleRepository(sqlxDB)
 
 	ruleID := "rule-uuid"
+	tenantID := 1
 	channelIDs := []string{"channel-1", "channel-2"}
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`INSERT INTO alert_rule_channels`).
-		WithArgs(ruleID, channelIDs[0]).
+		WithArgs(ruleID, channelIDs[0], tenantID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO alert_rule_channels`).
-		WithArgs(ruleID, channelIDs[1]).
+		WithArgs(ruleID, channelIDs[1], tenantID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err = repo.AttachChannels(ruleID, channelIDs)
+	err = repo.AttachChannels(tenantID, ruleID, channelIDs)
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -186,11 +187,11 @@ func TestAlertRuleRepository_GetChannelsByRuleID(t *testing.T) {
 		AddRow("channel-1").
 		AddRow("channel-2")
 
-	mock.ExpectQuery(`SELECT alert_channel_id FROM alert_rule_channels WHERE alert_rule_id`).
-		WithArgs("rule-uuid").
+	mock.ExpectQuery(`SELECT arc.alert_channel_id FROM alert_rule_channels arc INNER JOIN alert_rules ar`).
+		WithArgs("rule-uuid", 1).
 		WillReturnRows(rows)
 
-	channelIDs, err := repo.GetChannelsByRuleID("rule-uuid")
+	channelIDs, err := repo.GetChannelsByRuleID(1, "rule-uuid")
 	assert.NoError(t, err)
 	assert.Len(t, channelIDs, 2)
 	assert.Equal(t, "channel-1", channelIDs[0])

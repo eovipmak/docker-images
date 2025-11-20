@@ -64,7 +64,7 @@ func main() {
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, monitorService)
-	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo)
+	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
 
 	// Initialize middleware
