@@ -60,8 +60,8 @@ func main() {
 	healthCheckJob := jobs.NewHealthCheckJob(db)
 	sslCheckJob := jobs.NewSSLCheckJob(db)
 
-	// Schedule health check job to run every 1 minute
-	if err := sched.AddJob("*/1 * * * *", healthCheckJob); err != nil {
+	// Schedule health check job to run every 30 seconds
+	if err := sched.AddJob("*/30 * * * * *", healthCheckJob); err != nil {
 		log.Fatalf("Failed to schedule health check job: %v", err)
 	}
 

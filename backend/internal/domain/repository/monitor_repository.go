@@ -1,6 +1,10 @@
 package repository
 
-import "github.com/eovipmak/v-insight/backend/internal/domain/entities"
+import (
+	"time"
+
+	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+)
 
 // MonitorRepository defines the interface for monitor data operations
 type MonitorRepository interface {
@@ -21,4 +25,13 @@ type MonitorRepository interface {
 
 	// GetChecksByMonitorID retrieves all check history for a specific monitor
 	GetChecksByMonitorID(monitorID string, limit int) ([]*entities.MonitorCheck, error)
+
+	// GetMonitorsNeedingCheck retrieves enabled monitors that need to be checked
+	GetMonitorsNeedingCheck(now time.Time) ([]*entities.Monitor, error)
+
+	// SaveCheck saves a monitor check result to the database
+	SaveCheck(check *entities.MonitorCheck) error
+
+	// UpdateLastCheckedAt updates the last_checked_at timestamp for a monitor
+	UpdateLastCheckedAt(monitorID string, checkedAt time.Time) error
 }
