@@ -8,18 +8,21 @@ import (
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
 )
 
 // MonitorHandler handles monitor-related HTTP requests
 type MonitorHandler struct {
-	monitorRepo repository.MonitorRepository
+	monitorRepo    repository.MonitorRepository
+	monitorService *service.MonitorService
 }
 
 // NewMonitorHandler creates a new monitor handler
-func NewMonitorHandler(monitorRepo repository.MonitorRepository) *MonitorHandler {
+func NewMonitorHandler(monitorRepo repository.MonitorRepository, monitorService *service.MonitorService) *MonitorHandler {
 	return &MonitorHandler{
-		monitorRepo: monitorRepo,
+		monitorRepo:    monitorRepo,
+		monitorService: monitorService,
 	}
 }
 
@@ -30,6 +33,8 @@ type CreateMonitorRequest struct {
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
 	Enabled       *bool  `json:"enabled"`                                        // pointer to allow explicit false
+	CheckSSL      *bool  `json:"check_ssl"`                                      // pointer to allow explicit false
+	SSLAlertDays  int    `json:"ssl_alert_days" binding:"omitempty,min=1"`      // minimum 1 day
 }
 
 // UpdateMonitorRequest represents the request body for updating a monitor
@@ -39,6 +44,8 @@ type UpdateMonitorRequest struct {
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
 	Enabled       *bool  `json:"enabled"`
+	CheckSSL      *bool  `json:"check_ssl"`
+	SSLAlertDays  int    `json:"ssl_alert_days" binding:"omitempty,min=1"`
 }
 
 // Create handles monitor creation
@@ -74,6 +81,16 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		enabled = *req.Enabled
 	}
 
+	checkSSL := true
+	if req.CheckSSL != nil {
+		checkSSL = *req.CheckSSL
+	}
+
+	sslAlertDays := 30
+	if req.SSLAlertDays > 0 {
+		sslAlertDays = req.SSLAlertDays
+	}
+
 	monitor := &entities.Monitor{
 		TenantID:      tenantID,
 		Name:          req.Name,
@@ -81,6 +98,8 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		CheckInterval: checkInterval,
 		Timeout:       timeout,
 		Enabled:       enabled,
+		CheckSSL:      checkSSL,
+		SSLAlertDays:  sslAlertDays,
 	}
 
 	if err := h.monitorRepo.Create(monitor); err != nil {
@@ -208,6 +227,12 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	if req.Enabled != nil {
 		monitor.Enabled = *req.Enabled
 	}
+	if req.CheckSSL != nil {
+		monitor.CheckSSL = *req.CheckSSL
+	}
+	if req.SSLAlertDays > 0 {
+		monitor.SSLAlertDays = req.SSLAlertDays
+	}
 
 	if err := h.monitorRepo.Update(monitor); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update monitor"})
@@ -314,4 +339,72 @@ func (h *MonitorHandler) GetChecks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, checks)
+}
+
+// GetSSLStatus handles retrieving SSL certificate status for a monitor
+// GET /api/v1/monitors/:id/ssl-status
+func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "monitor ID required"})
+		return
+	}
+
+	// Get tenant ID from context for authorization check
+	tenantIDValue, exists := c.Get("tenant_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		return
+	}
+	tenantID := tenantIDValue.(int)
+
+	// Get existing monitor to verify ownership
+	monitor, err := h.monitorRepo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "monitor not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve monitor"})
+		return
+	}
+
+	// Verify that the monitor belongs to the current tenant
+	if monitor.TenantID != tenantID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	// Check if SSL checking is enabled
+	if !monitor.CheckSSL {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "SSL checking is disabled for this monitor",
+			"ssl_status": nil,
+		})
+		return
+	}
+
+	// Get SSL status
+	sslStatus, err := h.monitorService.GetSSLStatus(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve SSL status"})
+		return
+	}
+
+	// If no SSL status available yet
+	if sslStatus == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "No SSL check data available yet",
+			"ssl_status": nil,
+		})
+		return
+	}
+
+	// Check if expiring soon
+	sslStatus.ExpiringSoon = sslStatus.Valid && sslStatus.DaysUntilExpiry <= monitor.SSLAlertDays && sslStatus.DaysUntilExpiry >= 0
+
+	c.JSON(http.StatusOK, gin.H{
+		"ssl_status": sslStatus,
+		"alert_threshold": monitor.SSLAlertDays,
+	})
 }

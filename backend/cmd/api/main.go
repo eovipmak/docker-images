@@ -57,10 +57,11 @@ func main() {
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
+	monitorService := service.NewMonitorService(db)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
-	monitorHandler := handlers.NewMonitorHandler(monitorRepo)
+	monitorHandler := handlers.NewMonitorHandler(monitorRepo, monitorService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -115,6 +116,7 @@ func main() {
 		protected.PUT("/monitors/:id", monitorHandler.Update)
 		protected.DELETE("/monitors/:id", monitorHandler.Delete)
 		protected.GET("/monitors/:id/checks", monitorHandler.GetChecks)
+		protected.GET("/monitors/:id/ssl-status", monitorHandler.GetSSLStatus)
 
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {
