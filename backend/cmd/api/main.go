@@ -53,12 +53,14 @@ func main() {
 	userRepo := postgres.NewUserRepository(db.DB)
 	tenantRepo := postgres.NewTenantRepository(db.DB)
 	tenantUserRepo := postgres.NewTenantUserRepository(db.DB)
+	monitorRepo := postgres.NewMonitorRepository(db.DB)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
+	monitorHandler := handlers.NewMonitorHandler(monitorRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -106,6 +108,14 @@ func main() {
 	protected := api.Group("/")
 	protected.Use(authMiddleware.AuthRequired(), tenantMiddleware.TenantRequired())
 	{
+		// Monitor endpoints
+		protected.POST("/monitors", monitorHandler.Create)
+		protected.GET("/monitors", monitorHandler.List)
+		protected.GET("/monitors/:id", monitorHandler.GetByID)
+		protected.PUT("/monitors/:id", monitorHandler.Update)
+		protected.DELETE("/monitors/:id", monitorHandler.Delete)
+		protected.GET("/monitors/:id/checks", monitorHandler.GetChecks)
+
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {
 			// Get tenant ID from context
