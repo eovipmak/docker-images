@@ -2,112 +2,151 @@
 
 ## Project Overview
 
-V-Insight is a Docker-based multi-tenant monitoring SaaS platform. **Repository:** ~50 files. **Stack:** Go 1.23 (Gin backend on :8080, Fiber worker on :8081), SvelteKit/TypeScript frontend (:3000), PostgreSQL 15 (:5432).
+V-Insight is a Docker-based multi-tenant monitoring SaaS platform with automated alerting. **Stack:** Go 1.23 (Gin backend :8080, worker :8081), SvelteKit/TypeScript frontend (:3000), PostgreSQL 15 (:5432).
 
 **CRITICAL:** Uses CORS-free proxy architecture. Frontend (`src/routes/api/[...path]/+server.ts`) proxies all `/api/*` requests to backend. NEVER add CORS middleware.
 
-## Quick Start (ALWAYS Follow This Order)
+## Features
 
-**REQUIRED:** Copy `.env.example` to `.env` before starting: `cp .env.example .env`
+**Monitoring:** HTTP/HTTPS health checks, SSL certificate monitoring, custom intervals
+**Alerting:** Alert rules (down, slow_response, ssl_expiry), automatic incident creation/resolution
+**Notifications:** Webhook, Discord integrations; email-ready
+**Worker Jobs:** Health checks (30s), SSL checks (5m), alert evaluation (1m), notifications (30s)
 
-**Start services (PRIMARY METHOD):**
+## Quick Start
+
+**REQUIRED:** `cp .env.example .env` before starting
+
 ```bash
-make up          # Start all services
-# OR: docker compose up -d
+make up          # Start all services (wait ~30s for PostgreSQL init)
 ```
 
-**Wait ~30s for startup.** Services health-checked via `docker compose ps`.
+**Hot reload enabled:** Backend/worker use Air (`.air.toml`), frontend uses Vite HMR.
 
-**Hot reload enabled:** Backend/worker use Air (`.air.toml`), frontend uses Vite HMR. Code changes auto-reload.
+## Commands
 
-## Commands Reference
-
-**Docker (primary):** `make up|down|logs|logs-backend|logs-worker|logs-frontend|rebuild|clean`
-**Backend tests:** `cd backend && go test ./...` (takes ~10s, must pass before committing)
-**Frontend check:** `cd frontend && npm run check` (validates TypeScript/Svelte)
-**Permission fix:** `sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit` (if EACCES errors)
-
-## Testing
-
-**Backend:** Tests in `backend/internal/config/config_test.go`, `backend/cmd/api/main_test.go`, and other test files. Run: `cd backend && go test ./...`
-**Frontend:** TypeScript/Svelte validation with `npm run check`. E2E tests with Playwright: `npm run test:e2e`, `npm run test:e2e:ui`.
-**Expected:** All backend tests pass (~5-10s with dependency downloads).
+**Docker:** `make up|down|logs|logs-backend|logs-worker|logs-frontend|rebuild|clean|ps|restart`
+**Tests:** `cd backend && go test ./...` (required before commit)
+**Frontend:** `cd frontend && npm run check` (TypeScript validation)
+**E2E:** `cd frontend && npm run test:e2e`
+**Migrations:** `make migrate-up|migrate-down|migrate-create|migrate-version`
 
 ## Project Structure
 
 ```
 /
-├── .github/workflows/           # Manual workflows (manual-test.yml)
 ├── backend/
-│   ├── cmd/api/main.go          # Entry point, Gin setup, routes
-│   ├── internal/config/         # Config loader (config.go, config_test.go)
-│   ├── migrations/              # Database migrations
-│   ├── .air.toml                # Hot-reload config
-│   └── go.mod                   # Go 1.23.0, gin-gonic/gin, lib/pq, godotenv
+│   ├── cmd/api/main.go          # Entry point, Gin routes, middleware
+│   ├── internal/
+│   │   ├── api/handlers/        # HTTP handlers (monitors, alerts, channels)
+│   │   ├── domain/
+│   │   │   ├── entities/        # Core entities (Monitor, AlertRule, Incident, etc.)
+│   │   │   ├── repository/      # Repository interfaces
+│   │   │   └── service/         # Business logic (alert evaluation)
+│   │   └── repository/postgres/ # PostgreSQL implementations + tests
+│   ├── migrations/              # Database migrations (auto-run on startup)
+│   └── .air.toml                # Hot-reload config
 ├── worker/
-│   ├── cmd/worker/main.go       # Background job processor
-│   ├── .air.toml                # Hot-reload config  
-│   └── go.mod                   # Go 1.21, gofiber/fiber/v2
+│   ├── cmd/worker/main.go       # Job scheduler, cron jobs
+│   ├── internal/jobs/           # HealthCheckJob, SSLCheckJob, AlertEvaluatorJob, NotificationJob
+│   └── .air.toml                # Hot-reload config
 ├── frontend/
 │   ├── src/routes/
-│   │   ├── api/[...path]/+server.ts   # API proxy (critical!)
-│   │   ├── +layout.svelte, +page.svelte
-│   │   ├── login/, dashboard/, domains/, alerts/, settings/
-│   │   └── lib/api/client.ts, lib/components/Nav.svelte
-│   ├── package.json             # SvelteKit v2, Vite v5, Tailwind v3, Playwright
+│   │   ├── api/[...path]/+server.ts   # API proxy (CRITICAL!)
+│   │   ├── login/, dashboard/, monitors/, alerts/, settings/
+│   │   └── lib/                 # Shared components, API client
 │   ├── svelte.config.js         # Uses adapter-node
-│   ├── vite.config.js           # Port 3000, usePolling: true (for Docker)
-│   └── tests/                   # E2E tests with Playwright
-├── docker/                      # Dockerfile.{backend,worker,frontend}
+│   ├── vite.config.js           # Port 3000, usePolling: true
+│   └── tests/                   # Playwright E2E tests
+├── docker/                      # Dockerfiles for backend, worker, frontend
 ├── docker-compose.yml           # All services with health checks
 ├── Makefile                     # Convenience commands
-└── .env.example                 # Template (copy to .env)
+└── .env.example                 # Template (MUST copy to .env)
+```
 
-## Key Configuration Details
+## Database Schema
 
-**Backend (.air.toml):** Watches `cmd/`, `internal/`; excludes `tmp/`, `_test.go`; builds to `./tmp/main`
-**Worker (.air.toml):** Same as backend, builds `cmd/worker` to `./tmp/main`
-**Frontend (vite.config.js):** `usePolling: true` required for Docker volume watching
-**Docker Compose:** PostgreSQL health check takes ~10s; backend health check has 30s start_period
+**Multi-tenant tables (all include `tenant_id`):**
+- `tenants`, `users` - Multi-tenant organization and accounts
+- `monitors`, `monitor_checks` - Website/service monitoring and check results
+- `alert_rules`, `alert_channels`, `alert_rule_channels` - Alert configuration
+- `incidents` - Triggered alerts with resolution tracking
 
-## Environment Variables
+**Migrations:** Auto-run on backend startup. Files in `backend/migrations/`. Use `golang-migrate` for manual operations.
 
-Default `.env.example` values work for local dev. Service environment mappings:
-- **Backend:** `POSTGRES_HOST` (default: localhost, Docker: postgres), `POSTGRES_PORT` (5432), `PORT` (8080), `ENV` (development/production)
-- **Worker:** `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PORT` (8081)
-- **Frontend:** `NODE_ENV` (development), `BACKEND_API_URL` (http://backend:8080), `VITE_ALLOWED_HOSTS` (comma-separated hosts for Vite dev server)
+## API Endpoints
+
+**Monitors:** `/api/v1/monitors` (POST, GET, GET/:id, PUT/:id, DELETE/:id)
+**Alert Rules:** `/api/v1/alert-rules` (POST, GET, GET/:id, PUT/:id, DELETE/:id)
+**Alert Channels:** `/api/v1/alert-channels` (POST, GET, GET/:id, PUT/:id, DELETE/:id)
+**Health:** `/health` on backend:8080 and worker:8081
+
+## Alert System
+
+**Trigger Types:**
+- `down`: Monitor fails N consecutive checks (threshold = count)
+- `slow_response`: Response time > threshold (ms)
+- `ssl_expiry`: Certificate expires within threshold (days)
+
+**Channel Types:**
+- `webhook`: Generic POST with JSON payload
+- `discord`: Rich embed with color-coded status
+- `email`: Ready for implementation
+
+**Flow:** Monitor check → Alert Evaluator (1m) → Create/resolve incident → Notification Job (30s) → Send to channels
 
 ## Common Issues & Solutions
 
-**Services fail to start:** Ensure `.env` exists: `cp .env.example .env`
-**Permission denied (npm):** Run `sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit`
-**Hot-reload not working:** Check Air logs (`docker compose logs backend/worker`), look for syntax errors in `build-errors.log`
-**Frontend changes not appearing:** Vite polling enabled in `vite.config.js`; if needed: `docker compose restart frontend`
+**Services fail:** Ensure `.env` exists: `cp .env.example .env`
+**Permission denied (npm):** `sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit`
+**Hot-reload not working:** Check Air logs, look for syntax errors in `build-errors.log`
+**Frontend changes not appearing:** Vite polling enabled; try `docker compose restart frontend`
 **Database connection errors:** Wait ~10s for PostgreSQL init; verify with `docker compose ps`
-**Port conflicts:** Run `docker compose down` or change ports in `.env`
+**Port conflicts:** `docker compose down` or change ports in `.env`
 
 ## Making Code Changes
 
-**Backend:** Edit in `backend/cmd/` or `backend/internal/` → Air auto-rebuilds → Test: `curl http://localhost:8080/health`
-**Worker:** Edit in `worker/cmd/` → Air auto-rebuilds → Test: `curl http://localhost:8081/health`
-**Frontend:** Edit in `frontend/src/` → Vite HMR updates browser → Type check: `cd frontend && npm run check`
+**Backend:** Edit `backend/cmd/` or `backend/internal/` → Air rebuilds → Test: `curl localhost:8080/health`
+**Worker:** Edit `worker/cmd/` or `worker/internal/jobs/` → Air rebuilds → Test: `curl localhost:8081/health`
+**Frontend:** Edit `frontend/src/` → Vite HMR → Type check: `npm run check`
+
+**Add migration:** `make migrate-create name=description` → Edit `.up.sql` and `.down.sql` → Restart backend
 
 ## Validation Before Committing
 
 ```bash
-make rebuild && docker compose ps              # Verify all healthy
-curl http://localhost:8080/health              # Test backend
-curl http://localhost:8081/health              # Test worker
-cd backend && go test ./...                    # Run backend tests (REQUIRED)
-cd frontend && npm run check                   # Validate TypeScript (REQUIRED)
-git status                                     # Ensure no bin/, tmp/, node_modules/ committed
+make rebuild && docker compose ps      # All services healthy
+cd backend && go test ./...            # Backend tests pass (REQUIRED)
+cd frontend && npm run check           # TypeScript validates (REQUIRED)
+git status                             # No tmp/, node_modules/ committed
 ```
 
-## Critical Notes
+## Critical Architecture Notes
 
-1. **NEVER add CORS middleware** - Proxy architecture eliminates CORS
-2. **API proxy location:** `frontend/src/routes/api/[...path]/+server.ts`
-3. **Docker is primary dev method** - Use local builds only as fallback
-4. **PostgreSQL startup:** ~10s health check delay
-5. **`.env` is REQUIRED** - Copy from `.env.example` before starting
-6. **GitHub workflows are manual-only** - manual-test.yml not triggered on push/PR
+1. **NEVER add CORS middleware** - Proxy eliminates CORS entirely
+2. **API proxy:** `frontend/src/routes/api/[...path]/+server.ts` handles all API forwarding
+3. **Multi-tenant:** Every query MUST filter by `tenant_id` from JWT
+4. **Docker primary:** Use Docker for development; local builds are fallback only
+5. **Migrations auto-run:** Backend applies migrations on startup automatically
+6. **Worker jobs schedule:**
+   - Health checks: every 30 seconds
+   - SSL checks: every 5 minutes  
+   - Alert evaluation: every minute
+   - Notifications: every 30 seconds
+
+## Development Workflow
+
+1. Start services: `make up` (wait ~30s)
+2. Make changes (hot-reload enabled)
+3. Test manually via browser/curl
+4. Run tests: `go test ./...` and `npm run check`
+5. Check logs: `make logs-backend` / `make logs-worker` / `make logs-frontend`
+6. Commit only when tests pass
+
+## Key Technologies
+
+**Backend:** Go 1.23, Gin (HTTP), GORM (ORM), golang-migrate, Air (hot-reload), testify (testing)
+**Worker:** Go 1.23, robfig/cron (scheduler), same database/ORM as backend
+**Frontend:** SvelteKit v2, TypeScript, Vite v5, Tailwind CSS, Playwright (E2E)
+**Database:** PostgreSQL 15 with JSONB, UUIDs, auto-migrations
+**Infrastructure:** Docker Compose, health checks, volume mounts for hot-reload
