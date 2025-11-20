@@ -54,6 +54,8 @@ func main() {
 	tenantRepo := postgres.NewTenantRepository(db.DB)
 	tenantUserRepo := postgres.NewTenantUserRepository(db.DB)
 	monitorRepo := postgres.NewMonitorRepository(db.DB)
+	alertRuleRepo := postgres.NewAlertRuleRepository(db.DB)
+	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
@@ -62,6 +64,8 @@ func main() {
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, monitorService)
+	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo)
+	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -117,6 +121,20 @@ func main() {
 		protected.DELETE("/monitors/:id", monitorHandler.Delete)
 		protected.GET("/monitors/:id/checks", monitorHandler.GetChecks)
 		protected.GET("/monitors/:id/ssl-status", monitorHandler.GetSSLStatus)
+
+		// Alert rule endpoints
+		protected.POST("/alert-rules", alertRuleHandler.Create)
+		protected.GET("/alert-rules", alertRuleHandler.List)
+		protected.GET("/alert-rules/:id", alertRuleHandler.GetByID)
+		protected.PUT("/alert-rules/:id", alertRuleHandler.Update)
+		protected.DELETE("/alert-rules/:id", alertRuleHandler.Delete)
+
+		// Alert channel endpoints
+		protected.POST("/alert-channels", alertChannelHandler.Create)
+		protected.GET("/alert-channels", alertChannelHandler.List)
+		protected.GET("/alert-channels/:id", alertChannelHandler.GetByID)
+		protected.PUT("/alert-channels/:id", alertChannelHandler.Update)
+		protected.DELETE("/alert-channels/:id", alertChannelHandler.Delete)
 
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {
