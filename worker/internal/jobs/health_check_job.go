@@ -21,6 +21,8 @@ type Monitor struct {
 	CheckInterval int          `db:"check_interval"`
 	Timeout       int          `db:"timeout"`
 	Enabled       bool         `db:"enabled"`
+	CheckSSL      bool         `db:"check_ssl"`
+	SSLAlertDays  int          `db:"ssl_alert_days"`
 	LastCheckedAt sql.NullTime `db:"last_checked_at"`
 	CreatedAt     time.Time    `db:"created_at"`
 	UpdatedAt     time.Time    `db:"updated_at"`
@@ -43,6 +45,7 @@ type MonitorCheck struct {
 type HealthCheckJob struct {
 	db          *database.DB
 	httpChecker *executor.HTTPChecker
+	sslChecker  *executor.SSLChecker
 }
 
 // NewHealthCheckJob creates a new health check job
@@ -50,6 +53,7 @@ func NewHealthCheckJob(db *database.DB) *HealthCheckJob {
 	return &HealthCheckJob{
 		db:          db,
 		httpChecker: executor.NewHTTPChecker(),
+		sslChecker:  executor.NewSSLChecker(30 * time.Second),
 	}
 }
 
@@ -91,7 +95,7 @@ func (j *HealthCheckJob) getMonitorsNeedingCheck(now time.Time) ([]*Monitor, err
 	var monitors []*Monitor
 	query := `
 		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
-		       last_checked_at, created_at, updated_at
+		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE enabled = true
 		  AND (
@@ -175,6 +179,34 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 		check.ErrorMessage = sql.NullString{
 			String: result.Error.Error(),
 			Valid:  true,
+		}
+	}
+
+	// Check SSL certificate for HTTPS URLs if enabled
+	if monitor.CheckSSL && (len(monitor.URL) >= 5 && monitor.URL[:5] == "https") {
+		sslResult := j.sslChecker.CheckSSL(monitor.URL)
+		
+		// Set SSL validity
+		check.SSLValid = sql.NullBool{
+			Bool:  sslResult.Valid,
+			Valid: true,
+		}
+
+		// Set SSL expiry date
+		if !sslResult.ExpiresAt.IsZero() {
+			check.SSLExpiresAt = sql.NullTime{
+				Time:  sslResult.ExpiresAt,
+				Valid: true,
+			}
+		}
+
+		// Log SSL check result
+		if sslResult.Error != nil {
+			log.Printf("[HealthCheckJob] SSL check warning for %s: %v", monitor.Name, sslResult.Error)
+		} else if sslResult.DaysUntil < monitor.SSLAlertDays {
+			log.Printf("[HealthCheckJob] ⚠ SSL certificate for %s expires in %d days", monitor.Name, sslResult.DaysUntil)
+		} else {
+			log.Printf("[HealthCheckJob] ✓ SSL certificate for %s is valid (expires in %d days)", monitor.Name, sslResult.DaysUntil)
 		}
 	}
 
