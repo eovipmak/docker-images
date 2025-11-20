@@ -51,22 +51,27 @@ func (c *SSLChecker) CheckSSL(hostname string) SSLCheckResult {
 		port = "443"
 	}
 
-	// Create TLS configuration
-	conf := &tls.Config{
-		// We want to verify the certificate but also get details even if invalid
-		InsecureSkipVerify: false,
-		ServerName:         host,
-	}
-
 	// Set up dialer with timeout
 	dialer := &net.Dialer{
 		Timeout: c.timeout,
 	}
 
-	// Connect to the server
+	// First, try to connect with proper certificate verification
+	conf := &tls.Config{
+		InsecureSkipVerify: false,
+		ServerName:         host,
+	}
+
+	// Track whether the verified handshake succeeded
+	verifiedHandshake := false
+	var verificationErr error
+
 	conn, err := tls.DialWithDialer(dialer, "tcp", net.JoinHostPort(host, port), conf)
 	if err != nil {
-		// Try again with InsecureSkipVerify to get certificate details even if invalid
+		// Verified handshake failed - store the error
+		verificationErr = err
+		
+		// Try again with InsecureSkipVerify to get certificate details for diagnostics
 		conf.InsecureSkipVerify = true
 		conn, err = tls.DialWithDialer(dialer, "tcp", net.JoinHostPort(host, port), conf)
 		if err != nil {
@@ -75,6 +80,9 @@ func (c *SSLChecker) CheckSSL(hostname string) SSLCheckResult {
 				Error: fmt.Errorf("failed to connect: %w", err),
 			}
 		}
+	} else {
+		// Verified handshake succeeded
+		verifiedHandshake = true
 	}
 	defer conn.Close()
 
@@ -92,31 +100,6 @@ func (c *SSLChecker) CheckSSL(hostname string) SSLCheckResult {
 	// Get the leaf certificate (the server's certificate)
 	cert := state.PeerCertificates[0]
 
-	// Check if certificate is valid
-	now := time.Now()
-	valid := true
-	var validationErr error
-
-	// Check if certificate has expired or not yet valid
-	if now.Before(cert.NotBefore) {
-		valid = false
-		validationErr = fmt.Errorf("certificate not yet valid")
-	} else if now.After(cert.NotAfter) {
-		valid = false
-		validationErr = fmt.Errorf("certificate has expired")
-	}
-
-	// Verify certificate chain
-	opts := &tls.Config{
-		ServerName: host,
-	}
-	if err := cert.VerifyHostname(opts.ServerName); err != nil {
-		valid = false
-		if validationErr == nil {
-			validationErr = fmt.Errorf("hostname verification failed: %w", err)
-		}
-	}
-
 	// Calculate days until expiry
 	daysUntil := int(time.Until(cert.NotAfter).Hours() / 24)
 
@@ -124,11 +107,25 @@ func (c *SSLChecker) CheckSSL(hostname string) SSLCheckResult {
 	issuer := cert.Issuer.CommonName
 	subject := cert.Subject.CommonName
 
+	// Only mark as valid if the verified handshake succeeded
+	// This ensures we don't mark certificates as valid when they failed TLS verification
+	if !verifiedHandshake {
+		return SSLCheckResult{
+			Valid:     false,
+			ExpiresAt: cert.NotAfter,
+			DaysUntil: daysUntil,
+			Error:     verificationErr,
+			Issuer:    issuer,
+			Subject:   subject,
+		}
+	}
+
+	// Verified handshake succeeded - certificate is valid
 	return SSLCheckResult{
-		Valid:     valid,
+		Valid:     true,
 		ExpiresAt: cert.NotAfter,
 		DaysUntil: daysUntil,
-		Error:     validationErr,
+		Error:     nil,
 		Issuer:    issuer,
 		Subject:   subject,
 	}
