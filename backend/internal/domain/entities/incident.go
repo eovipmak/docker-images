@@ -14,5 +14,6 @@ type Incident struct {
 	ResolvedAt   sql.NullTime `db:"resolved_at" json:"resolved_at,omitempty"`
 	Status       string       `db:"status" json:"status"` // 'open', 'resolved'
 	TriggerValue string       `db:"trigger_value" json:"trigger_value,omitempty"`
+	NotifiedAt   sql.NullTime `db:"notified_at" json:"notified_at,omitempty"`
 	CreatedAt    time.Time    `db:"created_at" json:"created_at"`
 }

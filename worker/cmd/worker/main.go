@@ -60,6 +60,7 @@ func main() {
 	healthCheckJob := jobs.NewHealthCheckJob(db)
 	sslCheckJob := jobs.NewSSLCheckJob(db)
 	alertEvaluatorJob := jobs.NewAlertEvaluatorJob(db)
+	notificationJob := jobs.NewNotificationJob(db)
 
 	// Schedule health check job to run every 30 seconds
 	if err := sched.AddJob("*/30 * * * * *", healthCheckJob); err != nil {
@@ -74,6 +75,11 @@ func main() {
 	// Schedule alert evaluator job to run every minute
 	if err := sched.AddJob("* * * * *", alertEvaluatorJob); err != nil {
 		log.Fatalf("Failed to schedule alert evaluator job: %v", err)
+	}
+
+	// Schedule notification job to run every 30 seconds
+	if err := sched.AddJob("*/30 * * * * *", notificationJob); err != nil {
+		log.Fatalf("Failed to schedule notification job: %v", err)
 	}
 
 	// Start the scheduler
