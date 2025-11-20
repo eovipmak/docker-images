@@ -245,3 +245,22 @@ func (r *alertRuleRepository) GetAllWithChannelsByTenantID(tenantID int) ([]*ent
 
 	return rulesWithChannels, nil
 }
+
+// GetAllEnabled retrieves all enabled alert rules across all tenants
+func (r *alertRuleRepository) GetAllEnabled() ([]*entities.AlertRule, error) {
+	var rules []*entities.AlertRule
+	query := `
+		SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		FROM alert_rules
+		WHERE enabled = true
+		ORDER BY created_at DESC
+	`
+
+	err := r.db.Select(&rules, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all enabled alert rules: %w", err)
+	}
+
+	return rules, nil
+}
+
