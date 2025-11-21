@@ -56,6 +56,7 @@ func main() {
 	monitorRepo := postgres.NewMonitorRepository(db.DB)
 	alertRuleRepo := postgres.NewAlertRuleRepository(db.DB)
 	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
+	incidentRepo := postgres.NewIncidentRepository(db.DB)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
@@ -66,6 +67,7 @@ func main() {
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, monitorService)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
+	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -135,6 +137,10 @@ func main() {
 		protected.GET("/alert-channels/:id", alertChannelHandler.GetByID)
 		protected.PUT("/alert-channels/:id", alertChannelHandler.Update)
 		protected.DELETE("/alert-channels/:id", alertChannelHandler.Delete)
+
+		// Dashboard endpoints
+		protected.GET("/dashboard/stats", dashboardHandler.GetStats)
+		protected.GET("/dashboard", dashboardHandler.GetDashboard)
 
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {
