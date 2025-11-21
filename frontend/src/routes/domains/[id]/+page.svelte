@@ -49,7 +49,9 @@
 	}
 
 	function formatDate(dateString: string): string {
-		return new Date(dateString).toLocaleString();
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return 'Invalid Date';
+		return date.toLocaleString();
 	}
 
 	function getMonitorStatus(): 'up' | 'down' | 'unknown' {

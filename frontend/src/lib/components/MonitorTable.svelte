@@ -17,6 +17,7 @@
 	function formatDate(dateString?: string): string {
 		if (!dateString) return 'Never';
 		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return 'Invalid Date';
 		return date.toLocaleString();
 	}
 
@@ -24,6 +25,7 @@
 	function formatRelativeTime(dateString?: string): string {
 		if (!dateString) return 'Never';
 		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return 'Invalid Date';
 		const now = new Date();
 		const diffMs = now.getTime() - date.getTime();
 		const diffMins = Math.floor(diffMs / 60000);

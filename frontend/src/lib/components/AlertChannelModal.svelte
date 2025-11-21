@@ -10,16 +10,16 @@
 	interface FormData {
 		name: string;
 		type: string;
-		config: Record<string, any>;
 		enabled: boolean;
 	}
 
 	let formData: FormData = {
 		name: '',
 		type: 'webhook',
-		config: {},
 		enabled: true
 	};
+
+	let config: Record<string, any> = {};
 
 	let errors: Record<string, string> = {};
 	let isSubmitting = false;
@@ -28,16 +28,16 @@
 		formData = {
 			name: channel.name || '',
 			type: channel.type || 'webhook',
-			config: channel.config || {},
 			enabled: channel.enabled !== undefined ? channel.enabled : true
 		};
+		config = channel.config || {};
 	}
 
 	$: isEditMode = !!channel;
 
 	// Reset config when type changes (only in create mode)
 	$: if (formData.type && !isEditMode) {
-		formData.config = getDefaultConfig(formData.type);
+		config = getDefaultConfig(formData.type);
 	}
 
 	function getDefaultConfig(type: string): Record<string, any> {
@@ -66,11 +66,11 @@
 
 		// Validate config based on type
 		if (formData.type === 'webhook') {
-			if (!formData.config.url || !formData.config.url.trim()) {
+			if (!config.url || !config.url.trim()) {
 				errors.config = 'Webhook URL is required';
 			} else {
 				try {
-					new URL(formData.config.url);
+					new URL(config.url);
 				} catch {
 					errors.config = 'Invalid URL format';
 				}
@@ -78,11 +78,11 @@
 		}
 
 		if (formData.type === 'discord') {
-			if (!formData.config.webhook_url || !formData.config.webhook_url.trim()) {
+			if (!config.webhook_url || !config.webhook_url.trim()) {
 				errors.config = 'Discord Webhook URL is required';
 			} else {
 				try {
-					const url = new URL(formData.config.webhook_url);
+					const url = new URL(config.webhook_url);
 					if (!url.hostname.includes('discord.com')) {
 						errors.config = 'Must be a valid Discord webhook URL';
 					}
@@ -93,11 +93,11 @@
 		}
 
 		if (formData.type === 'email') {
-			if (!formData.config.to || !formData.config.to.trim()) {
+			if (!config.to || !config.to.trim()) {
 				errors.config = 'Email address is required';
 			} else {
 				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailRegex.test(formData.config.to)) {
+				if (!emailRegex.test(config.to)) {
 					errors.config = 'Invalid email address';
 				}
 			}
@@ -121,7 +121,10 @@
 
 			const response = await fetchAPI(endpoint, {
 				method,
-				body: JSON.stringify(formData)
+				body: JSON.stringify({
+					...formData,
+					config
+				})
 			});
 
 			if (!response.ok) {
@@ -144,9 +147,9 @@
 		formData = {
 			name: '',
 			type: 'webhook',
-			config: {},
 			enabled: true
 		};
+		config = {};
 		errors = {};
 		dispatch('close');
 	}
@@ -232,7 +235,7 @@
 							<input
 								type="url"
 								id="webhook_url"
-								bind:value={formData.config.url}
+								bind:value={config.url}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder="https://example.com/webhook"
 							/>
@@ -248,7 +251,7 @@
 							<input
 								type="url"
 								id="discord_webhook_url"
-								bind:value={formData.config.webhook_url}
+								bind:value={config.webhook_url}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder="https://discord.com/api/webhooks/..."
 							/>
@@ -264,7 +267,7 @@
 							<input
 								type="email"
 								id="email_to"
-								bind:value={formData.config.to}
+								bind:value={config.to}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder="alerts@example.com"
 							/>

@@ -121,6 +121,33 @@ cd frontend && npm run check           # TypeScript validates (REQUIRED)
 git status                             # No tmp/, node_modules/ committed
 ```
 
+## Code Patterns and Conventions
+
+**Multi-tenant enforcement:**
+- All entities include `tenant_id int` field
+- Handlers retrieve tenant from context: `tenantIDValue, _ := c.Get("tenant_id")`
+- Always verify ownership: `if monitor.TenantID != tenantID { return forbidden }`
+- Repositories have `GetByTenantID(tenantID int)` methods
+
+**API proxy implementation:**
+- Frontend `src/routes/api/[...path]/+server.ts` forwards all methods to backend
+- Strips headers like 'host', 'connection' to avoid issues
+- Uses `BACKEND_API_URL` env var (default: 'http://backend:8080')
+
+**Worker job patterns:**
+- Jobs query monitors directly without tenant filtering (process all tenants)
+- Use executor for concurrent processing
+- Store results in `monitor_checks` table with success/error details
+
+**Middleware chain:**
+- AuthRequired → TenantRequired for protected routes
+- TenantRequired validates user access to tenant via `tenantUserRepo.HasAccess()`
+
+**Database patterns:**
+- Auto-migrations run on backend startup
+- Use `sql.Null*` types for optional fields in structs
+- Timestamps: `created_at`, `updated_at` managed by triggers
+
 ## Critical Architecture Notes
 
 1. **NEVER add CORS middleware** - Proxy eliminates CORS entirely
