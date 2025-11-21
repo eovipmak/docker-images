@@ -68,6 +68,7 @@ func main() {
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
 	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo)
+	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -141,6 +142,11 @@ func main() {
 		// Dashboard endpoints
 		protected.GET("/dashboard/stats", dashboardHandler.GetStats)
 		protected.GET("/dashboard", dashboardHandler.GetDashboard)
+
+		// Incident endpoints
+		protected.GET("/incidents", incidentHandler.List)
+		protected.GET("/incidents/:id", incidentHandler.GetByID)
+		protected.POST("/incidents/:id/resolve", incidentHandler.Resolve)
 
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {

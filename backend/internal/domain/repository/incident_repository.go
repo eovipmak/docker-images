@@ -1,6 +1,10 @@
 package repository
 
-import "github.com/eovipmak/v-insight/backend/internal/domain/entities"
+import (
+	"time"
+
+	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+)
 
 // IncidentRepository defines the interface for incident data operations
 type IncidentRepository interface {
@@ -16,9 +20,23 @@ type IncidentRepository interface {
 	// GetByMonitorID retrieves all incidents for a specific monitor
 	GetByMonitorID(monitorID string) ([]*entities.Incident, error)
 
+	// List retrieves incidents with filtering options
+	List(filters IncidentFilters) ([]*entities.Incident, error)
+
 	// Update updates an existing incident
 	Update(incident *entities.Incident) error
 
 	// Resolve marks an incident as resolved
 	Resolve(id string) error
+}
+
+// IncidentFilters defines filtering options for incident queries
+type IncidentFilters struct {
+	TenantID  int
+	Status    string // 'open', 'resolved', or empty for all
+	MonitorID string
+	From      *time.Time
+	To        *time.Time
+	Limit     int
+	Offset    int
 }

@@ -160,3 +160,67 @@ func (r *incidentRepository) Resolve(id string) error {
 
 	return nil
 }
+
+// List retrieves incidents with filtering options
+func (r *incidentRepository) List(filters repository.IncidentFilters) ([]*entities.Incident, error) {
+	query := `
+		SELECT i.id, i.monitor_id, i.alert_rule_id, i.started_at, i.resolved_at, i.status, i.trigger_value, i.created_at
+		FROM incidents i
+		INNER JOIN monitors m ON i.monitor_id = m.id
+		WHERE m.tenant_id = $1
+	`
+	
+	args := []interface{}{filters.TenantID}
+	argCount := 1
+
+	// Add status filter
+	if filters.Status != "" {
+		argCount++
+		query += fmt.Sprintf(" AND i.status = $%d", argCount)
+		args = append(args, filters.Status)
+	}
+
+	// Add monitor_id filter
+	if filters.MonitorID != "" {
+		argCount++
+		query += fmt.Sprintf(" AND i.monitor_id = $%d", argCount)
+		args = append(args, filters.MonitorID)
+	}
+
+	// Add date range filters
+	if filters.From != nil {
+		argCount++
+		query += fmt.Sprintf(" AND i.started_at >= $%d", argCount)
+		args = append(args, filters.From)
+	}
+
+	if filters.To != nil {
+		argCount++
+		query += fmt.Sprintf(" AND i.started_at <= $%d", argCount)
+		args = append(args, filters.To)
+	}
+
+	// Order by most recent first
+	query += " ORDER BY i.started_at DESC"
+
+	// Add pagination
+	if filters.Limit > 0 {
+		argCount++
+		query += fmt.Sprintf(" LIMIT $%d", argCount)
+		args = append(args, filters.Limit)
+	}
+
+	if filters.Offset > 0 {
+		argCount++
+		query += fmt.Sprintf(" OFFSET $%d", argCount)
+		args = append(args, filters.Offset)
+	}
+
+	var incidents []*entities.Incident
+	err := r.db.Select(&incidents, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list incidents: %w", err)
+	}
+
+	return incidents, nil
+}

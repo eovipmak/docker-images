@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
 )
 
 // Mock incident repository for testing
@@ -67,6 +68,14 @@ func (m *mockIncidentRepository) Resolve(id string) error {
 		return nil
 	}
 	return sql.ErrNoRows
+}
+
+func (m *mockIncidentRepository) List(filters repository.IncidentFilters) ([]*entities.Incident, error) {
+	var result []*entities.Incident
+	for _, incident := range m.incidents {
+		result = append(result, incident)
+	}
+	return result, nil
 }
 
 // Mock alert rule repository for testing
