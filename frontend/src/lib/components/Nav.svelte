@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { isAuthenticated } from '$lib/stores/auth';
+	import { authStore } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
 
 	// Check authentication status on mount
-	onMount(() => {
-		isAuthenticated.checkAuth();
+	onMount(async () => {
+		await authStore.checkAuth();
 	});
 
 	const publicNavItems = [
@@ -21,7 +21,7 @@
 	];
 
 	function handleLogout() {
-		isAuthenticated.logout();
+		authStore.logout();
 		window.location.href = '/login';
 	}
 </script>
@@ -33,7 +33,7 @@
 				<span class="text-xl font-bold">V-Insight</span>
 			</div>
 			<div class="flex space-x-4">
-				{#if $isAuthenticated}
+				{#if $authStore.isAuthenticated}
 					{#each authenticatedNavItems as item}
 						<a
 							href={item.href}

@@ -31,7 +31,7 @@
 
 			// Store the token
 			if (data.token) {
-				isAuthenticated.login(data.token);
+				await isAuthenticated.login(data.token);
 				// Redirect to dashboard
 				window.location.href = '/dashboard';
 			}
