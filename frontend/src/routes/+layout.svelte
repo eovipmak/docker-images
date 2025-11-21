@@ -14,28 +14,14 @@
 		return publicRoutes.includes(pathname);
 	}
 
-	// Check authentication on mount and when route changes
+	// Reactive statement to handle route protection
+	$: if (browser && !$authStore.isAuthenticated && !isPublicRoute($page.url.pathname)) {
+		window.location.href = '/login';
+	}
+
+	// Check authentication on mount
 	onMount(async () => {
-		// Check authentication status
 		await authStore.checkAuth();
-
-		// Handle route protection
-		if (browser) {
-			const unsubscribe = page.subscribe(($page) => {
-				const pathname = $page.url.pathname;
-				
-				// If not authenticated and trying to access protected route
-				authStore.subscribe((state) => {
-					if (!state.isAuthenticated && !isPublicRoute(pathname)) {
-						window.location.href = '/login';
-					}
-				})();
-			});
-
-			return () => {
-				unsubscribe();
-			};
-		}
 	});
 </script>
 
