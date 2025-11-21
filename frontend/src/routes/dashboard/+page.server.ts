@@ -1,5 +1,4 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
 
 interface MonitorCheck {
 	id: string;
@@ -63,25 +62,33 @@ interface DashboardData {
 	open_incidents: IncidentWithDetails[];
 }
 
-export const load: PageServerLoad = async ({ fetch, cookies }) => {
-	const authToken = cookies.get('auth_token');
+export const load: PageServerLoad = async ({ fetch, request }) => {
+	// Get the auth token from the Authorization header
+	const authHeader = request.headers.get('authorization');
 	
-	if (!authToken) {
-		throw error(401, 'Not authenticated');
+	// Return empty data if not authenticated (will be loaded client-side)
+	if (!authHeader) {
+		return {
+			stats: {
+				total_monitors: 0,
+				up_count: 0,
+				down_count: 0,
+				open_incidents: 0
+			},
+			recentChecks: [],
+			openIncidents: []
+		};
 	}
 
 	try {
 		const response = await fetch('/api/v1/dashboard', {
 			headers: {
-				'Authorization': `Bearer ${authToken}`
+				'Authorization': authHeader
 			}
 		});
 
 		if (!response.ok) {
-			if (response.status === 401) {
-				throw error(401, 'Not authenticated');
-			}
-			throw error(response.status, 'Failed to load dashboard data');
+			throw new Error('Failed to load dashboard data');
 		}
 
 		const data: DashboardData = await response.json();
