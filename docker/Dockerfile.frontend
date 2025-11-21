@@ -2,8 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and setup script
 COPY package*.json ./
+COPY setup.js ./
 
 # Install dependencies
 RUN npm install
