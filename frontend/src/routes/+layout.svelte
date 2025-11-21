@@ -9,19 +9,23 @@
 	// Public routes that don't require authentication
 	const publicRoutes = ['/', '/login', '/register'];
 
+	// Track if auth initialization is complete
+	let authInitialized = false;
+
 	// Check if current route is public
 	function isPublicRoute(pathname: string): boolean {
 		return publicRoutes.includes(pathname);
 	}
 
 	// Reactive statement to handle route protection
-	$: if (browser && !$authStore.isAuthenticated && !isPublicRoute($page.url.pathname)) {
+	$: if (browser && authInitialized && !$authStore.isAuthenticated && !isPublicRoute($page.url.pathname)) {
 		window.location.href = '/login';
 	}
 
 	// Check authentication on mount
 	onMount(async () => {
 		await authStore.checkAuth();
+		authInitialized = true;
 	});
 </script>
 
