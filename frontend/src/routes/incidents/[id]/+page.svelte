@@ -18,7 +18,6 @@
 	onMount(() => {
 		if (incidentId) {
 			loadIncidentDetails();
-			loadMonitorChecks();
 		}
 	});
 
@@ -38,6 +37,8 @@
 			}
 
 			incident = await response.json();
+			// Load monitor checks after incident is loaded
+			loadMonitorChecks();
 		} catch (err: any) {
 			console.error('Error loading incident:', err);
 			error = err.message || 'Failed to load incident';

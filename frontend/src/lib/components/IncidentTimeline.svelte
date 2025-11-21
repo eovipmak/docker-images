@@ -17,7 +17,7 @@
 			{
 				timestamp: incident.started_at,
 				title: 'Incident Started',
-				description: `Alert "${incident.alert_rule_name}" triggered for monitor "${incident.monitor_name}"`,
+				description: `Alert "${incident.alert_rule_name || 'Unknown'}" triggered for monitor "${incident.monitor_name || 'Unknown'}"`,
 				type: 'start'
 			}
 		];
