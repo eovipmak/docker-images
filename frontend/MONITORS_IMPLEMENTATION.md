@@ -122,19 +122,16 @@ Comprehensive view of a single monitor with statistics and visualizations:
 
 ### Quick Setup
 
-The monitor detail page requires a directory to be created. Run this script from the frontend directory:
+Create the detail page directory (one-time only):
 
 ```bash
-chmod +x setup-monitor-detail.sh
-./setup-monitor-detail.sh
+cd frontend/src/routes/domains
+mkdir '[id]'
 ```
 
-Or manually:
+Then copy the monitor detail page content from `MONITOR_DETAIL_PAGE.md` into `src/routes/domains/[id]/+page.svelte`.
 
-```bash
-mkdir -p src/routes/domains/[id]
-cp /tmp/monitor-detail-page.svelte src/routes/domains/[id]/+page.svelte
-```
+**Important:** This is a ONE-TIME setup for the SvelteKit dynamic route. Once created, it handles ALL monitors automatically.
 
 ### Dependencies
 

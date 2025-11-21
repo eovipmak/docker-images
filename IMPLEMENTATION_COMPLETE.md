@@ -27,39 +27,34 @@ This implementation provides a complete monitors management system for V-Insight
 - CRUD operations integration
 - Loading and error states
 
-#### `/tmp/monitor-detail-page.svelte` (Created - needs installation)
+#### Monitor Detail Page (Needs one-time setup)
 - Monitor statistics (status, uptime, response time, interval)
 - Uptime history chart (last 24 hours)
-- Response time chart
+- Response time chart  
 - SSL certificate information (for HTTPS)
 - Monitor settings display
 - Recent checks table
 
-### 3. Documentation & Scripts
+### 3. Documentation
 
 - `MONITORS_IMPLEMENTATION.md` - Complete implementation guide
-- `MONITOR_DETAIL_PAGE.md` - Setup instructions
-- `setup-monitor-detail.sh` - Installation script
+- `MONITOR_DETAIL_PAGE.md` - Monitor detail page content and setup instructions
 
 ## Installation Steps
 
-### Step 1: Install the Monitor Detail Page
+### Step 1: Create the Monitor Detail Page
 
-The monitor detail page requires creating a directory with square brackets (SvelteKit dynamic route). Run ONE of these options:
+The monitor detail page requires creating a directory with square brackets (SvelteKit dynamic route).
 
-**Option A: Using the setup script (recommended)**
+**Manual setup (one-time only):**
 ```bash
-cd frontend
-chmod +x setup-monitor-detail.sh
-./setup-monitor-detail.sh
+cd frontend/src/routes/domains
+mkdir '[id]'
 ```
 
-**Option B: Manual installation**
-```bash
-cd frontend
-mkdir -p src/routes/domains/[id]
-cp /tmp/monitor-detail-page.svelte src/routes/domains/[id]/+page.svelte
-```
+Then copy the monitor detail page content from `frontend/MONITOR_DETAIL_PAGE.md` into `frontend/src/routes/domains/[id]/+page.svelte`.
+
+**Important:** This is a ONE-TIME setup for the SvelteKit dynamic route structure. Once created, it automatically handles ALL monitors.
 
 ### Step 2: Verify Installation
 

@@ -1,42 +1,17 @@
 # Quick Start - Monitors Management
 
-## Installation Command
+## One-Time Setup
 
-Run this single command from the repository root to complete the setup:
-
-```bash
-cd frontend && chmod +x setup-monitor-detail.sh && ./setup-monitor-detail.sh && npm run check
-```
-
-This will:
-1. Navigate to the frontend directory
-2. Make the setup script executable
-3. Run the script to create the directory and copy the detail page
-4. Run TypeScript validation
-
-## Expected Output
-
-```
-Setting up Monitor Detail Page...
-Creating directory structure...
-Installing monitor detail page...
-✓ Monitor detail page installed successfully!
-
-Setup complete! The monitor detail page is now available at:
-  src/routes/domains/[id]/+page.svelte
-
-You can now access monitor details by navigating to /domains/{monitor-id}
-```
-
-## Verification
-
-After running the command, verify the installation:
+Due to tooling limitations with creating dynamic routes (`[id]`), you need to manually create the monitor detail page directory:
 
 ```bash
-ls -la src/routes/domains/[id]/+page.svelte
+cd frontend/src/routes/domains
+mkdir '[id]'
 ```
 
-You should see the file listed.
+Then copy the monitor detail page content from `frontend/MONITOR_DETAIL_PAGE.md` into `frontend/src/routes/domains/[id]/+page.svelte`.
+
+**Note:** This is a ONE-TIME setup for the route structure, NOT per-monitor. Once created, all monitors automatically use this detail page.
 
 ## Start the Application
 
@@ -69,16 +44,6 @@ Open your browser to: **http://localhost:3000/domains**
    - Recent checks table
 
 ## Troubleshooting
-
-### If setup script fails:
-
-Run manually:
-```bash
-cd frontend
-mkdir -p src/routes/domains/[id]
-cp /tmp/monitor-detail-page.svelte src/routes/domains/[id]/+page.svelte
-npm run check
-```
 
 ### If TypeScript errors:
 
