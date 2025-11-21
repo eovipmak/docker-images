@@ -58,26 +58,25 @@ All features from the issue have been successfully implemented for the V-Insight
 6. ✅ `IMPLEMENTATION_COMPLETE.md` - Complete implementation guide
 7. ✅ `COMPONENT_GUIDE.md` - Visual component reference
 8. ✅ `frontend/MONITORS_IMPLEMENTATION.md` - Technical documentation
-9. ✅ `frontend/MONITOR_DETAIL_PAGE.md` - Detail page setup instructions
-10. ✅ `frontend/setup-monitor-detail.sh` - Installation script
+9. ✅ `frontend/setup.js` - Automated setup script
 
 ### This Summary
-11. ✅ `MONITORS_SUMMARY.md` - This file
+10. ✅ `MONITORS_SUMMARY.md` - This file
 
 ## 🚀 Installation
 
-### One-Time Setup
+### Automatic Setup
 
-Create the monitor detail page directory (SvelteKit dynamic route):
+The monitor detail page is automatically created during npm install:
 
 ```bash
-cd frontend/src/routes/domains
-mkdir '[id]'
+cd frontend
+npm install
 ```
 
-Then copy the content from `frontend/MONITOR_DETAIL_PAGE.md` into `frontend/src/routes/domains/[id]/+page.svelte`.
+This runs a postinstall script that creates `src/routes/domains/[id]/+page.svelte` automatically.
 
-**Note:** This is a ONE-TIME setup for the route structure, NOT per-monitor. Once created, all monitors automatically use this detail page.
+**Note:** The setup is fully automated - no manual steps required!
 
 ## 🧪 Testing
 

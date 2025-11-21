@@ -120,18 +120,26 @@ Comprehensive view of a single monitor with statistics and visualizations:
 
 ## Installation
 
-### Quick Setup
+### Automatic Setup
 
-Create the detail page directory (one-time only):
+Run npm install in the frontend directory:
 
 ```bash
-cd frontend/src/routes/domains
-mkdir '[id]'
+cd frontend
+npm install
 ```
 
-Then copy the monitor detail page content from `MONITOR_DETAIL_PAGE.md` into `src/routes/domains/[id]/+page.svelte`.
+This automatically creates the monitor detail page structure via the postinstall script (`setup.js`).
 
-**Important:** This is a ONE-TIME setup for the SvelteKit dynamic route. Once created, it handles ALL monitors automatically.
+The script:
+1. Creates `src/routes/domains/[id]` directory
+2. Generates `+page.svelte` with the monitor detail page content
+3. Only creates files if they don't already exist
+
+To manually trigger the setup:
+```bash
+npm run setup
+```
 
 ### Dependencies
 

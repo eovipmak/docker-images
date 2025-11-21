@@ -1,17 +1,21 @@
 # Quick Start - Monitors Management
 
-## One-Time Setup
+## Automatic Setup
 
-Due to tooling limitations with creating dynamic routes (`[id]`), you need to manually create the monitor detail page directory:
+The monitor detail page structure is automatically created when you run `npm install` in the frontend directory.
 
 ```bash
-cd frontend/src/routes/domains
-mkdir '[id]'
+cd frontend
+npm install
 ```
 
-Then copy the monitor detail page content from `frontend/MONITOR_DETAIL_PAGE.md` into `frontend/src/routes/domains/[id]/+page.svelte`.
+This runs a postinstall script that creates `src/routes/domains/[id]/+page.svelte` automatically.
 
-**Note:** This is a ONE-TIME setup for the route structure, NOT per-monitor. Once created, all monitors automatically use this detail page.
+If you need to manually trigger the setup later:
+```bash
+cd frontend
+npm run setup
+```
 
 ## Start the Application
 

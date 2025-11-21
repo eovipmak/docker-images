@@ -27,7 +27,7 @@ This implementation provides a complete monitors management system for V-Insight
 - CRUD operations integration
 - Loading and error states
 
-#### Monitor Detail Page (Needs one-time setup)
+#### Monitor Detail Page (Automatically created)
 - Monitor statistics (status, uptime, response time, interval)
 - Uptime history chart (last 24 hours)
 - Response time chart  
@@ -38,29 +38,28 @@ This implementation provides a complete monitors management system for V-Insight
 ### 3. Documentation
 
 - `MONITORS_IMPLEMENTATION.md` - Complete implementation guide
-- `MONITOR_DETAIL_PAGE.md` - Monitor detail page content and setup instructions
+- `frontend/setup.js` - Automated setup script
 
 ## Installation Steps
 
-### Step 1: Create the Monitor Detail Page
+### Step 1: Install Dependencies
 
-The monitor detail page requires creating a directory with square brackets (SvelteKit dynamic route).
+The monitor detail page is automatically created during npm install:
 
-**Manual setup (one-time only):**
 ```bash
-cd frontend/src/routes/domains
-mkdir '[id]'
+cd frontend
+npm install
 ```
 
-Then copy the monitor detail page content from `frontend/MONITOR_DETAIL_PAGE.md` into `frontend/src/routes/domains/[id]/+page.svelte`.
-
-**Important:** This is a ONE-TIME setup for the SvelteKit dynamic route structure. Once created, it automatically handles ALL monitors.
+This runs a postinstall script (`setup.js`) that creates the `src/routes/domains/[id]/+page.svelte` file automatically.
 
 ### Step 2: Verify Installation
 
-Check that the file exists:
-```bash
-ls -la src/routes/domains/[id]/+page.svelte
+The setup script will output:
+```
+✓ Created directory: src/routes/domains/[id]
+✓ Created file: src/routes/domains/[id]/+page.svelte
+✓ Setup complete! Monitor detail page is ready.
 ```
 
 ### Step 3: Run TypeScript Validation
