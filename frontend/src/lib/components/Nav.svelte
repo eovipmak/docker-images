@@ -17,6 +17,7 @@
 		{ href: '/dashboard', label: 'Dashboard' },
 		{ href: '/domains', label: 'Domains' },
 		{ href: '/alerts', label: 'Alerts' },
+		{ href: '/incidents', label: 'Incidents' },
 		{ href: '/settings', label: 'Settings' }
 	];
 

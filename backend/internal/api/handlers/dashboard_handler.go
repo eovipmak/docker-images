@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"

@@ -38,7 +38,7 @@
 		alert_rule_id: string;
 		started_at: string;
 		resolved_at?: string;
-		status: string;
+		status: 'open' | 'resolved';
 		trigger_value?: string;
 		notified_at?: string;
 		created_at: string;
