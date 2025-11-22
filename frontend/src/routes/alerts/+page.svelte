@@ -170,9 +170,16 @@
 		selectedChannel = null;
 	}
 
-	function getMonitorName(monitorId: string | null): string {
+	function getMonitorName(monitorId: any): string {
 		if (!monitorId) return 'All monitors';
-		const monitor = monitors.find((m) => m.id === monitorId);
+
+		let id = monitorId;
+		if (typeof monitorId === 'object' && 'String' in monitorId) {
+			if (!monitorId.Valid) return 'All monitors';
+			id = monitorId.String;
+		}
+
+		const monitor = monitors.find((m) => m.id === id);
 		return monitor ? monitor.name : 'Unknown';
 	}
 

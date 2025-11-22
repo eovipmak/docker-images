@@ -37,7 +37,8 @@
 			if (monitor.check_ssl && monitor.url.startsWith('https')) {
 				const sslResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/ssl-status`);
 				if (sslResponse.ok) {
-					sslStatus = await sslResponse.json();
+					const data = await sslResponse.json();
+					sslStatus = data.ssl_status;
 				}
 			}
 		} catch (err: any) {

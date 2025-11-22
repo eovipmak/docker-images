@@ -32,9 +32,16 @@
 	let isLoadingData = false;
 
 	$: if (rule) {
+		let monitorId = '';
+		if (rule.monitor_id && typeof rule.monitor_id === 'object' && 'String' in rule.monitor_id) {
+			monitorId = rule.monitor_id.Valid ? rule.monitor_id.String : '';
+		} else {
+			monitorId = rule.monitor_id || '';
+		}
+
 		formData = {
 			name: rule.name || '',
-			monitor_id: rule.monitor_id || '',
+			monitor_id: monitorId,
 			trigger_type: rule.trigger_type || 'down',
 			threshold_value: rule.threshold_value || getDefaultThreshold(rule.trigger_type || 'down'),
 			enabled: rule.enabled !== undefined ? rule.enabled : true,
@@ -63,9 +70,7 @@
 	}
 
 	// Update threshold when trigger type changes
-	$: if (formData.trigger_type && !isEditMode) {
-		formData.threshold_value = getDefaultThreshold(formData.trigger_type);
-	}
+
 
 	async function loadData() {
 		if (isLoadingData) return;
@@ -142,11 +147,16 @@
 			};
 
 			// Handle monitor_id - send null for "All monitors"
+			let monitorIdToSend = null;
 			if (formData.monitor_id) {
-				payload.monitor_id = formData.monitor_id;
-			} else {
-				payload.monitor_id = null;
+				if (typeof formData.monitor_id === 'object' && formData.monitor_id !== null && 'String' in formData.monitor_id) {
+					// @ts-ignore
+					monitorIdToSend = formData.monitor_id.Valid ? formData.monitor_id.String : null;
+				} else {
+					monitorIdToSend = formData.monitor_id;
+				}
 			}
+			payload.monitor_id = monitorIdToSend;
 
 			const response = await fetchAPI(endpoint, {
 				method,
@@ -291,6 +301,11 @@
 							id="trigger_type"
 							bind:value={formData.trigger_type}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							on:change={() => {
+								if (!isEditMode) {
+									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
+								}
+							}}
 						>
 							<option value="down">Down</option>
 							<option value="slow_response">Slow Response</option>

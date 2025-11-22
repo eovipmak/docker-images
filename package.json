@@ -1,0 +1,22 @@
+{
+  "name": "v-insight",
+  "version": "1.0.0",
+  "description": "A Docker-based multi-tenant monitoring SaaS platform built with Go and SvelteKit. Monitor your websites, APIs, and services with automated health checks, SSL monitoring, and intelligent alerting.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eovipmak/v-insight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eovipmak/v-insight/issues"
+  },
+  "homepage": "https://github.com/eovipmak/v-insight#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.1"
+  }
+}

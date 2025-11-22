@@ -19,7 +19,7 @@
 		enabled: true
 	};
 
-	let config: Record<string, any> = {};
+	let config: Record<string, any> = { url: '' };
 
 	let errors: Record<string, string> = {};
 	let isSubmitting = false;
@@ -36,9 +36,7 @@
 	$: isEditMode = !!channel;
 
 	// Reset config when type changes (only in create mode)
-	$: if (formData.type && !isEditMode) {
-		config = getDefaultConfig(formData.type);
-	}
+
 
 	function getDefaultConfig(type: string): Record<string, any> {
 		switch (type) {
@@ -149,7 +147,7 @@
 			type: 'webhook',
 			enabled: true
 		};
-		config = {};
+		config = { url: '' };
 		errors = {};
 		dispatch('close');
 	}
@@ -210,6 +208,11 @@
 						bind:value={formData.type}
 						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 						disabled={isEditMode}
+						on:change={() => {
+							if (!isEditMode) {
+								config = getDefaultConfig(formData.type);
+							}
+						}}
 					>
 						<option value="webhook">Webhook</option>
 						<option value="discord">Discord</option>
