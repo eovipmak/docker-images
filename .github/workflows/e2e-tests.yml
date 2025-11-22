@@ -37,24 +37,79 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to start..."
-          sleep 60
           
+          # Wait for containers to be created and running
+          echo "Waiting for containers to start (30s)..."
+          sleep 30
+          
+          # Check container status
+          echo "Container status:"
+          docker compose ps
+          
+          # Wait for backend health check with retries
           echo "Checking backend health..."
-          curl -f http://localhost:8080/health || exit 1
+          max_attempts=30
+          attempt=0
+          until curl -f http://localhost:8080/health 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Backend health check attempt $attempt/$max_attempts..."
+            if [ $attempt -lt $max_attempts ]; then
+              sleep 5
+            fi
+          done
           
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Backend failed to become healthy"
+            echo "Backend logs:"
+            docker compose logs backend
+            exit 1
+          fi
+          echo "✅ Backend is healthy"
+          
+          # Wait for worker health check with retries
           echo "Checking worker health..."
-          curl -f http://localhost:8081/health || exit 1
+          attempt=0
+          until curl -f http://localhost:8081/health 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Worker health check attempt $attempt/$max_attempts..."
+            if [ $attempt -lt $max_attempts ]; then
+              sleep 5
+            fi
+          done
           
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Worker failed to become healthy"
+            echo "Worker logs:"
+            docker compose logs worker
+            exit 1
+          fi
+          echo "✅ Worker is healthy"
+          
+          # Wait for frontend health check with retries
           echo "Checking frontend health..."
-          curl -f http://localhost:3000 || exit 1
+          attempt=0
+          until curl -f http://localhost:3000 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+            attempt=$((attempt + 1))
+            echo "Frontend health check attempt $attempt/$max_attempts..."
+            if [ $attempt -lt $max_attempts ]; then
+              sleep 5
+            fi
+          done
           
-          echo "✅ All services are healthy!"
-
-      - name: Wait for database migrations
-        run: |
-          echo "Waiting for database migrations to complete..."
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Frontend failed to become healthy"
+            echo "Frontend logs:"
+            docker compose logs frontend
+            exit 1
+          fi
+          echo "✅ Frontend is healthy"
+          
+          echo "🎉 All services are healthy!"
+          
+          # Additional wait for database migrations to complete
+          echo "Waiting for database migrations to complete (10s)..."
           sleep 10
-          echo "✅ Migrations should be complete"
+          echo "✅ Services ready for testing"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
