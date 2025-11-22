@@ -1,0 +1,29 @@
+package auth
+
+import (
+	"testing"
+)
+
+func TestDemoUserPasswordHash(t *testing.T) {
+	// This is the hash used in migration 000008_seed_demo_user
+	demoPasswordHash := "$2a$10$N9qo8uLOickgx2ZMRZoMye7.9VQ/T7dcCXL0V8LlQIl2iu0fvO1d6"
+	demoPassword := "Password!"
+
+	// Verify the hash matches the password
+	err := VerifyPassword(demoPasswordHash, demoPassword)
+	if err != nil {
+		t.Errorf("Demo user password hash verification failed: %v", err)
+		t.Errorf("Hash: %s", demoPasswordHash)
+		t.Errorf("Password: %s", demoPassword)
+		
+		// Generate a new hash for reference
+		newHash, genErr := HashPassword(demoPassword)
+		if genErr == nil {
+			t.Logf("A valid hash for '%s' would be: %s", demoPassword, newHash)
+		}
+	} else {
+		t.Logf("✅ Demo user password hash verified successfully")
+		t.Logf("   Email: test@gmail.com")
+		t.Logf("   Password: %s", demoPassword)
+	}
+}

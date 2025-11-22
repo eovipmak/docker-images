@@ -1,0 +1,65 @@
+name: Manual Test (DEPRECATED - Use e2e-tests.yml)
+
+# This workflow has been merged into e2e-tests.yml
+# Keeping this file for reference only
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  test-services:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || (github.event.issue.pull_request && contains(github.event.comment.body, '/test'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Build and start services
+        run: make up
+
+      - name: Wait for services to be healthy
+        run: |
+          sleep 60
+          curl -f http://localhost:8080/health || exit 1
+          curl -f http://localhost:8081/health || exit 1
+          curl -f http://localhost:3000 || exit 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fix frontend permissions
+        run: sudo chown -R $USER:$USER frontend/
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run Playwright tests
+        run: |
+          cd frontend
+          npx playwright install --with-deps
+          npm run test:e2e tests/e2e/ui-auth.spec.ts
+
+      - name: Upload test results and screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            frontend/test-results/
+            frontend/*.png
+          retention-days: 3

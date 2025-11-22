@@ -367,6 +367,80 @@ sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit
 - Verify: `docker compose ps postgres`
 - Check logs: `make logs-postgres`
 
+## Testing
+
+### Demo User
+
+A demo user is automatically created via database migrations for testing purposes:
+
+- **Email**: `test@gmail.com`
+- **Password**: `Password!`
+- **Tenant**: Demo Tenant
+
+This user is available immediately after starting the services and can be used for:
+- Manual testing
+- Automated E2E tests
+- Development and debugging
+
+### Running Tests
+
+**Backend Tests:**
+```bash
+cd backend
+go test ./...
+```
+
+**Frontend Type Check:**
+```bash
+cd frontend
+npm run check
+```
+
+**E2E Tests:**
+```bash
+# Install Playwright browsers first
+npx playwright install --with-deps
+
+# Run all E2E tests
+npx playwright test
+
+# Run specific test file
+npx playwright test tests/e2e-workflow.spec.ts
+
+# Run tests with UI
+npx playwright test --ui
+```
+
+### Automated Testing (GitHub Actions)
+
+The repository includes automated E2E testing via GitHub Actions that:
+1. Builds and starts all services (backend, worker, frontend, PostgreSQL)
+2. Waits for services to be healthy
+3. Runs comprehensive E2E tests covering:
+   - User login with demo account
+   - Monitor (domain) creation and editing
+   - Alert rule creation and editing
+
+Tests run automatically on:
+- Push to main/master branches
+- Pull requests to main/master
+- Manual workflow dispatch
+- Comment with `/test` on pull requests
+
+View test results and screenshots in the GitHub Actions artifacts.
+
+### Test Coverage
+
+The E2E test suite (`tests/e2e-workflow.spec.ts`) validates:
+- ✅ Login with demo user credentials
+- ✅ Add monitor for google.com with custom interval/timeout
+- ✅ Edit monitor properties (name, interval, timeout)
+- ✅ Add alert rule with trigger conditions
+- ✅ Edit alert rule properties
+- ✅ Complete workflow from login to alert configuration
+
+All test runs generate screenshots at each step for visual verification.
+
 ## Contributing
 
 1. Fork the repository

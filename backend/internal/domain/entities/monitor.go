@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"database/sql"
 	"time"
 )
 
