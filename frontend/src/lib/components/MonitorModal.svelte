@@ -29,8 +29,11 @@
 
 	let errors: Record<string, string> = {};
 	let isSubmitting = false;
+	let lastMonitorId: string | null = null;
 
-	$: if (monitor) {
+	// Only update formData when monitor actually changes (different monitor or switching between create/edit)
+	$: if (monitor && monitor.id !== lastMonitorId) {
+		lastMonitorId = monitor?.id || null;
 		formData = {
 			name: monitor.name || '',
 			url: monitor.url || '',
@@ -39,6 +42,18 @@
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
 			check_ssl: monitor.check_ssl !== undefined ? monitor.check_ssl : true,
 			ssl_alert_days: monitor.ssl_alert_days || 30
+		};
+	} else if (!monitor && lastMonitorId !== null) {
+		// Switching from edit to create mode
+		lastMonitorId = null;
+		formData = {
+			name: '',
+			url: '',
+			check_interval: 300,
+			timeout: 30,
+			enabled: true,
+			check_ssl: true,
+			ssl_alert_days: 30
 		};
 	}
 

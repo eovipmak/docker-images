@@ -30,8 +30,11 @@
 	let monitors: any[] = [];
 	let channels: any[] = [];
 	let isLoadingData = false;
+	let lastRuleId: string | null = null;
 
-	$: if (rule) {
+	// Only update formData when rule actually changes (different rule or switching between create/edit)
+	$: if (rule && rule.id !== lastRuleId) {
+		lastRuleId = rule?.id || null;
 		let monitorId = '';
 		if (rule.monitor_id && typeof rule.monitor_id === 'object' && 'String' in rule.monitor_id) {
 			monitorId = rule.monitor_id.Valid ? rule.monitor_id.String : '';
@@ -46,6 +49,17 @@
 			threshold_value: rule.threshold_value || getDefaultThreshold(rule.trigger_type || 'down'),
 			enabled: rule.enabled !== undefined ? rule.enabled : true,
 			channel_ids: rule.channel_ids || []
+		};
+	} else if (!rule && lastRuleId !== null) {
+		// Switching from edit to create mode
+		lastRuleId = null;
+		formData = {
+			name: '',
+			monitor_id: '',
+			trigger_type: 'down',
+			threshold_value: 3,
+			enabled: true,
+			channel_ids: []
 		};
 	}
 
