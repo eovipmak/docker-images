@@ -39,8 +39,8 @@ jobs:
           echo "Waiting for services to start..."
           
           # Wait for containers to be created and running
-          echo "Waiting for containers to start (30s)..."
-          sleep 30
+          echo "Waiting for containers to start (10s)..."
+          sleep 10
           
           # Check container status
           echo "Container status:"
@@ -106,9 +106,9 @@ jobs:
           
           echo "🎉 All services are healthy!"
           
-          # Additional wait for database migrations to complete
-          echo "Waiting for database migrations to complete (10s)..."
-          sleep 10
+          # Additional wait for database migrations and worker jobs to initialize
+          echo "Waiting for database migrations and worker jobs to initialize (15s)..."
+          sleep 15
           echo "✅ Services ready for testing"
 
       - name: Set up Node.js
