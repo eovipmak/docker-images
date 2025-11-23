@@ -23,14 +23,26 @@
 
 	let errors: Record<string, string> = {};
 	let isSubmitting = false;
+	let lastChannelId: string | null = null;
 
-	$: if (channel) {
+	// Only update formData when channel actually changes (different channel or switching between create/edit)
+	$: if (channel && channel.id !== lastChannelId) {
 		formData = {
 			name: channel.name || '',
 			type: channel.type || 'webhook',
 			enabled: channel.enabled !== undefined ? channel.enabled : true
 		};
 		config = channel.config || {};
+		lastChannelId = channel?.id || null;
+	} else if (!channel && lastChannelId !== null) {
+		// Switching from edit to create mode
+		formData = {
+			name: '',
+			type: 'webhook',
+			enabled: true
+		};
+		config = { url: '' };
+		lastChannelId = null;
 	}
 
 	$: isEditMode = !!channel;
@@ -168,10 +180,20 @@
 		aria-labelledby="modal-title"
 	>
 		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<div class="px-6 py-4 border-b border-gray-200">
+			<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
 				<h2 id="modal-title" class="text-2xl font-bold text-gray-900">
 					{isEditMode ? 'Edit Alert Channel' : 'Create Alert Channel'}
 				</h2>
+				<button
+					type="button"
+					on:click={closeModal}
+					class="text-gray-400 hover:text-gray-600 transition-colors"
+					aria-label="Close modal"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
 			</div>
 
 			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
