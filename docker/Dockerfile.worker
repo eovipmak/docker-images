@@ -23,8 +23,9 @@ FROM golang:1.23-alpine AS development
 
 WORKDIR /app
 
-# Install air for hot-reload and other dev tools
-RUN go install github.com/cosmtrek/air@v1.49.0
+# Install air for hot-reload, wget for healthcheck, and other dev tools
+RUN go install github.com/cosmtrek/air@v1.49.0 && \
+    apk add --no-cache wget
 
 # Set PATH to include Go binaries
 ENV PATH="/go/bin:$PATH"
@@ -49,8 +50,8 @@ FROM alpine:3.22 AS production
 
 WORKDIR /root/
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+# Install ca-certificates for HTTPS requests and wget for healthcheck
+RUN apk --no-cache add ca-certificates wget
 
 # Copy the binary from builder
 COPY --from=builder /build/main .

@@ -352,6 +352,10 @@ docker compose ps
 make logs
 ```
 
+For detailed troubleshooting of Docker health checks and service startup issues, see:
+- **[Docker Health Check Troubleshooting Guide](DOCKER_HEALTHCHECK_GUIDE.md)** - Comprehensive guide for diagnosing and fixing service health issues
+- **[E2E Test Fix Summary](E2E_TEST_FIX_SUMMARY.md)** - Details on recent fixes to E2E test reliability
+
 ### Permission Issues (Frontend)
 ```bash
 sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit
