@@ -138,10 +138,20 @@
 		aria-labelledby="modal-title"
 	>
 		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<div class="px-6 py-4 border-b border-gray-200">
+			<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
 				<h2 id="modal-title" class="text-2xl font-bold text-gray-900">
 					{isEditMode ? 'Edit Monitor' : 'Add Monitor'}
 				</h2>
+				<button
+					type="button"
+					on:click={closeModal}
+					class="text-gray-400 hover:text-gray-600 transition-colors"
+					aria-label="Close modal"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
 			</div>
 
 			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">

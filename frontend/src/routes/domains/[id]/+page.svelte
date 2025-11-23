@@ -70,9 +70,22 @@
 
 	function getAverageResponseTime(): string {
 		if (!checks || checks.length === 0) return 'N/A';
+		
 		const responseTimes = checks
-			.filter((check) => check.response_time_ms !== null && check.response_time_ms !== undefined)
-			.map((check) => check.response_time_ms);
+			.filter((check) => {
+				// Handle both direct values and sql.Null* types
+				if (typeof check.response_time_ms === 'object' && check.response_time_ms !== null) {
+					return check.response_time_ms.Valid && check.response_time_ms.Int64 !== null;
+				}
+				return check.response_time_ms !== null && check.response_time_ms !== undefined;
+			})
+			.map((check) => {
+				// Extract the actual value
+				if (typeof check.response_time_ms === 'object' && check.response_time_ms !== null) {
+					return check.response_time_ms.Int64;
+				}
+				return check.response_time_ms;
+			});
 
 		if (responseTimes.length === 0) return 'N/A';
 
@@ -166,9 +179,19 @@
 			<h2 class="text-xl font-bold text-gray-900 mb-4">Response Time (Last 24 Hours)</h2>
 			{#if checks && checks.length > 0}
 				{@const responseTimes = checks
-					.filter((c) => c.response_time_ms)
+					.filter((c) => {
+						if (typeof c.response_time_ms === 'object' && c.response_time_ms !== null) {
+							return c.response_time_ms.Valid && c.response_time_ms.Int64 !== null;
+						}
+						return c.response_time_ms !== null && c.response_time_ms !== undefined;
+					})
 					.slice(0, 48)
-					.map((c) => c.response_time_ms)}
+					.map((c) => {
+						if (typeof c.response_time_ms === 'object' && c.response_time_ms !== null) {
+							return c.response_time_ms.Int64;
+						}
+						return c.response_time_ms;
+					})}
 				{@const maxTime = Math.max(...responseTimes, 1)}
 				<div class="flex items-end gap-1 h-48">
 					{#each responseTimes as time}
@@ -196,19 +219,19 @@
 					<div>
 						<p class="text-sm text-gray-500">Valid</p>
 						<p class="font-medium text-gray-900">
-							{sslStatus.ssl_valid ? 'Yes' : 'No'}
+							{sslStatus.valid ? 'Yes' : 'No'}
 						</p>
 					</div>
-					{#if sslStatus.ssl_expires_at}
+					{#if sslStatus.expires_at}
 						<div>
 							<p class="text-sm text-gray-500">Expires At</p>
-							<p class="font-medium text-gray-900">{formatDate(sslStatus.ssl_expires_at)}</p>
+							<p class="font-medium text-gray-900">{formatDate(sslStatus.expires_at)}</p>
 						</div>
 					{/if}
-					{#if sslStatus.ssl_issuer}
+					{#if sslStatus.issuer}
 						<div>
 							<p class="text-sm text-gray-500">Issuer</p>
-							<p class="font-medium text-gray-900">{sslStatus.ssl_issuer}</p>
+							<p class="font-medium text-gray-900">{sslStatus.issuer}</p>
 						</div>
 					{/if}
 					{#if sslStatus.error_message}
@@ -281,13 +304,13 @@
 										<MonitorStatus status={check.success ? 'up' : 'down'} showText={true} />
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{check.status_code || 'N/A'}
+										{check.status_code && typeof check.status_code === 'object' && check.status_code.Valid ? check.status_code.Int64 : check.status_code || 'N/A'}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{check.response_time_ms ? `${check.response_time_ms}ms` : 'N/A'}
+										{check.response_time_ms && typeof check.response_time_ms === 'object' && check.response_time_ms.Valid ? `${check.response_time_ms.Int64}ms` : check.response_time_ms ? `${check.response_time_ms}ms` : 'N/A'}
 									</td>
 									<td class="px-6 py-4 text-sm text-red-600">
-										{check.error_message || '-'}
+										{check.error_message && typeof check.error_message === 'object' && check.error_message.Valid ? check.error_message.String : check.error_message || '-'}
 									</td>
 								</tr>
 							{/each}
