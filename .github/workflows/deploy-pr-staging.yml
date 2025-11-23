@@ -1,0 +1,121 @@
+name: Deploy PR to Staging
+
+on:
+  issue_comment:
+    types: [created]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACKEND: ghcr.io/${{ github.repository }}/backend
+  IMAGE_NAME_WORKER: ghcr.io/${{ github.repository }}/worker
+  IMAGE_NAME_FRONTEND: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  deploy-staging:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/test') &&
+      (github.event.comment.user.login == github.event.repository.owner.login || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    environment: staging
+    outputs:
+      date_stamp: ${{ steps.date.outputs.date_stamp }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.sha }}
+
+      - name: Get PR details
+        id: pr
+        run: |
+          PR_NUMBER=$(jq -r .issue.number "$GITHUB_EVENT_PATH")
+          PR_HEAD_SHA=$(jq -r .issue.pull_request.head.sha "$GITHUB_EVENT_PATH")
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Set Docker tag
+        id: date
+        run: echo "date_stamp=pr-${{ steps.pr.outputs.pr_number }}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend
+          push: true
+          tags: ${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }}
+
+      - name: Build and push Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./worker
+          file: ./docker/Dockerfile.worker
+          push: true
+          tags: ${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }}
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./docker/Dockerfile.frontend
+          push: true
+          tags: ${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.date.outputs.date_stamp }}
+
+      - name: SSH into VPS and deploy to staging
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/v-insight-staging  # Thay bằng path staging trên VPS
+            # Tạo .env nếu chưa có
+            if [ ! -f .env ]; then cp .env.example .env; fi
+            # Copy và modify docker-compose.prod.yml cho staging
+            cp docker-compose.prod.yml docker-compose.staging.yml
+            # Thay đổi ports cho staging (ví dụ: frontend 3001, backend 8081)
+            sed -i 's/"3000:3000"/"3001:3000"/g' docker-compose.staging.yml
+            sed -i 's/"8080:8080"/"8081:8080"/g' docker-compose.staging.yml
+            # Update images
+            sed -i "s|ghcr.io/${{ github.repository }}/backend:latest|${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
+            sed -i "s|ghcr.io/${{ github.repository }}/worker:latest|${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
+            sed -i "s|ghcr.io/${{ github.repository }}/frontend:latest|${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
+            # Deploy
+            docker compose -f docker-compose.staging.yml down
+            docker compose -f docker-compose.staging.yml pull
+            docker compose -f docker-compose.staging.yml up -d
+            # Comment URL trên PR
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              ${{ github.event.issue.comments_url }} \
+              -d "{\"body\": \"🚀 Staging deployed! Access at: http://YOUR_VPS_IP:3001\"}"
+
+  cleanup:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/cleanup') &&
+      (github.event.comment.user.login == github.event.repository.owner.login || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into VPS and cleanup staging
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/v-insight-staging
+            docker compose -f docker-compose.staging.yml down
+            docker system prune -f

@@ -318,6 +318,67 @@ The backend service will automatically run database migrations on startup.
 - The backend does not need to be directly accessible from the browser
 - No CORS configuration is needed since all requests appear to come from the same origin
 
+### CI/CD Pipeline for Auto-Deploy
+
+This project includes a GitHub Actions CI/CD pipeline for automatic deployment to your VPS.
+
+#### Setup Steps
+
+1. **Configure GitHub Secrets**:
+   - Go to your repository Settings > Secrets and variables > Actions
+   - Add the following secrets:
+     - `VPS_HOST`: Your VPS IP address or domain
+     - `VPS_USER`: SSH username for your VPS
+     - `SSH_PRIVATE_KEY`: Private SSH key for authentication (generate with `ssh-keygen -t rsa -b 4096`)
+     - `SSH_PORT`: SSH port (default 22, optional)
+
+2. **On your VPS**:
+   - Ensure Docker and Docker Compose are installed
+   - Clone the repository: `git clone https://github.com/eovipmak/v-insight.git`
+   - Copy `.env.example` to `.env` and configure production settings
+   - Ensure the SSH key is added to `~/.ssh/authorized_keys` on the VPS
+   - For production, use `docker-compose.prod.yml`: `docker compose -f docker-compose.prod.yml up -d`
+
+3. **Staging Environment for PR Testing**:
+   - Create a separate directory for staging: `mkdir /path/to/v-insight-staging && cd /path/to/v-insight-staging`
+   - Clone the repo again: `git clone https://github.com/eovipmak/v-insight.git .`
+   - Copy `.env.example` to `.env` and configure staging settings (different ports if needed, e.g., 3001 for frontend)
+   - The `deploy-pr-staging.yml` workflow will automatically deploy PRs to this staging environment on ports 3001 (frontend) and 8081 (backend) when you comment `/test` on the PR
+   - Access staging at: `http://YOUR_VPS_IP:3001`
+   - The workflow will comment the staging URL directly on the PR
+   - To cleanup staging, comment `/cleanup` on the PR
+
+4. **Deployment Flow**:
+   - On push to `main` branch, the pipeline runs tests
+   - If tests pass, it builds Docker images and pushes to GitHub Container Registry
+   - Then SSHs into your VPS, pulls the latest images, and restarts services
+   - For PRs, staging is deployed automatically for UI testing
+
+#### Manual Deployment Alternative
+
+If you prefer manual deployment:
+
+```bash
+# On your VPS
+git pull origin main
+make up
+```
+
+Or build images locally and push:
+
+```bash
+# Build and push images
+docker build -t your-registry/v-insight-backend:latest -f docker/Dockerfile.backend .
+docker build -t your-registry/v-insight-worker:latest -f docker/Dockerfile.worker ./worker
+docker build -t your-registry/v-insight-frontend:latest -f docker/Dockerfile.frontend ./frontend
+docker push your-registry/v-insight-backend:latest
+# ... push others
+
+# On VPS
+docker compose pull
+docker compose up -d
+```
+
 ## Database Schema
 
 ### Core Tables
