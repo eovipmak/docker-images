@@ -20,6 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   backend:
     image: ghcr.io/eovipmak/v-insight/backend:latest
@@ -45,6 +46,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    restart: unless-stopped
 
   worker:
     image: ghcr.io/eovipmak/v-insight/worker:latest
@@ -61,6 +63,16 @@ services:
       - "8081:8081"
     networks:
       - v-insight-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   frontend:
     image: ghcr.io/eovipmak/v-insight/frontend:latest
@@ -75,6 +87,7 @@ services:
       - "3000:3000"
     networks:
       - v-insight-network
+    restart: unless-stopped
 
 networks:
   v-insight-network:
