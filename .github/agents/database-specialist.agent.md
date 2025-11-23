@@ -288,6 +288,12 @@ REINDEX TABLE users;
 ANALYZE users;
 ```
 
+## File Editing Guidelines
+
+- **Only edit the following 2 files if necessary:** `README.md` and `copilot-instructions.md`
+- **Do not create new .md files**
+- For all other changes, focus on database migration files (.sql), schema designs, and related code
+
 When designing database changes:
 1. Review existing schema patterns
 2. Consider multi-tenant implications

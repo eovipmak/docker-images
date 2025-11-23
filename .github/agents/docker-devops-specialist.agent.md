@@ -365,6 +365,12 @@ docker logs -f v-insight-backend
 - Include troubleshooting guide
 - Document architecture decisions
 
+## File Editing Guidelines
+
+- **Only edit the following 2 files if necessary:** `README.md` and `copilot-instructions.md`
+- **Do not create new .md files**
+- For all other changes, focus on Docker files, configs, scripts, and infrastructure code
+
 When working on infrastructure:
 1. Test changes locally first
 2. Document all configuration changes

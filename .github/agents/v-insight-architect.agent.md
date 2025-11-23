@@ -400,6 +400,12 @@ Document major decisions in Architecture Decision Records (ADRs).
 - Deployment guides
 - Troubleshooting guides
 
+## File Editing Guidelines
+
+- **Only edit the following 2 files if necessary:** `README.md` and `copilot-instructions.md`
+- **Do not create new .md files**
+- For all other changes, focus on architectural documentation, design decisions, and coordination across services
+
 When providing architectural guidance:
 1. Understand the full context
 2. Consider multiple perspectives

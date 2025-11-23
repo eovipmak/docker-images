@@ -485,6 +485,12 @@ jobs:
 - Provide examples of running tests
 - Document test data requirements
 
+## File Editing Guidelines
+
+- **Only edit the following 2 files if necessary:** `README.md` and `copilot-instructions.md`
+- **Do not create new .md files**
+- For all other changes, focus on test files (.go, .ts, .spec.ts, etc.) and testing infrastructure
+
 When writing tests:
 1. Focus on behavior, not implementation
 2. Test edge cases and error conditions

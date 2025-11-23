@@ -183,6 +183,12 @@ export const actions = {
 - Test with screen readers
 - Support reduced motion preferences
 
+## File Editing Guidelines
+
+- **Only edit the following 2 files if necessary:** `README.md` and `copilot-instructions.md`
+- **Do not create new .md files**
+- For all other changes, focus on frontend code files (.svelte, .ts, .js, configs, etc.)
+
 When implementing features:
 1. Review existing component patterns first
 2. Follow SvelteKit file conventions
