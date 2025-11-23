@@ -20,8 +20,8 @@ test.describe('V-Insight E2E Automated Tests', () => {
 	let alertRuleId: string;
 
 	test.beforeEach(async ({ page }) => {
-		// Set a longer timeout for all actions in this test
-		page.setDefaultTimeout(10000);
+		// Set a longer timeout for all actions in this test (CI environments can be slow)
+		page.setDefaultTimeout(30000);
 	});
 
 	test('1. Login with demo user', async ({ page }) => {

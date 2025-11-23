@@ -88,9 +88,9 @@ jobs:
           # Wait for frontend health check with retries
           echo "Checking frontend health..."
           attempt=0
-          until curl -f http://localhost:3000 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+          until curl -f -s http://localhost:3000/login | grep -q "<!DOCTYPE html" 2>/dev/null || [ $attempt -eq $max_attempts ]; do
             attempt=$((attempt + 1))
-            echo "Frontend health check attempt $attempt/$max_attempts..."
+            echo "Frontend health check attempt $attempt/$max_attempts (waiting for Vite to compile)..."
             if [ $attempt -lt $max_attempts ]; then
               sleep 5
             fi
@@ -102,13 +102,13 @@ jobs:
             docker compose logs frontend
             exit 1
           fi
-          echo "✅ Frontend is healthy"
+          echo "✅ Frontend is healthy and serving pages"
           
           echo "🎉 All services are healthy!"
           
-          # Additional wait for database migrations and worker jobs to initialize
-          echo "Waiting for database migrations and worker jobs to initialize (15s)..."
-          sleep 15
+          # Additional wait for Vite HMR and database to fully stabilize
+          echo "Waiting for Vite HMR and database to stabilize (20s)..."
+          sleep 20
           echo "✅ Services ready for testing"
 
       - name: Set up Node.js
