@@ -3,7 +3,6 @@ package jobs
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
