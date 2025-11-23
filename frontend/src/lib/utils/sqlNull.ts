@@ -26,6 +26,8 @@ interface SqlNullTime {
 /**
  * Extract a value from a sql.NullInt64 or return the direct value/default
  */
+export function extractInt64(value: any, defaultValue: number): number;
+export function extractInt64(value: any, defaultValue: string): string | number;
 export function extractInt64(value: any, defaultValue: number | string = 'N/A'): number | string {
 	if (value === null || value === undefined) {
 		return defaultValue;

@@ -74,10 +74,7 @@
 		
 		const responseTimes = checks
 			.filter((check) => isValidSqlNull(check.response_time_ms))
-			.map((check) => {
-				const val = extractInt64(check.response_time_ms, 0);
-				return typeof val === 'number' ? val : 0;
-			});
+			.map((check) => extractInt64(check.response_time_ms, 0));
 
 		if (responseTimes.length === 0) return 'N/A';
 
@@ -173,10 +170,7 @@
 				{@const responseTimes = checks
 					.filter((c) => isValidSqlNull(c.response_time_ms))
 					.slice(0, 48)
-					.map((c) => {
-						const val = extractInt64(c.response_time_ms, 0);
-						return typeof val === 'number' ? val : 0;
-					})}
+					.map((c) => extractInt64(c.response_time_ms, 0))}
 				{@const maxTime = Math.max(...responseTimes, 1)}
 				<div class="flex items-end gap-1 h-48">
 					{#each responseTimes as time}
