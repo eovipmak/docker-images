@@ -27,22 +27,22 @@
 
 	// Only update formData when channel actually changes (different channel or switching between create/edit)
 	$: if (channel && channel.id !== lastChannelId) {
-		lastChannelId = channel?.id || null;
 		formData = {
 			name: channel.name || '',
 			type: channel.type || 'webhook',
 			enabled: channel.enabled !== undefined ? channel.enabled : true
 		};
 		config = channel.config || {};
+		lastChannelId = channel?.id || null;
 	} else if (!channel && lastChannelId !== null) {
 		// Switching from edit to create mode
-		lastChannelId = null;
 		formData = {
 			name: '',
 			type: 'webhook',
 			enabled: true
 		};
 		config = { url: '' };
+		lastChannelId = null;
 	}
 
 	$: isEditMode = !!channel;

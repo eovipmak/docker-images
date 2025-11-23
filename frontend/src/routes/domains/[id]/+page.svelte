@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
+	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
 	let monitorId: string = '';
 	let monitor: any = null;
@@ -72,19 +73,10 @@
 		if (!checks || checks.length === 0) return 'N/A';
 		
 		const responseTimes = checks
-			.filter((check) => {
-				// Handle both direct values and sql.Null* types
-				if (typeof check.response_time_ms === 'object' && check.response_time_ms !== null) {
-					return check.response_time_ms.Valid && check.response_time_ms.Int64 !== null;
-				}
-				return check.response_time_ms !== null && check.response_time_ms !== undefined;
-			})
+			.filter((check) => isValidSqlNull(check.response_time_ms))
 			.map((check) => {
-				// Extract the actual value
-				if (typeof check.response_time_ms === 'object' && check.response_time_ms !== null) {
-					return check.response_time_ms.Int64;
-				}
-				return check.response_time_ms;
+				const val = extractInt64(check.response_time_ms, 0);
+				return typeof val === 'number' ? val : 0;
 			});
 
 		if (responseTimes.length === 0) return 'N/A';
@@ -179,18 +171,11 @@
 			<h2 class="text-xl font-bold text-gray-900 mb-4">Response Time (Last 24 Hours)</h2>
 			{#if checks && checks.length > 0}
 				{@const responseTimes = checks
-					.filter((c) => {
-						if (typeof c.response_time_ms === 'object' && c.response_time_ms !== null) {
-							return c.response_time_ms.Valid && c.response_time_ms.Int64 !== null;
-						}
-						return c.response_time_ms !== null && c.response_time_ms !== undefined;
-					})
+					.filter((c) => isValidSqlNull(c.response_time_ms))
 					.slice(0, 48)
 					.map((c) => {
-						if (typeof c.response_time_ms === 'object' && c.response_time_ms !== null) {
-							return c.response_time_ms.Int64;
-						}
-						return c.response_time_ms;
+						const val = extractInt64(c.response_time_ms, 0);
+						return typeof val === 'number' ? val : 0;
 					})}
 				{@const maxTime = Math.max(...responseTimes, 1)}
 				<div class="flex items-end gap-1 h-48">
@@ -304,13 +289,17 @@
 										<MonitorStatus status={check.success ? 'up' : 'down'} showText={true} />
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{check.status_code && typeof check.status_code === 'object' && check.status_code.Valid ? check.status_code.Int64 : check.status_code || 'N/A'}
+										{extractInt64(check.status_code, 'N/A')}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{check.response_time_ms && typeof check.response_time_ms === 'object' && check.response_time_ms.Valid ? `${check.response_time_ms.Int64}ms` : check.response_time_ms ? `${check.response_time_ms}ms` : 'N/A'}
+										{#if isValidSqlNull(check.response_time_ms)}
+											{extractInt64(check.response_time_ms, 0)}ms
+										{:else}
+											N/A
+										{/if}
 									</td>
 									<td class="px-6 py-4 text-sm text-red-600">
-										{check.error_message && typeof check.error_message === 'object' && check.error_message.Valid ? check.error_message.String : check.error_message || '-'}
+										{extractString(check.error_message, '-')}
 									</td>
 								</tr>
 							{/each}

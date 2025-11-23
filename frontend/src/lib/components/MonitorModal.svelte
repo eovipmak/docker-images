@@ -33,7 +33,6 @@
 
 	// Only update formData when monitor actually changes (different monitor or switching between create/edit)
 	$: if (monitor && monitor.id !== lastMonitorId) {
-		lastMonitorId = monitor?.id || null;
 		formData = {
 			name: monitor.name || '',
 			url: monitor.url || '',
@@ -43,9 +42,9 @@
 			check_ssl: monitor.check_ssl !== undefined ? monitor.check_ssl : true,
 			ssl_alert_days: monitor.ssl_alert_days || 30
 		};
+		lastMonitorId = monitor?.id || null;
 	} else if (!monitor && lastMonitorId !== null) {
 		// Switching from edit to create mode
-		lastMonitorId = null;
 		formData = {
 			name: '',
 			url: '',
@@ -55,6 +54,7 @@
 			check_ssl: true,
 			ssl_alert_days: 30
 		};
+		lastMonitorId = null;
 	}
 
 	$: isEditMode = !!monitor;
