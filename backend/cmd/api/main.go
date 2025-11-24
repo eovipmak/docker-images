@@ -61,13 +61,15 @@ func main() {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
 	monitorService := service.NewMonitorService(db)
+	metricsService := service.NewMetricsService(db.DB)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, alertRuleRepo, alertChannelRepo, monitorService)
+	metricsHandler := handlers.NewMetricsHandler(metricsService, monitorRepo)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
-	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo)
+	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo, metricsService)
 	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo, alertChannelRepo)
 	streamHandler := handlers.NewStreamHandler()
 
@@ -131,6 +133,7 @@ func main() {
 		protected.DELETE("/monitors/:id", monitorHandler.Delete)
 		protected.GET("/monitors/:id/checks", monitorHandler.GetChecks)
 		protected.GET("/monitors/:id/ssl-status", monitorHandler.GetSSLStatus)
+		protected.GET("/monitors/:id/metrics", metricsHandler.GetMonitorMetrics)
 
 		// Alert rule endpoints
 		protected.POST("/alert-rules", alertRuleHandler.Create)
