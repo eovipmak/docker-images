@@ -83,10 +83,6 @@
 	let isLoading = true;
 	let error = '';
 
-	// Auto-refresh settings
-	let autoRefreshInterval = 60; // seconds
-	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
-
 	// Subscribe to SSE events
 	let unsubscribeChecks: (() => void) | null = null;
 	let unsubscribeIncidents: (() => void) | null = null;
@@ -115,37 +111,8 @@
 		}
 	}
 
-	// Start auto-refresh timer
-	function startAutoRefresh() {
-		if (autoRefreshTimer) {
-			clearInterval(autoRefreshTimer);
-		}
-		autoRefreshTimer = setInterval(() => {
-			console.log(`[Dashboard] Auto-refreshing data (${autoRefreshInterval}s interval)`);
-			loadDashboardData();
-		}, autoRefreshInterval * 1000);
-	}
-
-	// Stop auto-refresh timer
-	function stopAutoRefresh() {
-		if (autoRefreshTimer) {
-			clearInterval(autoRefreshTimer);
-			autoRefreshTimer = null;
-		}
-	}
-
-	// Handle interval change
-	function handleIntervalChange(event: Event) {
-		const target = event.target as HTMLSelectElement;
-		autoRefreshInterval = parseInt(target.value);
-		startAutoRefresh(); // Restart with new interval
-	}
-
 	onMount(async () => {
 		await loadDashboardData();
-
-		// Start auto-refresh
-		startAutoRefresh();
 
 		// Subscribe to monitor check events
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
@@ -168,7 +135,6 @@
 	});
 
 	onDestroy(() => {
-		stopAutoRefresh();
 
 		if (unsubscribeChecks) {
 			unsubscribeChecks();
@@ -215,21 +181,6 @@
 		<div>
 			<h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
 			<p class="text-gray-600">Monitor your domains and view system metrics</p>
-		</div>
-		<div class="flex items-center gap-4">
-			<label for="refresh-interval" class="text-sm text-gray-600">Auto-refresh:</label>
-			<select 
-				id="refresh-interval" 
-				bind:value={autoRefreshInterval} 
-				on:change={handleIntervalChange}
-				class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-			>
-				<option value={15}>15s</option>
-				<option value={30}>30s</option>
-				<option value={60}>1m</option>
-				<option value={300}>5m</option>
-				<option value={900}>15m</option>
-			</select>
 		</div>
 	</div>
 

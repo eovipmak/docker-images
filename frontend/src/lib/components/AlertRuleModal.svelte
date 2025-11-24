@@ -65,6 +65,9 @@
 
 	$: isEditMode = !!rule;
 
+	$: thresholdLabel = getThresholdLabel(formData.trigger_type);
+	$: thresholdHelp = getThresholdHelp(formData.trigger_type);
+
 	$: if (isOpen) {
 		loadData();
 	}
@@ -221,8 +224,9 @@
 		}
 	}
 
-	function getThresholdLabel(): string {
-		switch (formData.trigger_type) {
+	function getThresholdLabel(triggerType?: string): string {
+		const type = triggerType || formData.trigger_type;
+		switch (type) {
 			case 'down':
 				return 'Failed Checks';
 			case 'slow_response':
@@ -234,8 +238,9 @@
 		}
 	}
 
-	function getThresholdHelp(): string {
-		switch (formData.trigger_type) {
+	function getThresholdHelp(triggerType?: string): string {
+		const type = triggerType || formData.trigger_type;
+		switch (type) {
 			case 'down':
 				return 'Number of consecutive failed checks before triggering';
 			case 'slow_response':
@@ -341,7 +346,7 @@
 					<!-- Threshold Value -->
 					<div>
 						<label for="threshold_value" class="block text-sm font-medium text-gray-700 mb-1">
-							{getThresholdLabel()} <span class="text-red-500">*</span>
+							{thresholdLabel} <span class="text-red-500">*</span>
 						</label>
 						<input
 							type="number"
@@ -352,8 +357,8 @@
 						/>
 						{#if errors.threshold_value}
 							<p class="text-sm text-red-600 mt-1">{errors.threshold_value}</p>
-						{:else if getThresholdHelp()}
-							<p class="text-xs text-gray-500 mt-1">{getThresholdHelp()}</p>
+						{:else if thresholdHelp}
+							<p class="text-xs text-gray-500 mt-1">{thresholdHelp}</p>
 						{/if}
 					</div>
 				</div>
