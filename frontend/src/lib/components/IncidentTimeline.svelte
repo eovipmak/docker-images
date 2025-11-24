@@ -23,7 +23,7 @@
 		];
 
 		if (incident.notified_at && incident.notified_at.Valid && isValidDate(incident.notified_at.Time)) {
-			let description = 'Alert notifications were sent';
+			let description = `Alert notifications were sent at ${formatDate(incident.notified_at.Time)}`;
 			if (incident.channels && incident.channels.length > 0) {
 				const channelNames = (incident.channels as any[]).map((ch: any) => `${ch.name} (${ch.type})`).join(', ');
 				description += ` to: ${channelNames}`;
