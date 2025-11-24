@@ -49,6 +49,10 @@ func main() {
 	// Initialize Gin router
 	router := gin.Default()
 
+	// Add performance middleware
+	router.Use(middleware.GzipCompression())
+	router.Use(middleware.CacheHeaders())
+
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db.DB)
 	tenantRepo := postgres.NewTenantRepository(db.DB)

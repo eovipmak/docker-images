@@ -4,8 +4,6 @@
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
-	import LineChart from '$lib/components/charts/LineChart.svelte';
-	import DonutChart from '$lib/components/charts/DonutChart.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
 	let monitorId: string = '';
@@ -21,20 +19,44 @@
 	let responseTimePeriod: '1h' | '6h' | '12h' | '24h' | '1w' = '24h';
 	let chartType: 'uptime' | 'response' = 'uptime';
 
+	// Lazy loaded chart components
+	let LineChart: any = null;
+	let DonutChart: any = null;
+	let chartsLoaded = false;
+
 	// Auto-refresh settings
 	let autoRefreshInterval = 300; // seconds (5 minutes)
 	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 	$: monitorId = $page.params.id || '';
 
-	onMount(() => {
+	// Computed uptime data based on selected period
+	$: currentUptimeData = uptimePeriod === '7d' ? metrics7d?.uptime : metrics30d?.uptime;
+
+	onMount(async () => {
 		loadMonitorData();
 		startAutoRefresh();
+		// Lazy load chart components
+		loadCharts();
 	});
 
 	onDestroy(() => {
 		stopAutoRefresh();
 	});
+
+	async function loadCharts() {
+		try {
+			const [lineChartModule, donutChartModule] = await Promise.all([
+				import('$lib/components/charts/LineChart.svelte'),
+				import('$lib/components/charts/DonutChart.svelte')
+			]);
+			LineChart = lineChartModule.default;
+			DonutChart = donutChartModule.default;
+			chartsLoaded = true;
+		} catch (err) {
+			console.error('Failed to load chart components:', err);
+		}
+	}
 
 	async function loadMonitorData() {
 		isLoading = true;
@@ -377,9 +399,10 @@
 						</button>
 					</div>
 				</div>
-				{#if getResponseTimeData() && getResponseTimeData().length > 0}
+				{#if chartsLoaded && LineChart && getResponseTimeData() && getResponseTimeData().length > 0}
 					<div class="h-48">
-						<LineChart 
+						<svelte:component 
+							this={LineChart}
 							data={getResponseTimeData()} 
 							label="Response Time" 
 							color="#3B82F6"
@@ -428,12 +451,30 @@
 					</button>
 				</div>
 			</div>
-			{#if (uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime)}
+			{#if chartsLoaded && DonutChart && ((uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime))}
 				<div class="h-48">
-					<DonutChart 
+					<svelte:component 
+						this={DonutChart}
 						percentage={uptimePeriod === '7d' ? metrics7d.uptime.percentage : metrics30d.uptime.percentage} 
 						label="Uptime"
 					/>
+				</div>
+				<div class="mt-4 text-center text-sm text-gray-600">
+					<p>
+						{uptimePeriod === '7d' 
+							? `${metrics7d.uptime.success_checks} successful / ${metrics7d.uptime.total_checks} total checks`
+							: `${metrics30d.uptime.success_checks} successful / ${metrics30d.uptime.total_checks} total checks`
+						}
+					</p>
+				</div>
+			{:else if !chartsLoaded && ((uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime))}
+				<div class="h-48 flex items-center justify-center">
+					<div class="text-center">
+						<div class="text-4xl font-bold text-gray-900">
+							{uptimePeriod === '7d' ? metrics7d.uptime.percentage.toFixed(1) : metrics30d.uptime.percentage.toFixed(1)}%
+						</div>
+						<div class="text-sm text-gray-500">Uptime</div>
+					</div>
 				</div>
 				<div class="mt-4 text-center text-sm text-gray-600">
 					<p>

@@ -6,7 +6,20 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			// Enable compression for static assets
+			precompress: true
+		})
+	},
+
+	// Compiler options for optimized output
+	compilerOptions: {
+		// Enable dev mode warnings only in development
+		dev: process.env.NODE_ENV !== 'production',
+		// Preserve whitespace only in development
+		preserveWhitespace: false,
+		// Enable CSS optimization
+		css: 'injected'
 	}
 };
 
