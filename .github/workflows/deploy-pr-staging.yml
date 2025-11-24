@@ -96,7 +96,7 @@ jobs:
             docker compose -f docker-compose.staging.yml up -d
             # Comment URL trên PR
             curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
               ${{ github.event.issue.comments_url }} \
               -d "{\"body\": \"🚀 Staging deployed! Access at: http://YOUR_VPS_IP:3001\"}"
@@ -111,11 +111,11 @@ jobs:
       - name: SSH into VPS and cleanup staging
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          username: ${{ secrets.VPS_USER }}
+          host: ${{ secrets.STAGING_SERVER_HOST }}
+          port: ${{ secrets.STAGING_SERVER_SSH_PORT || 22 }}
+          username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /path/to/v-insight-staging
+            cd v-insight-staging
             docker compose -f docker-compose.staging.yml down
             docker system prune -f

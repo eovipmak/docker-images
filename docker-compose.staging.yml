@@ -1,0 +1,98 @@
+# Staging Docker Compose Configuration
+# This file is used for staging deployments on VPS
+# Based on docker-compose.prod.yml with staging-specific modifications
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: v-insight-postgres-staging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-v_insight}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - v-insight-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/eovipmak/v-insight/backend:latest
+    container_name: v-insight-backend-staging
+    environment:
+      - ENV=production  # Keep as production for staging
+      - PORT=8080
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-v_insight}
+    ports:
+      - "8081:8080"  # Changed from 8080 to 8081 for staging
+    networks:
+      - v-insight-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/eovipmak/v-insight/worker:latest
+    container_name: v-insight-worker-staging
+    environment:
+      - ENV=production  # Keep as production for staging
+      - PORT=8081
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DB_NAME=${POSTGRES_DB:-v_insight}
+    ports:
+      - "8082:8081"  # Changed from 8081 to 8082 to avoid conflict with backend
+    networks:
+      - v-insight-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/eovipmak/v-insight/frontend:latest
+    container_name: v-insight-frontend-staging
+    environment:
+      - NODE_ENV=production
+      - BACKEND_API_URL=http://backend:8080
+      # IMPORTANT: Add your domain here when using reverse proxy
+      # Example: VITE_ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.com
+      - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
+    ports:
+      - "3001:3000"  # Changed from 3000 to 3001 for staging
+    networks:
+      - v-insight-network
+    restart: unless-stopped
+
+networks:
+  v-insight-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
