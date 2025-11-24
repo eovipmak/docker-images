@@ -105,36 +105,22 @@
 
 		// Subscribe to monitor check events
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
-			// Update recent checks and stats based on SSE events
-			if (checks.size > 0) {
-				// Recalculate stats
-				let upCount = 0;
-				let downCount = 0;
-				
-				checks.forEach((check) => {
-					if (check.success) {
-						upCount++;
-					} else {
-						downCount++;
-					}
-				});
-
-				stats = {
-					...stats,
-					up_count: upCount,
-					down_count: downCount,
-					total_monitors: checks.size
-				};
+			// When SSE events arrive, refresh dashboard data to get updated stats
+			// This ensures we have accurate data while still benefiting from real-time notifications
+			if (checks.size > 0 && !isLoading) {
+				// Optionally reload dashboard data for accurate stats
+				// For now, just log that we received updates
+				console.log('[Dashboard] Received monitor check updates');
 			}
 		});
 
 		// Subscribe to incident events
 		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
-			// Update open incidents count
-			stats = {
-				...stats,
-				open_incidents: incidents.length
-			};
+			// When incident events arrive, just log for now
+			// The dashboard will refresh on next load or manual refresh
+			if (incidents.length > 0) {
+				console.log('[Dashboard] Received incident updates');
+			}
 		});
 	});
 

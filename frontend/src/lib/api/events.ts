@@ -33,7 +33,7 @@ export const latestIncidents: Writable<IncidentEvent[]> = writable([]);
 
 // Event source connection
 let eventSource: EventSource | null = null;
-let reconnectTimer: number | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
@@ -202,7 +202,7 @@ function scheduleReconnect(): void {
 	reconnectTimer = setTimeout(() => {
 		console.log(`[SSE] Reconnect attempt ${reconnectAttempts}`);
 		connectEventStream();
-	}, delay) as unknown as number;
+	}, delay);
 }
 
 /**
