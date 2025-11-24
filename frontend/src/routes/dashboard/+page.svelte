@@ -50,6 +50,8 @@
 		up_count: number;
 		down_count: number;
 		open_incidents: number;
+		average_response_time: number;
+		overall_uptime: number;
 	}
 
 	interface MonitorCheckWithMonitor {
@@ -72,7 +74,9 @@
 		total_monitors: 0,
 		up_count: 0,
 		down_count: 0,
-		open_incidents: 0
+		open_incidents: 0,
+		average_response_time: 0,
+		overall_uptime: 0
 	};
 	let recentChecks: MonitorCheckWithMonitor[] = [];
 	let openIncidents: IncidentWithDetails[] = [];
@@ -239,11 +243,21 @@
 		</div>
 	{:else}
 		<!-- Stats Cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 			<StatCard title="Total Monitors" value={stats.total_monitors} valueColor="text-gray-900" />
 			<StatCard title="Monitors Up" value={stats.up_count} valueColor="text-green-600" />
 			<StatCard title="Monitors Down" value={stats.down_count} valueColor="text-red-600" />
 			<StatCard title="Open Incidents" value={stats.open_incidents} valueColor="text-yellow-600" />
+			<StatCard 
+				title="Avg Response Time (24h)" 
+				value={stats.average_response_time ? `${Math.round(stats.average_response_time)}ms` : 'N/A'} 
+				valueColor="text-blue-600" 
+			/>
+			<StatCard 
+				title="Overall Uptime (24h)" 
+				value={stats.overall_uptime ? `${stats.overall_uptime.toFixed(2)}%` : 'N/A'} 
+				valueColor="text-green-600" 
+			/>
 		</div>
 
 		<div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
