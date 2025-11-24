@@ -6,7 +6,6 @@
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import LineChart from '$lib/components/charts/LineChart.svelte';
 	import DonutChart from '$lib/components/charts/DonutChart.svelte';
-	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
 	let monitorId: string = '';
@@ -18,6 +17,9 @@
 	let metrics30d: any = null;
 	let isLoading = true;
 	let error = '';
+	let uptimePeriod: '7d' | '30d' = '7d';
+	let responseTimePeriod: '1h' | '6h' | '12h' | '24h' | '1w' = '24h';
+	let chartType: 'uptime' | 'response' = 'uptime';
 
 	// Auto-refresh settings
 	let autoRefreshInterval = 60; // seconds
@@ -143,6 +145,74 @@
 		autoRefreshInterval = parseInt(target.value);
 		startAutoRefresh(); // Restart with new interval
 	}
+
+	// Get response time data based on selected period
+	function getResponseTimeData() {
+		switch (responseTimePeriod) {
+			case '1h':
+				// For 1h, we might need to filter recent data or fetch from API
+				// For now, return empty array to use fallback logic
+				return [];
+			case '6h':
+				return [];
+			case '12h':
+				return [];
+			case '24h':
+				return metrics24h?.response_time_history || [];
+			case '1w':
+				return metrics7d?.response_time_history || [];
+			default:
+				return metrics24h?.response_time_history || [];
+		}
+	}
+
+	// Get filtered response times based on period
+	function getFilteredResponseTimes() {
+		if (!checks || checks.length === 0) return [];
+
+		let limit = 48; // Default for 24h (assuming 30min intervals)
+		switch (responseTimePeriod) {
+			case '1h':
+				limit = 2; // Assuming 30min intervals
+				break;
+			case '6h':
+				limit = 12;
+				break;
+			case '12h':
+				limit = 24;
+				break;
+			case '24h':
+				limit = 48;
+				break;
+			case '1w':
+				limit = 336; // 7 days * 48 checks per day
+				break;
+		}
+
+		return checks
+			.filter((c) => isValidSqlNull(c.response_time_ms))
+			.slice(0, limit)
+			.reverse()
+			.map((c) => extractInt64(c.response_time_ms, 0));
+	}
+
+	// Get period label for display
+	function getPeriodLabel() {
+		switch (responseTimePeriod) {
+			case '1h':
+				return '1h';
+			case '6h':
+				return '6h';
+			case '12h':
+				return '12h';
+			case '24h':
+				return '24h';
+			case '1w':
+				return '1w';
+			default:
+				return '24h';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -192,7 +262,8 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+			<!-- Status Overview -->
 			<div class="bg-white rounded-lg shadow-md p-6">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Status</h3>
 				<MonitorStatus status={getMonitorStatus()} />
@@ -205,176 +276,176 @@
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Avg Response Time</h3>
 				<p class="text-2xl font-bold text-gray-900">{getAverageResponseTime()}</p>
 			</div>
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h3 class="text-sm font-medium text-gray-500 mb-2">Check Interval</h3>
-				<p class="text-2xl font-bold text-gray-900">{monitor.check_interval}s</p>
-			</div>
-		</div>
-
-		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-			<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime History (Last 24 Hours)</h2>
-			{#if checks && checks.length > 0}
-				<div class="flex items-end gap-1 h-48">
-					{#each checks.slice(0, 48).reverse() as check}
-						<div
-							class="flex-1 rounded-t transition-all hover:opacity-75"
-							class:bg-green-500={check.success}
-							class:bg-red-500={!check.success}
-							style="height: {check.success ? '100%' : '20%'}"
-							title="{formatDate(check.checked_at)} - {check.success ? 'Up' : 'Down'}"
-						></div>
-					{/each}
+			
+			<!-- SSL Information (conditional) -->
+			{#if monitor.check_ssl && sslStatus}
+				<div class="bg-white rounded-lg shadow-md p-6">
+					<h3 class="text-sm font-medium text-gray-500 mb-2">SSL Status</h3>
+					<div class="space-y-1">
+						<p class="text-lg font-semibold {sslStatus.valid ? 'text-green-600' : 'text-red-600'}">
+							{sslStatus.valid ? 'Valid' : 'Invalid'}
+						</p>
+						{#if sslStatus.expires_at}
+							<p class="text-sm text-gray-600">
+								Expires: {new Date(sslStatus.expires_at).toLocaleDateString()}
+							</p>
+						{/if}
+					</div>
 				</div>
-				<div class="flex justify-between text-xs text-gray-500 mt-2">
-					<span>24h ago</span>
-					<span>Now</span>
+			{:else if monitor.check_ssl}
+				<div class="bg-white rounded-lg shadow-md p-6">
+					<h3 class="text-sm font-medium text-gray-500 mb-2">SSL Status</h3>
+					<p class="text-lg font-semibold text-gray-500">Checking...</p>
 				</div>
-			{:else}
-				<p class="text-gray-500">No check history available</p>
 			{/if}
 		</div>
 
+		<!-- History Charts -->
 		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-			<h2 class="text-xl font-bold text-gray-900 mb-4">Response Time (Last 24 Hours)</h2>
-			{#if metrics24h && metrics24h.response_time_history && metrics24h.response_time_history.length > 0}
+			<div class="flex justify-between items-center mb-4">
+				<h2 class="text-xl font-bold text-gray-900">History</h2>
+				<div class="flex bg-gray-100 rounded-lg p-1">
+					<button
+						class="px-3 py-1 text-sm rounded-md transition-colors {chartType === 'uptime' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+						on:click={() => chartType = 'uptime'}
+					>
+						Uptime
+					</button>
+					<button
+						class="px-3 py-1 text-sm rounded-md transition-colors {chartType === 'response' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+						on:click={() => chartType = 'response'}
+					>
+						Response Time
+					</button>
+				</div>
+			</div>
+
+			{#if chartType === 'uptime'}
+				<!-- Uptime History Chart -->
+				{#if checks && checks.length > 0}
+					<div class="flex items-end gap-1 h-24">
+						{#each checks.slice(0, 48).reverse() as check}
+							<div
+								class="flex-1 rounded-t transition-all hover:opacity-75"
+								class:bg-green-500={check.success}
+								class:bg-red-500={!check.success}
+								style="height: {check.success ? '100%' : '20%'}"
+								title="{formatDate(check.checked_at)} - {check.success ? 'Up' : 'Down'}"
+							></div>
+						{/each}
+					</div>
+					<div class="flex justify-between text-xs text-gray-500 mt-2">
+						<span>24h ago</span>
+						<span>Now</span>
+					</div>
+				{:else}
+					<p class="text-gray-500">No check history available</p>
+				{/if}
+			{:else}
+				<!-- Response Time Chart -->
+				<div class="mb-4">
+					<div class="flex bg-gray-50 rounded-lg p-1 w-fit">
+						<button
+							class="px-2 py-1 text-xs rounded-md transition-colors {responseTimePeriod === '1h' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+							on:click={() => responseTimePeriod = '1h'}
+						>
+							1h
+						</button>
+						<button
+							class="px-2 py-1 text-xs rounded-md transition-colors {responseTimePeriod === '6h' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+							on:click={() => responseTimePeriod = '6h'}
+						>
+							6h
+						</button>
+						<button
+							class="px-2 py-1 text-xs rounded-md transition-colors {responseTimePeriod === '12h' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+							on:click={() => responseTimePeriod = '12h'}
+						>
+							12h
+						</button>
+						<button
+							class="px-2 py-1 text-xs rounded-md transition-colors {responseTimePeriod === '24h' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+							on:click={() => responseTimePeriod = '24h'}
+						>
+							24h
+						</button>
+						<button
+							class="px-2 py-1 text-xs rounded-md transition-colors {responseTimePeriod === '1w' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+							on:click={() => responseTimePeriod = '1w'}
+						>
+							1w
+						</button>
+					</div>
+				</div>
+				{#if getResponseTimeData() && getResponseTimeData().length > 0}
+					<div class="h-48">
+						<LineChart 
+							data={getResponseTimeData()} 
+							label="Response Time" 
+							color="#3B82F6"
+							yAxisLabel="Response Time (ms)"
+						/>
+					</div>
+				{:else if checks && checks.length > 0}
+					{@const responseTimes = getFilteredResponseTimes()}
+					{@const maxTime = Math.max(...responseTimes, 1)}
+					<div class="flex items-end gap-1 h-32">
+						{#each responseTimes as time}
+							<div
+								class="flex-1 bg-blue-500 rounded-t transition-all hover:opacity-75"
+								style="height: {(time / maxTime) * 100}%"
+								title="{time}ms"
+							></div>
+						{/each}
+					</div>
+					<div class="flex justify-between text-xs text-gray-500 mt-2">
+						<span>{getPeriodLabel()} ago</span>
+						<span>Max: {maxTime}ms</span>
+						<span>Now</span>
+					</div>
+				{:else}
+					<p class="text-gray-500">No response time data available</p>
+				{/if}
+			{/if}
+		</div>
+
+		<!-- Uptime Chart -->
+		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
+			<div class="flex justify-between items-center mb-4">
+				<h2 class="text-xl font-bold text-gray-900">Uptime</h2>
+				<div class="flex bg-gray-100 rounded-lg p-1">
+					<button
+						class="px-3 py-1 text-sm rounded-md transition-colors {uptimePeriod === '7d' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+						on:click={() => uptimePeriod = '7d'}
+					>
+						Last 7 Days
+					</button>
+					<button
+						class="px-3 py-1 text-sm rounded-md transition-colors {uptimePeriod === '30d' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}"
+						on:click={() => uptimePeriod = '30d'}
+					>
+						Last 30 Days
+					</button>
+				</div>
+			</div>
+			{#if (uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime)}
 				<div class="h-64">
-					<LineChart 
-						data={metrics24h.response_time_history} 
-						label="Response Time" 
-						color="#3B82F6"
-						yAxisLabel="Response Time (ms)"
+					<DonutChart 
+						percentage={uptimePeriod === '7d' ? metrics7d.uptime.percentage : metrics30d.uptime.percentage} 
+						label="Uptime"
 					/>
 				</div>
-			{:else if checks && checks.length > 0}
-				{@const responseTimes = checks
-					.filter((c) => isValidSqlNull(c.response_time_ms))
-					.slice(0, 48)
-					.reverse()
-					.map((c) => extractInt64(c.response_time_ms, 0))}
-				{@const maxTime = Math.max(...responseTimes, 1)}
-				<div class="flex items-end gap-1 h-48">
-					{#each responseTimes as time}
-						<div
-							class="flex-1 bg-blue-500 rounded-t transition-all hover:opacity-75"
-							style="height: {(time / maxTime) * 100}%"
-							title="{time}ms"
-						></div>
-					{/each}
-				</div>
-				<div class="flex justify-between text-xs text-gray-500 mt-2">
-					<span>24h ago</span>
-					<span>Max: {maxTime}ms</span>
-					<span>Now</span>
-				</div>
-			{:else}
-				<p class="text-gray-500">No response time data available</p>
-			{/if}
-		</div>
-
-		<!-- Uptime Charts -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime - Last 7 Days</h2>
-				{#if metrics7d && metrics7d.uptime}
-					<div class="h-64">
-						<DonutChart 
-							percentage={metrics7d.uptime.percentage} 
-							label="Uptime"
-						/>
-					</div>
-					<div class="mt-4 text-center text-sm text-gray-600">
-						<p>{metrics7d.uptime.success_checks} successful / {metrics7d.uptime.total_checks} total checks</p>
-					</div>
-				{:else}
-					<p class="text-gray-500">No uptime data available</p>
-				{/if}
-			</div>
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime - Last 30 Days</h2>
-				{#if metrics30d && metrics30d.uptime}
-					<div class="h-64">
-						<DonutChart 
-							percentage={metrics30d.uptime.percentage} 
-							label="Uptime"
-						/>
-					</div>
-					<div class="mt-4 text-center text-sm text-gray-600">
-						<p>{metrics30d.uptime.success_checks} successful / {metrics30d.uptime.total_checks} total checks</p>
-					</div>
-				{:else}
-					<p class="text-gray-500">No uptime data available</p>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Status Code Distribution -->
-		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-			<h2 class="text-xl font-bold text-gray-900 mb-4">Status Code Distribution (Last 24 Hours)</h2>
-			{#if metrics24h && metrics24h.status_code_distribution && metrics24h.status_code_distribution.length > 0}
-				<div class="h-64">
-					<BarChart data={metrics24h.status_code_distribution} />
-				</div>
-			{:else}
-				<p class="text-gray-500">No status code data available</p>
-			{/if}
-		</div>
-
-		{#if monitor.check_ssl && monitor.url.startsWith('https') && sslStatus}
-			<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-				<h2 class="text-xl font-bold text-gray-900 mb-4">SSL Certificate</h2>
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<div>
-						<p class="text-sm text-gray-500">Valid</p>
-						<p class="font-medium text-gray-900">
-							{sslStatus.valid ? 'Yes' : 'No'}
-						</p>
-					</div>
-					{#if sslStatus.expires_at}
-						<div>
-							<p class="text-sm text-gray-500">Expires At</p>
-							<p class="font-medium text-gray-900">{formatDate(sslStatus.expires_at)}</p>
-						</div>
-					{/if}
-					{#if sslStatus.issuer}
-						<div>
-							<p class="text-sm text-gray-500">Issuer</p>
-							<p class="font-medium text-gray-900">{sslStatus.issuer}</p>
-						</div>
-					{/if}
-					{#if sslStatus.error_message}
-						<div class="col-span-2">
-							<p class="text-sm text-gray-500">Error</p>
-							<p class="font-medium text-red-600">{sslStatus.error_message}</p>
-						</div>
-					{/if}
-				</div>
-			</div>
-		{/if}
-
-		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
-			<h2 class="text-xl font-bold text-gray-900 mb-4">Settings</h2>
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<div>
-					<p class="text-sm text-gray-500">Timeout</p>
-					<p class="font-medium text-gray-900">{monitor.timeout}s</p>
-				</div>
-				<div>
-					<p class="text-sm text-gray-500">SSL Checks</p>
-					<p class="font-medium text-gray-900">{monitor.check_ssl ? 'Enabled' : 'Disabled'}</p>
-				</div>
-				{#if monitor.check_ssl}
-					<div>
-						<p class="text-sm text-gray-500">SSL Alert (Days Before Expiry)</p>
-						<p class="font-medium text-gray-900">{monitor.ssl_alert_days} days</p>
-					</div>
-				{/if}
-				<div>
-					<p class="text-sm text-gray-500">Last Checked</p>
-					<p class="font-medium text-gray-900">
-						{monitor.last_checked_at ? formatDate(monitor.last_checked_at) : 'Never'}
+				<div class="mt-4 text-center text-sm text-gray-600">
+					<p>
+						{uptimePeriod === '7d' 
+							? `${metrics7d.uptime.success_checks} successful / ${metrics7d.uptime.total_checks} total checks`
+							: `${metrics30d.uptime.success_checks} successful / ${metrics30d.uptime.total_checks} total checks`
+						}
 					</p>
 				</div>
-			</div>
+			{:else}
+				<p class="text-gray-500">No uptime data available</p>
+			{/if}
 		</div>
 
 		{#if checks && checks.length > 0}

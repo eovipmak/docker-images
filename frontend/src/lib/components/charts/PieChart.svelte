@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		Chart,
-		BarController,
-		BarElement,
+		PieController,
+		ArcElement,
 		CategoryScale,
 		LinearScale,
 		Title,
@@ -12,7 +12,7 @@
 	} from 'chart.js';
 
 	// Register Chart.js components
-	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
+	Chart.register(PieController, ArcElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
 	export let data: { status_code: number; count: number }[] = [];
 	export const label: string = 'Status Code Distribution';
@@ -49,7 +49,7 @@
 		if (!ctx) return;
 
 		chart = new Chart(ctx, {
-			type: 'bar',
+			type: 'pie',
 			data: {
 				labels: data.map((d) => d.status_code.toString()),
 				datasets: [
@@ -57,8 +57,8 @@
 						label: 'Count',
 						data: data.map((d) => d.count),
 						backgroundColor: data.map((d) => getColorForStatusCode(d.status_code)),
-						borderWidth: 0,
-						borderRadius: 4
+						borderWidth: 1,
+						borderColor: '#FFFFFF'
 					}
 				]
 			},
@@ -67,7 +67,11 @@
 				maintainAspectRatio: false,
 				plugins: {
 					legend: {
-						display: false
+						position: 'bottom',
+						labels: {
+							usePointStyle: true,
+							padding: 20
+						}
 					},
 					tooltip: {
 						callbacks: {
@@ -75,32 +79,8 @@
 								return 'Status Code: ' + context[0].label;
 							},
 							label: function (context) {
-								return 'Count: ' + context.parsed.y;
+								return 'Count: ' + context.parsed;
 							}
-						}
-					}
-				},
-				scales: {
-					x: {
-						title: {
-							display: true,
-							text: 'Status Code'
-						},
-						grid: {
-							display: false
-						}
-					},
-					y: {
-						beginAtZero: true,
-						title: {
-							display: true,
-							text: 'Count'
-						},
-						grid: {
-							color: '#E5E7EB'
-						},
-						ticks: {
-							precision: 0
 						}
 					}
 				}

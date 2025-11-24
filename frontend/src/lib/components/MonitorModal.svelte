@@ -20,7 +20,7 @@
 	let formData: FormData = {
 		name: '',
 		url: '',
-		check_interval: 300,
+		check_interval: 60,
 		timeout: 30,
 		enabled: true,
 		check_ssl: true,
@@ -36,7 +36,7 @@
 		formData = {
 			name: monitor.name || '',
 			url: monitor.url || '',
-			check_interval: monitor.check_interval || 300,
+			check_interval: monitor.check_interval || 60,
 			timeout: monitor.timeout || 30,
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
 			check_ssl: monitor.check_ssl !== undefined ? monitor.check_ssl : true,
@@ -48,7 +48,7 @@
 		formData = {
 			name: '',
 			url: '',
-			check_interval: 300,
+			check_interval: 60,
 			timeout: 30,
 			enabled: true,
 			check_ssl: true,
@@ -127,7 +127,7 @@
 		formData = {
 			name: '',
 			url: '',
-			check_interval: 300,
+			check_interval: 60,
 			timeout: 30,
 			enabled: true,
 			check_ssl: true,
@@ -148,9 +148,11 @@
 	<div
 		class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
 		on:click={handleBackdropClick}
+		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"
+		tabindex="-1"
 	>
 		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
 			<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">

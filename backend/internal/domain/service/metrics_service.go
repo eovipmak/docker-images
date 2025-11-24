@@ -141,7 +141,7 @@ func (s *MetricsService) GetStatusCodeDistribution(monitorID string, period stri
 		  AND checked_at >= $2
 		  AND status_code IS NOT NULL
 		GROUP BY status_code
-		ORDER BY count DESC
+		ORDER BY status_code ASC
 	`
 
 	var distribution []StatusCodeDistribution
