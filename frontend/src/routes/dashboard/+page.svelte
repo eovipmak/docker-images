@@ -243,7 +243,7 @@
 		</div>
 	{:else}
 		<!-- Stats Cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
 			<StatCard title="Total Monitors" value={stats.total_monitors} valueColor="text-gray-900" />
 			<StatCard title="Monitors Up" value={stats.up_count} valueColor="text-green-600" />
 			<StatCard title="Monitors Down" value={stats.down_count} valueColor="text-red-600" />

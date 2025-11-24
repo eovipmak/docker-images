@@ -39,7 +39,9 @@
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
-		const success = Math.max(0, Math.min(100, percentage));
+		// Ensure percentage is a valid number
+		const validPercentage = isNaN(percentage) || percentage === undefined ? 0 : percentage;
+		const success = Math.max(0, Math.min(100, validPercentage));
 		const failure = 100 - success;
 
 		chart = new Chart(ctx, {
@@ -85,7 +87,9 @@
 	function updateChart() {
 		if (!chart) return;
 
-		const success = Math.max(0, Math.min(100, percentage));
+		// Ensure percentage is a valid number
+		const validPercentage = isNaN(percentage) || percentage === undefined ? 0 : percentage;
+		const success = Math.max(0, Math.min(100, validPercentage));
 		const failure = 100 - success;
 
 		chart.data.datasets[0].data = [success, failure];
@@ -97,7 +101,9 @@
 	<canvas bind:this={canvas}></canvas>
 	<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
 		<div class="text-center">
-			<div class="text-2xl font-bold text-gray-900">{percentage.toFixed(1)}%</div>
+			<div class="text-2xl font-bold text-gray-900">
+				{isNaN(percentage) || percentage === undefined ? '0.0' : percentage.toFixed(1)}%
+			</div>
 			<div class="text-sm text-gray-500">{label}</div>
 		</div>
 	</div>
