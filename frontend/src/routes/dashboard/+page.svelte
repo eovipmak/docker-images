@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
+	import { latestMonitorChecks, latestIncidents } from '$lib/api/events';
 	import StatCard from '$lib/components/StatCard.svelte';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
@@ -78,6 +79,10 @@
 	let isLoading = true;
 	let error = '';
 
+	// Subscribe to SSE events
+	let unsubscribeChecks: (() => void) | null = null;
+	let unsubscribeIncidents: (() => void) | null = null;
+
 	onMount(async () => {
 		try {
 			const response = await fetchAPI('/api/v1/dashboard');
@@ -96,6 +101,35 @@
 			error = 'An error occurred while loading dashboard data';
 		} finally {
 			isLoading = false;
+		}
+
+		// Subscribe to monitor check events
+		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
+			// When SSE events arrive, refresh dashboard data to get updated stats
+			// This ensures we have accurate data while still benefiting from real-time notifications
+			if (checks.size > 0 && !isLoading) {
+				// Optionally reload dashboard data for accurate stats
+				// For now, just log that we received updates
+				console.log('[Dashboard] Received monitor check updates');
+			}
+		});
+
+		// Subscribe to incident events
+		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
+			// When incident events arrive, just log for now
+			// The dashboard will refresh on next load or manual refresh
+			if (incidents.length > 0) {
+				console.log('[Dashboard] Received incident updates');
+			}
+		});
+	});
+
+	onDestroy(() => {
+		if (unsubscribeChecks) {
+			unsubscribeChecks();
+		}
+		if (unsubscribeIncidents) {
+			unsubscribeIncidents();
 		}
 	});
 

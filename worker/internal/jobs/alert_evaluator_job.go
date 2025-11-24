@@ -170,6 +170,9 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 				incidentsCreated++
 				log.Printf("[AlertEvaluatorJob] ⚠ Incident created: Monitor %s triggered rule '%s' - %s",
 					check.MonitorID, rule.Name, triggerValue)
+				
+				// Get monitor info for tenant ID
+				j.broadcastIncidentCreatedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name, triggerValue)
 			}
 		} else {
 			// Alert not triggered - resolve incident if open
@@ -183,6 +186,9 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 				incidentsResolved++
 				log.Printf("[AlertEvaluatorJob] ✓ Incident resolved: Monitor %s recovered from rule '%s'",
 					check.MonitorID, rule.Name)
+				
+				// Broadcast incident resolved event
+				j.broadcastIncidentResolvedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name)
 			}
 		}
 	}
@@ -275,4 +281,29 @@ func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string) (boo
 	}
 
 	return rowsAffected > 0, nil
+}
+
+// broadcastIncidentCreatedEvent broadcasts an incident created event
+func (j *AlertEvaluatorJob) broadcastIncidentCreatedEvent(monitorID, ruleID string, tenantID int, ruleName, triggerValue string) {
+	data := map[string]interface{}{
+		"monitor_id":    monitorID,
+		"alert_rule_id": ruleID,
+		"rule_name":     ruleName,
+		"trigger_value": triggerValue,
+		"status":        "open",
+	}
+
+	broadcastEvent("incident_created", data, tenantID)
+}
+
+// broadcastIncidentResolvedEvent broadcasts an incident resolved event
+func (j *AlertEvaluatorJob) broadcastIncidentResolvedEvent(monitorID, ruleID string, tenantID int, ruleName string) {
+	data := map[string]interface{}{
+		"monitor_id":    monitorID,
+		"alert_rule_id": ruleID,
+		"rule_name":     ruleName,
+		"status":        "resolved",
+	}
+
+	broadcastEvent("incident_resolved", data, tenantID)
 }

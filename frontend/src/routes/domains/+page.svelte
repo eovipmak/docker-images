@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
+	import { latestMonitorChecks } from '$lib/api/events';
 	import MonitorTable from '$lib/components/MonitorTable.svelte';
 	import MonitorModal from '$lib/components/MonitorModal.svelte';
 
@@ -11,8 +12,33 @@
 	let isModalOpen = false;
 	let selectedMonitor: any = null;
 
+	// Subscribe to monitor check events
+	let unsubscribe: (() => void) | null = null;
+
 	onMount(() => {
 		loadMonitors();
+
+		// Subscribe to SSE events to update monitor status in real-time
+		unsubscribe = latestMonitorChecks.subscribe((checks) => {
+			// Update monitors with latest check data
+			monitors = monitors.map((monitor) => {
+				const latestCheck = checks.get(monitor.id);
+				if (latestCheck) {
+					return {
+						...monitor,
+						last_check: latestCheck,
+						status: latestCheck.success ? 'up' : 'down'
+					};
+				}
+				return monitor;
+			});
+		});
+	});
+
+	onDestroy(() => {
+		if (unsubscribe) {
+			unsubscribe();
+		}
 	});
 
 	async function loadMonitors() {

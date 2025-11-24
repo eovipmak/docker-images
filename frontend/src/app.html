@@ -3,6 +3,15 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- Inject PUBLIC_API_URL for SSE connection -->
+		<script>
+			// This will be replaced by Docker environment variable at runtime
+			window.__PUBLIC_API_URL__ = '%PUBLIC_API_URL%';
+			// Clean up if not replaced
+			if (window.__PUBLIC_API_URL__ === '%PUBLIC_API_URL%') {
+				window.__PUBLIC_API_URL__ = '';
+			}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body>

@@ -234,6 +234,9 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 		log.Printf("[HealthCheckJob] ✗ Monitor %s is DOWN - Error: %v",
 			monitor.Name, result.Error)
 	}
+
+	// Broadcast monitor_check event
+	j.broadcastMonitorCheckEvent(monitor, check)
 }
 
 // saveCheck saves a monitor check result to the database
@@ -289,4 +292,38 @@ func (j *HealthCheckJob) updateLastCheckedAt(monitorID string, checkedAt time.Ti
 	}
 
 	return nil
+}
+
+// broadcastMonitorCheckEvent broadcasts a monitor check event to the backend SSE handler
+func (j *HealthCheckJob) broadcastMonitorCheckEvent(monitor *Monitor, check *MonitorCheck) {
+	// Prepare event data
+	data := map[string]interface{}{
+		"monitor_id":   monitor.ID,
+		"monitor_name": monitor.Name,
+		"success":      check.Success,
+		"checked_at":   check.CheckedAt.Format(time.RFC3339),
+	}
+
+	if check.StatusCode.Valid {
+		data["status_code"] = check.StatusCode.Int64
+	}
+
+	if check.ResponseTimeMs.Valid {
+		data["response_time_ms"] = check.ResponseTimeMs.Int64
+	}
+
+	if check.ErrorMessage.Valid {
+		data["error_message"] = check.ErrorMessage.String
+	}
+
+	if check.SSLValid.Valid {
+		data["ssl_valid"] = check.SSLValid.Bool
+	}
+
+	if check.SSLExpiresAt.Valid {
+		data["ssl_expires_at"] = check.SSLExpiresAt.Time.Format(time.RFC3339)
+	}
+
+	// Send broadcast request to backend
+	broadcastEvent("monitor_check", data, monitor.TenantID)
 }
