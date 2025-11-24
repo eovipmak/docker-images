@@ -22,7 +22,7 @@
 	let chartType: 'uptime' | 'response' = 'uptime';
 
 	// Auto-refresh settings
-	let autoRefreshInterval = 60; // seconds
+	let autoRefreshInterval = 300; // seconds (5 minutes)
 	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
 	$: monitorId = $page.params.id || '';
@@ -232,7 +232,7 @@
 			← Back to Monitors
 		</button>
 	{:else if monitor}
-		<div class="mb-6">
+		<div class="mb-4">
 			<button
 				on:click={handleBack}
 				class="text-blue-600 hover:text-blue-800 font-medium mb-4 inline-flex items-center"
@@ -241,7 +241,7 @@
 			</button>
 			<div class="flex justify-between items-start">
 				<div>
-					<h1 class="text-3xl font-bold text-gray-900 mb-2">{monitor.name}</h1>
+					<h1 class="text-2xl font-bold text-gray-900 mb-2">{monitor.name}</h1>
 					<p class="text-gray-600">{monitor.url}</p>
 				</div>
 				<div class="flex items-center gap-2">
@@ -262,24 +262,24 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
 			<!-- Status Overview -->
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Status</h3>
 				<MonitorStatus status={getMonitorStatus()} />
 			</div>
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Uptime (24h)</h3>
 				<p class="text-2xl font-bold text-gray-900">{calculateUptime()}</p>
 			</div>
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Avg Response Time</h3>
 				<p class="text-2xl font-bold text-gray-900">{getAverageResponseTime()}</p>
 			</div>
 			
 			<!-- SSL Information (conditional) -->
 			{#if monitor.check_ssl && sslStatus}
-				<div class="bg-white rounded-lg shadow-md p-6">
+				<div class="bg-white rounded-lg shadow-md p-4">
 					<h3 class="text-sm font-medium text-gray-500 mb-2">SSL Status</h3>
 					<div class="space-y-1">
 						<p class="text-lg font-semibold {sslStatus.valid ? 'text-green-600' : 'text-red-600'}">
@@ -293,7 +293,7 @@
 					</div>
 				</div>
 			{:else if monitor.check_ssl}
-				<div class="bg-white rounded-lg shadow-md p-6">
+				<div class="bg-white rounded-lg shadow-md p-4">
 					<h3 class="text-sm font-medium text-gray-500 mb-2">SSL Status</h3>
 					<p class="text-lg font-semibold text-gray-500">Checking...</p>
 				</div>
@@ -301,7 +301,7 @@
 		</div>
 
 		<!-- History Charts -->
-		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
+		<div class="bg-white rounded-lg shadow-md p-4 mb-4">
 			<div class="flex justify-between items-center mb-4">
 				<h2 class="text-xl font-bold text-gray-900">History</h2>
 				<div class="flex bg-gray-100 rounded-lg p-1">
@@ -323,7 +323,7 @@
 			{#if chartType === 'uptime'}
 				<!-- Uptime History Chart -->
 				{#if checks && checks.length > 0}
-					<div class="flex items-end gap-1 h-24">
+					<div class="flex items-end gap-1 h-16">
 						{#each checks.slice(0, 48).reverse() as check}
 							<div
 								class="flex-1 rounded-t transition-all hover:opacity-75"
@@ -389,7 +389,7 @@
 				{:else if checks && checks.length > 0}
 					{@const responseTimes = getFilteredResponseTimes()}
 					{@const maxTime = Math.max(...responseTimes, 1)}
-					<div class="flex items-end gap-1 h-32">
+					<div class="flex items-end gap-1 h-16">
 						{#each responseTimes as time}
 							<div
 								class="flex-1 bg-blue-500 rounded-t transition-all hover:opacity-75"
@@ -410,7 +410,7 @@
 		</div>
 
 		<!-- Uptime Chart -->
-		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
+		<div class="bg-white rounded-lg shadow-md p-4 mb-4">
 			<div class="flex justify-between items-center mb-4">
 				<h2 class="text-xl font-bold text-gray-900">Uptime</h2>
 				<div class="flex bg-gray-100 rounded-lg p-1">
@@ -429,7 +429,7 @@
 				</div>
 			</div>
 			{#if (uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime)}
-				<div class="h-64">
+				<div class="h-48">
 					<DonutChart 
 						percentage={uptimePeriod === '7d' ? metrics7d.uptime.percentage : metrics30d.uptime.percentage} 
 						label="Uptime"
@@ -449,49 +449,49 @@
 		</div>
 
 		{#if checks && checks.length > 0}
-			<div class="bg-white rounded-lg shadow-md p-6">
+			<div class="bg-white rounded-lg shadow-md p-4">
 				<h2 class="text-xl font-bold text-gray-900 mb-4">Recent Checks</h2>
 				<div class="overflow-x-auto">
 					<table class="min-w-full divide-y divide-gray-200">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+								<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Time
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+								<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Status
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+								<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Status Code
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+								<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Response Time
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+								<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Error
 								</th>
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">
-							{#each checks.slice(0, 10) as check}
+							{#each checks.slice(0, 5) as check}
 								<tr>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+									<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
 										{formatDate(check.checked_at)}
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
+									<td class="px-4 py-2 whitespace-nowrap">
 										<MonitorStatus status={check.success ? 'up' : 'down'} showText={true} />
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+									<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
 										{extractInt64(check.status_code, 'N/A')}
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+									<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
 										{#if isValidSqlNull(check.response_time_ms)}
 											{extractInt64(check.response_time_ms, 0)}ms
 										{:else}
 											N/A
 										{/if}
 									</td>
-									<td class="px-6 py-4 text-sm text-red-600">
+									<td class="px-4 py-2 text-sm text-red-600">
 										{extractString(check.error_message, '-')}
 									</td>
 								</tr>
