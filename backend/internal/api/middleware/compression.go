@@ -24,6 +24,8 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 }
 
 // gzipWriterPool reuses gzip writers to reduce allocations
+// Note: gzip.NewWriterLevel only returns an error for invalid compression levels.
+// Since we use gzip.DefaultCompression (a valid constant), this will never fail.
 var gzipWriterPool = sync.Pool{
 	New: func() interface{} {
 		w, _ := gzip.NewWriterLevel(io.Discard, gzip.DefaultCompression)

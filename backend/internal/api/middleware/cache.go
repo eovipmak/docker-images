@@ -115,7 +115,7 @@ func ETagMiddleware() gin.HandlerFunc {
 
 			// Check if client sent If-None-Match
 			ifNoneMatch := c.GetHeader("If-None-Match")
-			if ifNoneMatch != "" && ifNoneMatch == etag {
+			if ifNoneMatch != "" && matchesETag(ifNoneMatch, etag) {
 				c.Status(http.StatusNotModified)
 				return
 			}
@@ -123,6 +123,31 @@ func ETagMiddleware() gin.HandlerFunc {
 			c.Header("ETag", etag)
 		}
 	}
+}
+
+// matchesETag checks if the etag matches the If-None-Match header value
+// Handles multiple ETags separated by commas and the special "*" case
+func matchesETag(ifNoneMatch, etag string) bool {
+	// Handle wildcard
+	if strings.TrimSpace(ifNoneMatch) == "*" {
+		return true
+	}
+
+	// Split by comma and check each ETag
+	etags := strings.Split(ifNoneMatch, ",")
+	for _, e := range etags {
+		e = strings.TrimSpace(e)
+		if e == etag {
+			return true
+		}
+		// Also handle weak ETag comparison (W/"..." == "...")
+		if strings.HasPrefix(e, "W/") && strings.HasPrefix(etag, "W/") {
+			if e == etag {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // generateETag generates a weak ETag based on path and content size

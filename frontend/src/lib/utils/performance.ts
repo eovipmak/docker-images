@@ -83,27 +83,23 @@ export async function measureTTI(): Promise<number | null> {
 
 	return new Promise((resolve) => {
 		const checkTTI = () => {
-			const timing = performance.timing || performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-			
-			if (timing) {
-				// Use Navigation Timing API v2 if available
-				if ('domInteractive' in timing && 'fetchStart' in timing) {
-					const navTiming = timing as PerformanceNavigationTiming;
-					if (navTiming.domInteractive > 0) {
-						// TTI approximation: time when DOM is interactive
-						const tti = Math.round(navTiming.domInteractive - navTiming.fetchStart);
-						resolve(tti);
-						return;
-					}
-				}
-				
-				// Fallback to legacy timing API
-				const legacyTiming = performance.timing;
-				if (legacyTiming && legacyTiming.domInteractive > 0) {
-					const tti = Math.round(legacyTiming.domInteractive - legacyTiming.navigationStart);
+			// First try Navigation Timing API v2
+			const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+			if (entries.length > 0) {
+				const navTiming = entries[0];
+				if (navTiming.domInteractive > 0) {
+					// TTI approximation: time when DOM is interactive
+					const tti = Math.round(navTiming.domInteractive);
 					resolve(tti);
 					return;
 				}
+			}
+			
+			// Fallback to legacy timing API (deprecated but still works)
+			if (performance.timing && performance.timing.domInteractive > 0) {
+				const tti = Math.round(performance.timing.domInteractive - performance.timing.navigationStart);
+				resolve(tti);
+				return;
 			}
 			
 			// Wait for page to finish loading

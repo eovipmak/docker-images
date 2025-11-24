@@ -30,6 +30,9 @@
 
 	$: monitorId = $page.params.id || '';
 
+	// Computed uptime data based on selected period
+	$: currentUptimeData = uptimePeriod === '7d' ? metrics7d?.uptime : metrics30d?.uptime;
+
 	onMount(async () => {
 		loadMonitorData();
 		startAutoRefresh();
