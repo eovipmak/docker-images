@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
-	import AlertRuleModal from '$lib/components/AlertRuleModal.svelte';
-	import AlertChannelModal from '$lib/components/AlertChannelModal.svelte';
 
 	type Tab = 'rules' | 'channels';
 
@@ -18,9 +16,39 @@
 	let selectedRule: any = null;
 	let selectedChannel: any = null;
 
+	// Lazy loaded modal components
+	let AlertRuleModal: any = null;
+	let AlertChannelModal: any = null;
+	let ruleModalLoaded = false;
+	let channelModalLoaded = false;
+
 	onMount(() => {
 		loadData();
 	});
+
+	async function loadRuleModal() {
+		if (!ruleModalLoaded) {
+			try {
+				const module = await import('$lib/components/AlertRuleModal.svelte');
+				AlertRuleModal = module.default;
+				ruleModalLoaded = true;
+			} catch (err) {
+				console.error('Failed to load AlertRuleModal:', err);
+			}
+		}
+	}
+
+	async function loadChannelModal() {
+		if (!channelModalLoaded) {
+			try {
+				const module = await import('$lib/components/AlertChannelModal.svelte');
+				AlertChannelModal = module.default;
+				channelModalLoaded = true;
+			} catch (err) {
+				console.error('Failed to load AlertChannelModal:', err);
+			}
+		}
+	}
 
 	async function loadData() {
 		isLoading = true;
@@ -49,12 +77,14 @@
 	}
 
 	// Alert Rules handlers
-	function handleCreateRule() {
+	async function handleCreateRule() {
+		await loadRuleModal();
 		selectedRule = null;
 		isRuleModalOpen = true;
 	}
 
-	function handleEditRule(rule: any) {
+	async function handleEditRule(rule: any) {
+		await loadRuleModal();
 		selectedRule = rule;
 		isRuleModalOpen = true;
 	}
@@ -99,12 +129,14 @@
 	}
 
 	// Alert Channels handlers
-	function handleCreateChannel() {
+	async function handleCreateChannel() {
+		await loadChannelModal();
 		selectedChannel = null;
 		isChannelModalOpen = true;
 	}
 
-	function handleEditChannel(channel: any) {
+	async function handleEditChannel(channel: any) {
+		await loadChannelModal();
 		selectedChannel = channel;
 		isChannelModalOpen = true;
 	}
@@ -531,16 +563,22 @@
 </div>
 </div>
 
-<AlertRuleModal
-	bind:isOpen={isRuleModalOpen}
-	rule={selectedRule}
-	on:save={handleRuleModalSave}
-	on:close={handleRuleModalClose}
-/>
+{#if ruleModalLoaded && AlertRuleModal}
+	<svelte:component
+		this={AlertRuleModal}
+		bind:isOpen={isRuleModalOpen}
+		rule={selectedRule}
+		on:save={handleRuleModalSave}
+		on:close={handleRuleModalClose}
+	/>
+{/if}
 
-<AlertChannelModal
-	bind:isOpen={isChannelModalOpen}
-	channel={selectedChannel}
-	on:save={handleChannelModalSave}
-	on:close={handleChannelModalClose}
-/>
+{#if channelModalLoaded && AlertChannelModal}
+	<svelte:component
+		this={AlertChannelModal}
+		bind:isOpen={isChannelModalOpen}
+		channel={selectedChannel}
+		on:save={handleChannelModalSave}
+		on:close={handleChannelModalClose}
+	/>
+{/if}

@@ -4,13 +4,16 @@
 	import { fetchAPI } from '$lib/api/client';
 	import { latestMonitorChecks } from '$lib/api/events';
 	import MonitorTable from '$lib/components/MonitorTable.svelte';
-	import MonitorModal from '$lib/components/MonitorModal.svelte';
 
 	let monitors: any[] = [];
 	let isLoading = true;
 	let error = '';
 	let isModalOpen = false;
 	let selectedMonitor: any = null;
+
+	// Lazy loaded modal component
+	let MonitorModal: any = null;
+	let modalLoaded = false;
 
 	// Subscribe to monitor check events
 	let unsubscribe: (() => void) | null = null;
@@ -41,6 +44,18 @@
 		}
 	});
 
+	async function loadModal() {
+		if (!modalLoaded) {
+			try {
+				const module = await import('$lib/components/MonitorModal.svelte');
+				MonitorModal = module.default;
+				modalLoaded = true;
+			} catch (err) {
+				console.error('Failed to load MonitorModal:', err);
+			}
+		}
+	}
+
 	async function loadMonitors() {
 		isLoading = true;
 		error = '';
@@ -61,12 +76,14 @@
 		}
 	}
 
-	function handleAddMonitor() {
+	async function handleAddMonitor() {
+		await loadModal();
 		selectedMonitor = null;
 		isModalOpen = true;
 	}
 
-	function handleEditMonitor(event: CustomEvent) {
+	async function handleEditMonitor(event: CustomEvent) {
+		await loadModal();
 		selectedMonitor = event.detail;
 		isModalOpen = true;
 	}
@@ -148,9 +165,12 @@
 	{/if}
 </div>
 
-<MonitorModal
-	bind:isOpen={isModalOpen}
-	monitor={selectedMonitor}
-	on:save={handleModalSave}
-	on:close={handleModalClose}
-/>
+{#if modalLoaded && MonitorModal}
+	<svelte:component
+		this={MonitorModal}
+		bind:isOpen={isModalOpen}
+		monitor={selectedMonitor}
+		on:save={handleModalSave}
+		on:close={handleModalClose}
+	/>
+{/if}

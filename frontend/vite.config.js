@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
 	// Load env file based on `mode` in the current working directory.
@@ -13,8 +14,27 @@ export default defineConfig(({ mode }) => {
 		? env.VITE_ALLOWED_HOSTS.split(',').map(host => host.trim()).filter(Boolean)
 		: ['localhost', '127.0.0.1'];
 
+	// Check if bundle analysis is requested
+	const analyze = process.env.ANALYZE === 'true';
+
+	// Build plugins array
+	const plugins = [sveltekit()];
+	
+	// Add visualizer plugin when analyzing bundle
+	if (analyze) {
+		plugins.push(
+			visualizer({
+				filename: 'stats.html',
+				open: true,
+				gzipSize: true,
+				brotliSize: true,
+				template: 'treemap'
+			})
+		);
+	}
+
 	return {
-		plugins: [sveltekit()],
+		plugins,
 		optimizeDeps: {
 			include: ['svelte', '@sveltejs/kit', 'vite']
 		},
@@ -25,6 +45,59 @@ export default defineConfig(({ mode }) => {
 			watch: {
 				usePolling: true
 			}
+		},
+		build: {
+			// Enable source maps for production debugging (optional)
+			sourcemap: false,
+			// Minification settings
+			minify: 'terser',
+			terserOptions: {
+				compress: {
+					drop_console: mode === 'production',
+					drop_debugger: mode === 'production',
+					pure_funcs: mode === 'production' ? ['console.log', 'console.debug'] : []
+				},
+				mangle: true
+			},
+			// Rollup options for code splitting and tree shaking
+			rollupOptions: {
+				output: {
+					// Manual chunks for better caching
+					manualChunks: (id) => {
+						// Vendor chunk for node_modules
+						if (id.includes('node_modules')) {
+							// Chart.js and related dependencies
+							if (id.includes('chart.js') || id.includes('chartjs-adapter-date-fns')) {
+								return 'vendor-charts';
+							}
+							// Date utilities
+							if (id.includes('date-fns')) {
+								return 'vendor-date';
+							}
+							// Other vendor libraries
+							return 'vendor';
+						}
+					},
+					// Optimize chunk names for caching
+					chunkFileNames: 'assets/[name]-[hash].js',
+					entryFileNames: 'assets/[name]-[hash].js',
+					assetFileNames: 'assets/[name]-[hash].[ext]'
+				},
+				// Tree shaking configuration
+				treeshake: {
+					moduleSideEffects: 'no-external',
+					propertyReadSideEffects: false
+				}
+			},
+			// Target modern browsers for smaller bundles
+			target: 'es2020',
+			// Chunk size warning limit
+			chunkSizeWarningLimit: 500
+		},
+		// Dependency optimization for faster dev startup
+		esbuild: {
+			// Remove console and debugger in production
+			drop: mode === 'production' ? ['console', 'debugger'] : []
 		}
 	};
 });
