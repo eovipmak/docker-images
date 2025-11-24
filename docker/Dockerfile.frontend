@@ -3,14 +3,14 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files and setup script
-COPY package*.json ./
-COPY setup.js ./
+COPY frontend/package*.json ./
+COPY frontend/setup.js ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY . ./
+COPY frontend/ ./
 
 # Copy entrypoint script
 COPY docker/entrypoint-frontend.sh /entrypoint.sh

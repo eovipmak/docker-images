@@ -109,6 +109,7 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 			c.Writer.Flush()
 		case event := <-client.Channel:
 			// Send event to client
+			log.Printf("[SSE] Sending %s event to client %s", event.Type, clientID)
 			fmt.Fprintf(c.Writer, "event: %s\ndata: %s\n\n", event.Type, h.formatEventData(event))
 			c.Writer.Flush()
 		}
@@ -134,16 +135,15 @@ func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interfa
 			select {
 			case client.Channel <- event:
 				count++
+				log.Printf("[SSE] Sent %s event to client %s (tenant: %d)", eventType, client.ID, tenantID)
 			default:
 				// Channel full, skip this client
-				log.Printf("[SSE] Warning: Client %s channel full, dropping event", client.ID)
+				log.Printf("[SSE] Warning: Client %s channel full, dropping event %s (tenant: %d)", client.ID, eventType, tenantID)
 			}
 		}
 	}
 
-	if count > 0 {
-		log.Printf("[SSE] Broadcasted %s event to %d clients (tenant: %d)", eventType, count, tenantID)
-	}
+	log.Printf("[SSE] Broadcasted %s event to %d/%d clients (tenant: %d)", eventType, count, len(h.clients), tenantID)
 }
 
 // HandleBroadcast handles HTTP POST requests to broadcast events
@@ -151,9 +151,12 @@ func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interfa
 func (h *StreamHandler) HandleBroadcast(c *gin.Context) {
 	var req BroadcastRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[SSE] Broadcast request failed: invalid JSON - %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	log.Printf("[SSE] Received broadcast request: type=%s, tenant=%d", req.Type, req.TenantID)
 
 	h.BroadcastEvent(req.Type, req.Data, req.TenantID)
 

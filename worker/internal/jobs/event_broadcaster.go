@@ -19,11 +19,15 @@ type BroadcastRequest struct {
 
 // broadcastEvent sends an event to the backend SSE handler
 func broadcastEvent(eventType string, data map[string]interface{}, tenantID int) {
+	log.Printf("[Event] Broadcasting %s event for tenant %d", eventType, tenantID)
+
 	// Get backend URL from environment
 	backendURL := os.Getenv("BACKEND_API_URL")
 	if backendURL == "" {
 		backendURL = "http://backend:8080"
 	}
+
+	log.Printf("[Event] Using backend URL: %s", backendURL)
 
 	// Prepare broadcast request
 	req := BroadcastRequest{
@@ -38,6 +42,8 @@ func broadcastEvent(eventType string, data map[string]interface{}, tenantID int)
 		return
 	}
 
+	log.Printf("[Event] Broadcast payload: %s", string(jsonData))
+
 	// Send POST request to backend internal endpoint
 	url := fmt.Sprintf("%s/internal/broadcast", backendURL)
 	
@@ -45,12 +51,16 @@ func broadcastEvent(eventType string, data map[string]interface{}, tenantID int)
 		Timeout: 5 * time.Second,
 	}
 
+	log.Printf("[Event] Sending POST to %s", url)
+
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("[Event] Failed to broadcast event %s: %v", eventType, err)
 		return
 	}
 	defer resp.Body.Close()
+
+	log.Printf("[Event] Broadcast response status: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("[Event] Broadcast event %s failed with status: %d", eventType, resp.StatusCode)

@@ -72,6 +72,8 @@ export function connectEventStream(): void {
 		// Check if PUBLIC_API_URL was injected via script tag
 		backendUrl = (window as any).__PUBLIC_API_URL__ || '';
 		
+		console.log('[SSE] PUBLIC_API_URL from window:', backendUrl);
+
 		// If not found, try to construct from current location
 		// In development: use localhost:8080
 		// In production: use current origin (assumes reverse proxy or same-origin setup)
@@ -86,6 +88,7 @@ export function connectEventStream(): void {
 				const port = window.location.hostname.includes('localhost') ? '8081' : window.location.port;
 				backendUrl = `${window.location.protocol}//${window.location.hostname}${port ? ':' + (port === '3001' ? '8081' : port) : ''}`;
 			}
+			console.log('[SSE] Constructed backend URL:', backendUrl);
 		}
 	}
 	
@@ -113,11 +116,12 @@ export function connectEventStream(): void {
 
 		// Monitor check events
 		eventSource.addEventListener('monitor_check', (e) => {
+			console.log('[SSE] Raw monitor_check event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const checkData = eventData.data as MonitorCheckEvent;
 
-				console.log('[SSE] Monitor check event:', checkData);
+				console.log('[SSE] Monitor check event parsed:', checkData);
 
 				// Update store
 				latestMonitorChecks.update((checks) => {
@@ -132,11 +136,12 @@ export function connectEventStream(): void {
 
 		// Incident created events
 		eventSource.addEventListener('incident_created', (e) => {
+			console.log('[SSE] Raw incident_created event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const incidentData = eventData.data as IncidentEvent;
 
-				console.log('[SSE] Incident created event:', incidentData);
+				console.log('[SSE] Incident created event parsed:', incidentData);
 
 				// Add to incidents store
 				latestIncidents.update((incidents) => {
@@ -149,11 +154,12 @@ export function connectEventStream(): void {
 
 		// Incident resolved events
 		eventSource.addEventListener('incident_resolved', (e) => {
+			console.log('[SSE] Raw incident_resolved event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const incidentData = eventData.data as IncidentEvent;
 
-				console.log('[SSE] Incident resolved event:', incidentData);
+				console.log('[SSE] Incident resolved event parsed:', incidentData);
 
 				// Update incidents store
 				latestIncidents.update((incidents) => {

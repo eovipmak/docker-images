@@ -30,21 +30,21 @@ down:
 logs:
 	docker compose logs -f
 
-## logs-backend: View logs from backend service
+## logs-backend: View logs from backend service (last 30s)
 logs-backend:
-	docker compose logs -f backend
+	docker compose logs --since 30s -f backend
 
-## logs-worker: View logs from worker service
+## logs-worker: View logs from worker service (last 30s)
 logs-worker:
-	docker compose logs -f worker
+	docker compose logs --since 30s -f worker
 
-## logs-frontend: View logs from frontend service
+## logs-frontend: View logs from frontend service (last 30s)
 logs-frontend:
-	docker compose logs -f frontend
+	docker compose logs --since 30s -f frontend
 
-## logs-postgres: View logs from postgres service
+## logs-postgres: View logs from postgres service (last 30s)
 logs-postgres:
-	docker compose logs -f postgres
+	docker compose logs --since 30s -f postgres
 
 ## rebuild: Rebuild and restart all services
 rebuild:

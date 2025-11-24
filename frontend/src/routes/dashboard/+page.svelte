@@ -79,12 +79,19 @@
 	let isLoading = true;
 	let error = '';
 
+	// Auto-refresh settings
+	let autoRefreshInterval = 60; // seconds
+	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 	// Subscribe to SSE events
 	let unsubscribeChecks: (() => void) | null = null;
 	let unsubscribeIncidents: (() => void) | null = null;
 
-	onMount(async () => {
+	// Load dashboard data
+	async function loadDashboardData() {
 		try {
+			isLoading = true;
+			error = '';
 			const response = await fetchAPI('/api/v1/dashboard');
 
 			if (!response.ok) {
@@ -102,29 +109,63 @@
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	// Start auto-refresh timer
+	function startAutoRefresh() {
+		if (autoRefreshTimer) {
+			clearInterval(autoRefreshTimer);
+		}
+		autoRefreshTimer = setInterval(() => {
+			console.log(`[Dashboard] Auto-refreshing data (${autoRefreshInterval}s interval)`);
+			loadDashboardData();
+		}, autoRefreshInterval * 1000);
+	}
+
+	// Stop auto-refresh timer
+	function stopAutoRefresh() {
+		if (autoRefreshTimer) {
+			clearInterval(autoRefreshTimer);
+			autoRefreshTimer = null;
+		}
+	}
+
+	// Handle interval change
+	function handleIntervalChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		autoRefreshInterval = parseInt(target.value);
+		startAutoRefresh(); // Restart with new interval
+	}
+
+	onMount(async () => {
+		await loadDashboardData();
+
+		// Start auto-refresh
+		startAutoRefresh();
 
 		// Subscribe to monitor check events
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
 			// When SSE events arrive, refresh dashboard data to get updated stats
 			// This ensures we have accurate data while still benefiting from real-time notifications
 			if (checks.size > 0 && !isLoading) {
-				// Optionally reload dashboard data for accurate stats
-				// For now, just log that we received updates
-				console.log('[Dashboard] Received monitor check updates');
+				console.log('[Dashboard] Received monitor check updates, refreshing data');
+				loadDashboardData();
 			}
 		});
 
 		// Subscribe to incident events
 		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
-			// When incident events arrive, just log for now
-			// The dashboard will refresh on next load or manual refresh
-			if (incidents.length > 0) {
-				console.log('[Dashboard] Received incident updates');
+			// When incident events arrive, refresh dashboard data
+			if (incidents.length > 0 && !isLoading) {
+				console.log('[Dashboard] Received incident updates, refreshing data');
+				loadDashboardData();
 			}
 		});
 	});
 
 	onDestroy(() => {
+		stopAutoRefresh();
+
 		if (unsubscribeChecks) {
 			unsubscribeChecks();
 		}
@@ -166,8 +207,27 @@
 </svelte:head>
 
 <div class="max-w-7xl mx-auto">
-	<h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
-	<p class="text-gray-600 mb-8">Monitor your domains and view system metrics</p>
+	<div class="flex items-center justify-between mb-6">
+		<div>
+			<h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+			<p class="text-gray-600">Monitor your domains and view system metrics</p>
+		</div>
+		<div class="flex items-center gap-4">
+			<label for="refresh-interval" class="text-sm text-gray-600">Auto-refresh:</label>
+			<select 
+				id="refresh-interval" 
+				bind:value={autoRefreshInterval} 
+				on:change={handleIntervalChange}
+				class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+			>
+				<option value={15}>15s</option>
+				<option value={30}>30s</option>
+				<option value={60}>1m</option>
+				<option value={300}>5m</option>
+				<option value={900}>15m</option>
+			</select>
+		</div>
+	</div>
 
 	{#if isLoading}
 		<div class="flex items-center justify-center py-12">

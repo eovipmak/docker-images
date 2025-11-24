@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
@@ -13,10 +13,19 @@
 	let isLoading = true;
 	let error = '';
 
+	// Auto-refresh settings
+	let autoRefreshInterval = 60; // seconds
+	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 	$: monitorId = $page.params.id || '';
 
 	onMount(() => {
 		loadMonitorData();
+		startAutoRefresh();
+	});
+
+	onDestroy(() => {
+		stopAutoRefresh();
 	});
 
 	async function loadMonitorData() {
@@ -85,6 +94,32 @@
 	function handleBack() {
 		goto('/domains');
 	}
+
+	// Start auto-refresh timer
+	function startAutoRefresh() {
+		if (autoRefreshTimer) {
+			clearInterval(autoRefreshTimer);
+		}
+		autoRefreshTimer = setInterval(() => {
+			console.log(`[Monitor Details] Auto-refreshing data (${autoRefreshInterval}s interval)`);
+			loadMonitorData();
+		}, autoRefreshInterval * 1000);
+	}
+
+	// Stop auto-refresh timer
+	function stopAutoRefresh() {
+		if (autoRefreshTimer) {
+			clearInterval(autoRefreshTimer);
+			autoRefreshTimer = null;
+		}
+	}
+
+	// Handle interval change
+	function handleIntervalChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		autoRefreshInterval = parseInt(target.value);
+		startAutoRefresh(); // Restart with new interval
+	}
 </script>
 
 <svelte:head>
@@ -116,16 +151,28 @@
 					<h1 class="text-3xl font-bold text-gray-900 mb-2">{monitor.name}</h1>
 					<p class="text-gray-600">{monitor.url}</p>
 				</div>
-				<MonitorStatus status={getMonitorStatus()} />
+				<div class="flex items-center gap-2">
+					<label for="refresh-interval" class="text-sm text-gray-600">Auto-refresh:</label>
+					<select 
+						id="refresh-interval" 
+						bind:value={autoRefreshInterval} 
+						on:change={handleIntervalChange}
+						class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+					>
+						<option value={15}>15s</option>
+						<option value={30}>30s</option>
+						<option value={60}>1m</option>
+						<option value={300}>5m</option>
+						<option value={900}>15m</option>
+					</select>
+				</div>
 			</div>
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 			<div class="bg-white rounded-lg shadow-md p-6">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Status</h3>
-				<p class="text-2xl font-bold text-gray-900">
-					{monitor.enabled ? 'Enabled' : 'Disabled'}
-				</p>
+				<MonitorStatus status={getMonitorStatus()} />
 			</div>
 			<div class="bg-white rounded-lg shadow-md p-6">
 				<h3 class="text-sm font-medium text-gray-500 mb-2">Uptime (24h)</h3>
@@ -145,7 +192,7 @@
 			<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime History (Last 24 Hours)</h2>
 			{#if checks && checks.length > 0}
 				<div class="flex items-end gap-1 h-48">
-					{#each checks.slice(0, 48) as check}
+					{#each checks.slice(0, 48).reverse() as check}
 						<div
 							class="flex-1 rounded-t transition-all hover:opacity-75"
 							class:bg-green-500={check.success}
@@ -170,6 +217,7 @@
 				{@const responseTimes = checks
 					.filter((c) => isValidSqlNull(c.response_time_ms))
 					.slice(0, 48)
+					.reverse()
 					.map((c) => extractInt64(c.response_time_ms, 0))}
 				{@const maxTime = Math.max(...responseTimes, 1)}
 				<div class="flex items-end gap-1 h-48">
