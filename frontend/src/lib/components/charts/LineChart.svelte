@@ -31,9 +31,18 @@
 	export let label: string = 'Response Time';
 	export let color: string = '#3B82F6';
 	export let yAxisLabel: string = 'Response Time (ms)';
+	export let fillOpacity: number = 0.2; // Opacity for area fill (0-1)
 
 	let canvas: HTMLCanvasElement;
 	let chart: Chart | null = null;
+
+	// Helper function to convert hex color to rgba
+	function hexToRgba(hex: string, alpha: number): string {
+		const r = parseInt(hex.slice(1, 3), 16);
+		const g = parseInt(hex.slice(3, 5), 16);
+		const b = parseInt(hex.slice(5, 7), 16);
+		return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+	}
 
 	onMount(() => {
 		createChart();
@@ -64,7 +73,7 @@
 						label,
 						data: data.map((d) => d.value),
 						borderColor: color,
-						backgroundColor: color + '33',
+						backgroundColor: hexToRgba(color, fillOpacity),
 						borderWidth: 2,
 						tension: 0.4,
 						fill: true,
