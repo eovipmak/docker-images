@@ -24,23 +24,28 @@ func NewAuthMiddleware(authService *service.AuthService) *AuthMiddleware {
 // AuthRequired is a middleware that validates JWT tokens
 func (m *AuthMiddleware) AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get Authorization header
+		// Get token from Authorization header or query parameter (for SSE)
+		var token string
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
-			c.Abort()
-			return
+		
+		if authHeader != "" {
+			// Check if it's a Bearer token
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
+				c.Abort()
+				return
+			}
+			token = parts[1]
+		} else {
+			// Fallback to query parameter for SSE (EventSource can't set headers)
+			token = c.Query("token")
+			if token == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+				c.Abort()
+				return
+			}
 		}
-
-		// Check if it's a Bearer token
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization header format"})
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
 
 		// Validate token
 		userID, tenantID, err := m.authService.ValidateToken(token)

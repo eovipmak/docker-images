@@ -63,10 +63,9 @@ export function connectEventStream(): void {
 
 	console.log('[SSE] Connecting to event stream...');
 
-	// Create EventSource with auth header
-	// Note: EventSource doesn't support custom headers directly,
-	// so we pass the token as a query parameter for server-side auth
-	const url = `/api/v1/stream/events`;
+	// Create EventSource with auth token as query parameter
+	// EventSource doesn't support custom headers, so we pass token in URL
+	const url = `/api/v1/stream/events?token=${encodeURIComponent(token)}`;
 
 	try {
 		eventSource = new EventSource(url, {
