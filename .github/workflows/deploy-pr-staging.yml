@@ -75,26 +75,21 @@ jobs:
         with:
           host: ${{ secrets.STAGING_SERVER_HOST }}
           port: ${{ secrets.STAGING_SERVER_SSH_PORT || 22 }}
-          username: ${{ secrets.VPS_USER }}
+          username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /path/to/v-insight-staging  # Thay bằng path staging trên VPS
-            # Tạo .env nếu chưa có
-            if [ ! -f .env ]; then cp .env.example .env; fi
-            # Copy và modify docker-compose.prod.yml cho staging
-            cp docker-compose.prod.yml docker-compose.staging.yml
-            # Thay đổi ports cho staging (ví dụ: frontend 3001, backend 8081)
+            cd v-insight-staging
+
             sed -i 's/"3000:3000"/"3001:3000"/g' docker-compose.staging.yml
             sed -i 's/"8080:8080"/"8081:8080"/g' docker-compose.staging.yml
-            # Update images
             sed -i "s|ghcr.io/${{ github.repository }}/backend:latest|${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
             sed -i "s|ghcr.io/${{ github.repository }}/worker:latest|${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
             sed -i "s|ghcr.io/${{ github.repository }}/frontend:latest|${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.date.outputs.date_stamp }}|g" docker-compose.staging.yml
-            # Deploy
+            
             docker compose -f docker-compose.staging.yml down
             docker compose -f docker-compose.staging.yml pull
             docker compose -f docker-compose.staging.yml up -d
-            # Comment URL trên PR
+
             curl -X POST \
               -H "Authorization: token ${{ secrets.GB_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
