@@ -69,6 +69,7 @@ func main() {
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
 	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo)
 	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo, alertChannelRepo)
+	streamHandler := handlers.NewStreamHandler()
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -112,6 +113,12 @@ func main() {
 		auth.GET("/me", authMiddleware.AuthRequired(), authHandler.Me)
 	}
 
+	// Internal routes (no auth - should be internal network only)
+	internal := router.Group("/internal")
+	{
+		internal.POST("/broadcast", streamHandler.HandleBroadcast)
+	}
+
 	// Protected routes requiring authentication and tenant context
 	protected := api.Group("/")
 	protected.Use(authMiddleware.AuthRequired(), tenantMiddleware.TenantRequired())
@@ -149,6 +156,9 @@ func main() {
 		protected.GET("/incidents", incidentHandler.List)
 		protected.GET("/incidents/:id", incidentHandler.GetByID)
 		protected.POST("/incidents/:id/resolve", incidentHandler.Resolve)
+
+		// SSE Stream endpoint
+		protected.GET("/stream/events", streamHandler.HandleSSE)
 
 		// Example protected endpoints - placeholder for future tenant-specific routes
 		protected.GET("/tenant/info", func(c *gin.Context) {

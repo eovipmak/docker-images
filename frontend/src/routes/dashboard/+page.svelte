@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
+	import { latestMonitorChecks, latestIncidents } from '$lib/api/events';
 	import StatCard from '$lib/components/StatCard.svelte';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
@@ -78,6 +79,10 @@
 	let isLoading = true;
 	let error = '';
 
+	// Subscribe to SSE events
+	let unsubscribeChecks: (() => void) | null = null;
+	let unsubscribeIncidents: (() => void) | null = null;
+
 	onMount(async () => {
 		try {
 			const response = await fetchAPI('/api/v1/dashboard');
@@ -96,6 +101,49 @@
 			error = 'An error occurred while loading dashboard data';
 		} finally {
 			isLoading = false;
+		}
+
+		// Subscribe to monitor check events
+		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
+			// Update recent checks and stats based on SSE events
+			if (checks.size > 0) {
+				// Recalculate stats
+				let upCount = 0;
+				let downCount = 0;
+				
+				checks.forEach((check) => {
+					if (check.success) {
+						upCount++;
+					} else {
+						downCount++;
+					}
+				});
+
+				stats = {
+					...stats,
+					up_count: upCount,
+					down_count: downCount,
+					total_monitors: checks.size
+				};
+			}
+		});
+
+		// Subscribe to incident events
+		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
+			// Update open incidents count
+			stats = {
+				...stats,
+				open_incidents: incidents.length
+			};
+		});
+	});
+
+	onDestroy(() => {
+		if (unsubscribeChecks) {
+			unsubscribeChecks();
+		}
+		if (unsubscribeIncidents) {
+			unsubscribeIncidents();
 		}
 	});
 

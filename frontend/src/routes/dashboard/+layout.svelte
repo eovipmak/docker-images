@@ -1,7 +1,18 @@
 <script lang="ts">
-// Dashboard layout - can add sidebar or other dashboard-specific layout here
+	import { onMount, onDestroy } from 'svelte';
+	import { connectEventStream, disconnectEventStream } from '$lib/api/events';
+
+	// Connect to SSE stream when dashboard is mounted
+	onMount(() => {
+		connectEventStream();
+	});
+
+	// Disconnect when dashboard is unmounted
+	onDestroy(() => {
+		disconnectEventStream();
+	});
 </script>
 
 <div class="container mx-auto px-4 py-8">
-<slot />
+	<slot />
 </div>
