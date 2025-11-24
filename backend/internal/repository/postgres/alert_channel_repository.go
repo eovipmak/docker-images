@@ -129,3 +129,22 @@ func (r *alertChannelRepository) Delete(id string) error {
 
 	return nil
 }
+
+// GetByAlertRuleID retrieves all alert channels associated with a specific alert rule
+func (r *alertChannelRepository) GetByAlertRuleID(tenantID int, alertRuleID string) ([]*entities.AlertChannel, error) {
+	var channels []*entities.AlertChannel
+	query := `
+		SELECT ac.id, ac.tenant_id, ac.type, ac.name, ac.config, ac.enabled, ac.created_at, ac.updated_at
+		FROM alert_channels ac
+		JOIN alert_rule_channels arc ON ac.id = arc.alert_channel_id
+		WHERE ac.tenant_id = $1 AND arc.alert_rule_id = $2
+		ORDER BY ac.created_at ASC
+	`
+
+	err := r.db.Select(&channels, query, tenantID, alertRuleID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get alert channels by alert rule: %w", err)
+	}
+
+	return channels, nil
+}

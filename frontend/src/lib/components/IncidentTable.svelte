@@ -102,7 +102,7 @@
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">
 								<div class="text-sm text-gray-900">
-									{incident.resolved_at ? formatDate(incident.resolved_at) : 'Ongoing'}
+									{incident.resolved_at && incident.resolved_at.Valid ? formatDate(incident.resolved_at.Time) : 'Ongoing'}
 								</div>
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap">

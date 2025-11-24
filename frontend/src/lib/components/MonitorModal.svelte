@@ -250,6 +250,9 @@
 				<!-- SSL Settings -->
 				<div class="border-t border-gray-200 pt-4">
 					<h3 class="text-lg font-medium text-gray-900 mb-3">SSL/TLS Settings</h3>
+					<p class="text-sm text-gray-600 mb-3">
+						Configure SSL certificate monitoring. An alert rule will be automatically created when SSL checking is enabled.
+					</p>
 
 					<div class="space-y-3">
 						<!-- Check SSL -->
@@ -281,6 +284,9 @@
 								{#if errors.ssl_alert_days}
 									<p class="text-sm text-red-600 mt-1">{errors.ssl_alert_days}</p>
 								{/if}
+								<p class="text-xs text-blue-600 mt-1">
+									ℹ️ An alert rule will be automatically created to notify when SSL expires within this many days
+								</p>
 							</div>
 						{/if}
 					</div>

@@ -64,11 +64,11 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
-	monitorHandler := handlers.NewMonitorHandler(monitorRepo, monitorService)
+	monitorHandler := handlers.NewMonitorHandler(monitorRepo, alertRuleRepo, alertChannelRepo, monitorService)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
 	alertChannelHandler := handlers.NewAlertChannelHandler(alertChannelRepo)
 	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo)
-	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo)
+	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo, alertChannelRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -131,6 +131,7 @@ func main() {
 		protected.GET("/alert-rules/:id", alertRuleHandler.GetByID)
 		protected.PUT("/alert-rules/:id", alertRuleHandler.Update)
 		protected.DELETE("/alert-rules/:id", alertRuleHandler.Delete)
+		protected.POST("/alert-rules/:id/test", alertRuleHandler.Test)
 
 		// Alert channel endpoints
 		protected.POST("/alert-channels", alertChannelHandler.Create)
@@ -138,6 +139,7 @@ func main() {
 		protected.GET("/alert-channels/:id", alertChannelHandler.GetByID)
 		protected.PUT("/alert-channels/:id", alertChannelHandler.Update)
 		protected.DELETE("/alert-channels/:id", alertChannelHandler.Delete)
+		protected.POST("/alert-channels/:id/test", alertChannelHandler.Test)
 
 		// Dashboard endpoints
 		protected.GET("/dashboard/stats", dashboardHandler.GetStats)

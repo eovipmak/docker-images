@@ -185,12 +185,6 @@
 									<span class="text-gray-400">{getSortIcon('last_checked_at')}</span>
 								</div>
 							</th>
-							<th
-								scope="col"
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-							>
-								Response Time
-							</th>
 							<th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
 								Actions
 							</th>
@@ -227,9 +221,6 @@
 									<div class="text-xs text-gray-500">
 										{formatDate(monitor.last_checked_at)}
 									</div>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-									{getResponseTime(monitor)}
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 									<button

@@ -326,9 +326,7 @@
 							bind:value={formData.trigger_type}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							on:change={() => {
-								if (!isEditMode) {
-									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
-								}
+								formData.threshold_value = getDefaultThreshold(formData.trigger_type);
 							}}
 						>
 							<option value="down">Down</option>

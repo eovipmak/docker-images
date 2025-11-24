@@ -14,17 +14,19 @@ import (
 
 // IncidentHandler handles incident-related HTTP requests
 type IncidentHandler struct {
-	incidentRepo repository.IncidentRepository
-	monitorRepo  repository.MonitorRepository
-	alertRuleRepo repository.AlertRuleRepository
+	incidentRepo     repository.IncidentRepository
+	monitorRepo      repository.MonitorRepository
+	alertRuleRepo    repository.AlertRuleRepository
+	alertChannelRepo repository.AlertChannelRepository
 }
 
 // NewIncidentHandler creates a new incident handler
-func NewIncidentHandler(incidentRepo repository.IncidentRepository, monitorRepo repository.MonitorRepository, alertRuleRepo repository.AlertRuleRepository) *IncidentHandler {
+func NewIncidentHandler(incidentRepo repository.IncidentRepository, monitorRepo repository.MonitorRepository, alertRuleRepo repository.AlertRuleRepository, alertChannelRepo repository.AlertChannelRepository) *IncidentHandler {
 	return &IncidentHandler{
-		incidentRepo:  incidentRepo,
-		monitorRepo:   monitorRepo,
-		alertRuleRepo: alertRuleRepo,
+		incidentRepo:     incidentRepo,
+		monitorRepo:      monitorRepo,
+		alertRuleRepo:    alertRuleRepo,
+		alertChannelRepo: alertChannelRepo,
 	}
 }
 
@@ -34,7 +36,15 @@ type IncidentResponse struct {
 	MonitorName    string `json:"monitor_name"`
 	MonitorURL     string `json:"monitor_url"`
 	AlertRuleName  string `json:"alert_rule_name"`
+	Channels       []ChannelInfo `json:"channels,omitempty"`
 	Duration       *int64 `json:"duration,omitempty"` // Duration in seconds
+}
+
+// ChannelInfo represents channel information for notifications
+type ChannelInfo struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 // List handles listing incidents with filters
@@ -193,6 +203,19 @@ func (h *IncidentHandler) GetByID(c *gin.Context) {
 	alertRule, err := h.alertRuleRepo.GetByID(monitor.TenantID, incident.AlertRuleID)
 	if err == nil {
 		response.AlertRuleName = alertRule.Name
+		
+		// Get associated channels
+		channels, err := h.alertChannelRepo.GetByAlertRuleID(monitor.TenantID, incident.AlertRuleID)
+		if err == nil {
+			response.Channels = make([]ChannelInfo, len(channels))
+			for i, ch := range channels {
+				response.Channels[i] = ChannelInfo{
+					ID:   ch.ID,
+					Name: ch.Name,
+					Type: ch.Type,
+				}
+			}
+		}
 	}
 
 	// Calculate duration

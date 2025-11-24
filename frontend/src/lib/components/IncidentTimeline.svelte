@@ -22,18 +22,23 @@
 			}
 		];
 
-		if (incident.notified_at) {
+		if (incident.notified_at && incident.notified_at.Valid && isValidDate(incident.notified_at.Time)) {
+			let description = 'Alert notifications were sent';
+			if (incident.channels && incident.channels.length > 0) {
+				const channelNames = (incident.channels as any[]).map((ch: any) => `${ch.name} (${ch.type})`).join(', ');
+				description += ` to: ${channelNames}`;
+			}
 			timeline.push({
-				timestamp: incident.notified_at,
+				timestamp: incident.notified_at.Time,
 				title: 'Notifications Sent',
-				description: 'Alert notifications were sent to configured channels',
+				description: description,
 				type: 'notify'
 			});
 		}
 
-		if (incident.resolved_at) {
+		if (incident.resolved_at && incident.resolved_at.Valid && isValidDate(incident.resolved_at.Time)) {
 			timeline.push({
-				timestamp: incident.resolved_at,
+				timestamp: incident.resolved_at.Time,
 				title: 'Incident Resolved',
 				description: 'The incident was automatically resolved',
 				type: 'resolve'
@@ -41,6 +46,11 @@
 		}
 
 		return timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+	}
+
+	function isValidDate(dateString: string): boolean {
+		const date = new Date(dateString);
+		return date instanceof Date && !isNaN(date.getTime());
 	}
 
 	function formatDate(dateString: string): string {

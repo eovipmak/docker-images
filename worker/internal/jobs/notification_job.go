@@ -20,6 +20,7 @@ type IncidentNotificationData struct {
 	MonitorURL   string
 	AlertRuleID  string
 	AlertName    string
+	TriggerType  string
 	Status       string // "open" or "resolved"
 	Message      string
 	Timestamp    time.Time
@@ -144,6 +145,7 @@ func (j *NotificationJob) getUnnotifiedIncidents() ([]*IncidentNotificationData,
 			m.url as monitor_url,
 			i.alert_rule_id,
 			ar.name as alert_name,
+			ar.trigger_type,
 			i.status,
 			i.trigger_value as message,
 			i.started_at as timestamp
@@ -171,6 +173,7 @@ func (j *NotificationJob) getUnnotifiedIncidents() ([]*IncidentNotificationData,
 			&incident.MonitorURL,
 			&incident.AlertRuleID,
 			&incident.AlertName,
+			&incident.TriggerType,
 			&incident.Status,
 			&incident.Message,
 			&incident.Timestamp,
@@ -337,15 +340,33 @@ func (j *NotificationJob) sendDiscordNotification(incident *IncidentNotification
 		return fmt.Errorf("Discord webhook URL not configured")
 	}
 
-	// Determine embed color based on status
+	// Determine embed color and title based on status and trigger type
 	var color int
 	var title string
 	if incident.Status == "open" {
 		color = 0xFF0000 // Red for open incidents
-		title = "🚨 New Incident Detected"
+		switch incident.TriggerType {
+		case "down":
+			title = "🔴 Monitor Down Alert"
+		case "slow_response":
+			title = "🐌 Slow Response Alert"
+		case "ssl_expiry":
+			title = "🔒 SSL Certificate Expiry Alert"
+		default:
+			title = "🚨 New Incident Detected"
+		}
 	} else {
 		color = 0x00FF00 // Green for resolved incidents
-		title = "✅ Incident Resolved"
+		switch incident.TriggerType {
+		case "down":
+			title = "✅ Monitor Restored"
+		case "slow_response":
+			title = "✅ Response Time Normalized"
+		case "ssl_expiry":
+			title = "✅ SSL Certificate Renewed"
+		default:
+			title = "✅ Incident Resolved"
+		}
 	}
 
 	// Create Discord embed

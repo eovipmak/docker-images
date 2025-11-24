@@ -152,51 +152,7 @@
 			<StatCard title="Open Incidents" value={stats.open_incidents} valueColor="text-yellow-600" />
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-			<!-- Recent Checks -->
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Checks</h2>
-				{#if recentChecks.length === 0}
-					<p class="text-gray-500">No recent checks to display</p>
-				{:else}
-					<div class="space-y-4">
-						{#each recentChecks as { check, monitor }}
-							<div class="border-b border-gray-200 pb-3 last:border-0">
-								<div class="flex items-start justify-between">
-									<div class="flex-1">
-										<div class="flex items-center gap-2 mb-1">
-											<MonitorStatus status={check.success ? 'up' : 'down'} />
-											<span class="font-medium text-gray-900">{monitor.name}</span>
-										</div>
-										<p class="text-sm text-gray-600 truncate">{monitor.url}</p>
-										{#if check.response_time_ms}
-											<p class="text-xs text-gray-500 mt-1">
-												Response time: {check.response_time_ms}ms
-											</p>
-										{/if}
-										{#if check.error_message}
-											<p class="text-xs text-red-600 mt-1">
-												{check.error_message}
-											</p>
-										{/if}
-									</div>
-									<div class="text-right">
-										<p class="text-xs text-gray-500">
-											{formatRelativeTime(check.checked_at)}
-										</p>
-										{#if check.status_code}
-											<p class="text-xs text-gray-600 mt-1">
-												Status: {check.status_code}
-											</p>
-										{/if}
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</div>
-
+		<div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
 			<!-- Open Incidents -->
 			<div class="bg-white rounded-lg shadow-md p-6">
 				<h2 class="text-xl font-semibold text-gray-800 mb-4">Open Incidents</h2>

@@ -148,6 +148,47 @@
 		}
 	}
 
+	async function handleTestChannel(channel: any) {
+		try {
+			const response = await fetchAPI(`/api/v1/alert-channels/${channel.id}/test`, {
+				method: 'POST'
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to test alert channel');
+			}
+
+			alert('Test notification sent successfully!');
+		} catch (err: any) {
+			console.error('Error testing alert channel:', err);
+			alert(err.message || 'Failed to test alert channel');
+		}
+	}
+
+	async function handleTestRule(rule: any) {
+		try {
+			const response = await fetchAPI(`/api/v1/alert-rules/${rule.id}/test`, {
+				method: 'POST'
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to test alert rule');
+			}
+
+			const result = await response.json();
+			if (result.valid) {
+				alert('Alert rule configuration is valid!');
+			} else {
+				alert('Alert rule has issues:\n' + result.issues.join('\n'));
+			}
+		} catch (err: any) {
+			console.error('Error testing alert rule:', err);
+			alert(err.message || 'Failed to test alert rule');
+		}
+	}
+
 	function handleRuleModalSave() {
 		isRuleModalOpen = false;
 		selectedRule = null;
@@ -362,6 +403,13 @@
 										</td>
 										<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 											<button
+												on:click={() => handleTestRule(rule)}
+												class="text-purple-600 hover:text-purple-900 mr-3"
+												title="Test Rule"
+											>
+												Test
+											</button>
+											<button
 												on:click={() => handleEditRule(rule)}
 												class="text-blue-600 hover:text-blue-900 mr-3"
 												title="Edit"
@@ -479,6 +527,13 @@
 											</button>
 										</td>
 										<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+											<button
+												on:click={() => handleTestChannel(channel)}
+												class="text-purple-600 hover:text-purple-900 mr-3"
+												title="Test Channel"
+											>
+												Test
+											</button>
 											<button
 												on:click={() => handleEditChannel(channel)}
 												class="text-blue-600 hover:text-blue-900 mr-3"

@@ -169,7 +169,7 @@
 					<div>
 						<h3 class="text-sm font-medium text-gray-500 mb-1">Resolved At</h3>
 						<p class="text-base text-gray-900">
-							{incident.resolved_at ? formatDate(incident.resolved_at) : 'Ongoing'}
+							{incident.resolved_at && incident.resolved_at.Valid ? formatDate(incident.resolved_at.Time) : 'Ongoing'}
 						</p>
 					</div>
 
@@ -247,13 +247,13 @@
 											</span>
 										</td>
 										<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-											{check.response_time_ms ? `${check.response_time_ms}ms` : 'N/A'}
+											{check.response_time_ms && check.response_time_ms.Valid ? `${check.response_time_ms.Int64}ms` : 'N/A'}
 										</td>
 										<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-											{check.status_code || 'N/A'}
+											{check.status_code && check.status_code.Valid ? check.status_code.Int64 : 'N/A'}
 										</td>
 										<td class="px-4 py-3 text-sm text-gray-900">
-											{check.error_message || '-'}
+											{check.error_message && check.error_message.Valid ? check.error_message.String : '-'}
 										</td>
 									</tr>
 								{/each}

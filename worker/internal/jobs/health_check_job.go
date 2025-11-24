@@ -64,6 +64,10 @@ func (j *HealthCheckJob) Name() string {
 
 // Run executes the health check job
 func (j *HealthCheckJob) Run(ctx context.Context) error {
+	if j.db == nil {
+		return fmt.Errorf("database connection is nil")
+	}
+	
 	startTime := time.Now()
 	log.Println("[HealthCheckJob] Starting health check run")
 

@@ -353,3 +353,85 @@ func (h *AlertRuleHandler) Delete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "alert rule deleted successfully"})
 }
+
+// Test handles testing an alert rule by validating its configuration
+// POST /api/v1/alert-rules/:id/test
+func (h *AlertRuleHandler) Test(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "alert rule ID required"})
+		return
+	}
+
+	// Get tenant ID from context for authorization check
+	tenantIDValue, exists := c.Get("tenant_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		return
+	}
+	tenantID := tenantIDValue.(int)
+
+	// Get existing rule
+	rule, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rule"})
+		return
+	}
+
+	// Validate rule configuration
+	issues := h.validateRuleConfiguration(rule)
+
+	if len(issues) > 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"valid":  false,
+			"issues": issues,
+			"message": "alert rule has configuration issues",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"valid":   true,
+		"message": "alert rule configuration is valid",
+	})
+}
+
+// validateRuleConfiguration validates an alert rule's configuration
+func (h *AlertRuleHandler) validateRuleConfiguration(rule *entities.AlertRuleWithChannels) []string {
+	var issues []string
+
+	// Check if rule has channels
+	if len(rule.ChannelIDs) == 0 {
+		issues = append(issues, "no notification channels configured")
+	}
+
+	// Check if monitor exists (if monitor-specific)
+	if rule.MonitorID.Valid {
+		_, err := h.monitorRepo.GetByID(rule.MonitorID.String)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				issues = append(issues, "associated monitor not found")
+			} else {
+				issues = append(issues, "failed to validate monitor")
+			}
+		}
+	}
+
+	// Validate trigger-specific logic
+	switch rule.TriggerType {
+	case "ssl_expiry":
+		if rule.MonitorID.Valid {
+			// Check if monitor has SSL checking enabled
+			monitor, err := h.monitorRepo.GetByID(rule.MonitorID.String)
+			if err == nil && !monitor.CheckSSL {
+				issues = append(issues, "monitor does not have SSL checking enabled")
+			}
+		}
+	}
+
+	return issues
+}

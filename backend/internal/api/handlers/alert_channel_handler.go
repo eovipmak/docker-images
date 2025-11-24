@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
@@ -240,4 +244,179 @@ func (h *AlertChannelHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "alert channel deleted successfully"})
+}
+
+// Test handles testing an alert channel by sending a test notification
+// POST /api/v1/alert-channels/:id/test
+func (h *AlertChannelHandler) Test(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "alert channel ID required"})
+		return
+	}
+
+	// Get tenant ID from context for authorization check
+	tenantIDValue, exists := c.Get("tenant_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		return
+	}
+	tenantID := tenantIDValue.(int)
+
+	// Get existing channel
+	channel, err := h.alertChannelRepo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "alert channel not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert channel"})
+		return
+	}
+
+	// Verify that the alert channel belongs to the current tenant
+	if channel.TenantID != tenantID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	// Send test notification
+	if err := h.sendTestNotification(channel); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send test notification: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "test notification sent successfully"})
+}
+
+// sendTestNotification sends a test notification to the given channel
+func (h *AlertChannelHandler) sendTestNotification(channel *entities.AlertChannel) error {
+	// Create test data similar to notification job
+	testData := map[string]interface{}{
+		"incident_id":  "test-incident-123",
+		"monitor_name": "Test Monitor",
+		"monitor_url":  "https://example.com",
+		"status":       "test",
+		"message":      "This is a test notification from V-Insight",
+		"timestamp":    time.Now().Format(time.RFC3339),
+	}
+
+	switch channel.Type {
+	case "webhook":
+		return h.sendTestWebhook(channel, testData)
+	case "discord":
+		return h.sendTestDiscord(channel, testData)
+	case "email":
+		return h.sendTestEmail(channel, testData)
+	default:
+		return fmt.Errorf("unsupported channel type: %s", channel.Type)
+	}
+}
+
+// sendTestWebhook sends a test webhook notification
+func (h *AlertChannelHandler) sendTestWebhook(channel *entities.AlertChannel, data map[string]interface{}) error {
+	webhookURL, ok := channel.Config["url"].(string)
+	if !ok || webhookURL == "" {
+		return fmt.Errorf("webhook URL not configured")
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal webhook payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create webhook request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send webhook request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("webhook returned non-success status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// sendTestDiscord sends a test Discord notification
+func (h *AlertChannelHandler) sendTestDiscord(channel *entities.AlertChannel, data map[string]interface{}) error {
+	webhookURL, ok := channel.Config["url"].(string)
+	if !ok || webhookURL == "" {
+		return fmt.Errorf("Discord webhook URL not configured")
+	}
+
+	embed := map[string]interface{}{
+		"title":       "🧪 Test Notification",
+		"description": "This is a test notification from V-Insight",
+		"color":       0x00FF00, // Green
+		"fields": []map[string]interface{}{
+			{
+				"name":   "Monitor",
+				"value":  data["monitor_name"].(string),
+				"inline": true,
+			},
+			{
+				"name":   "URL",
+				"value":  data["monitor_url"].(string),
+				"inline": true,
+			},
+			{
+				"name":   "Status",
+				"value":  "Test",
+				"inline": true,
+			},
+			{
+				"name":   "Message",
+				"value":  data["message"].(string),
+				"inline": false,
+			},
+		},
+		"timestamp": data["timestamp"],
+		"footer": map[string]interface{}{
+			"text": "V-Insight Test Notification",
+		},
+	}
+
+	payload := map[string]interface{}{
+		"embeds": []map[string]interface{}{embed},
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal Discord payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create Discord request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send Discord request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("Discord webhook returned non-success status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// sendTestEmail sends a test email notification (placeholder)
+func (h *AlertChannelHandler) sendTestEmail(channel *entities.AlertChannel, data map[string]interface{}) error {
+	// Email implementation is ready for future development
+	return fmt.Errorf("email notifications not yet implemented")
 }

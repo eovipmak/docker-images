@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
@@ -14,15 +15,19 @@ import (
 
 // MonitorHandler handles monitor-related HTTP requests
 type MonitorHandler struct {
-	monitorRepo    repository.MonitorRepository
-	monitorService *service.MonitorService
+	monitorRepo      repository.MonitorRepository
+	alertRuleRepo    repository.AlertRuleRepository
+	alertChannelRepo repository.AlertChannelRepository
+	monitorService   *service.MonitorService
 }
 
 // NewMonitorHandler creates a new monitor handler
-func NewMonitorHandler(monitorRepo repository.MonitorRepository, monitorService *service.MonitorService) *MonitorHandler {
+func NewMonitorHandler(monitorRepo repository.MonitorRepository, alertRuleRepo repository.AlertRuleRepository, alertChannelRepo repository.AlertChannelRepository, monitorService *service.MonitorService) *MonitorHandler {
 	return &MonitorHandler{
-		monitorRepo:    monitorRepo,
-		monitorService: monitorService,
+		monitorRepo:      monitorRepo,
+		alertRuleRepo:    alertRuleRepo,
+		alertChannelRepo: alertChannelRepo,
+		monitorService:   monitorService,
 	}
 }
 
@@ -105,6 +110,14 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	if err := h.monitorRepo.Create(monitor); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create monitor"})
 		return
+	}
+
+	// Auto-create SSL expiry alert rule if SSL checking is enabled
+	if monitor.CheckSSL && monitor.SSLAlertDays > 0 {
+		if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
+			// Log error but don't fail the monitor creation
+			fmt.Printf("Warning: Failed to create SSL alert rule for monitor %s: %v\n", monitor.Name, err)
+		}
 	}
 
 	c.JSON(http.StatusCreated, monitor)
@@ -239,6 +252,20 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 		return
 	}
 
+	// Update SSL alert rule if SSL settings changed
+	if req.CheckSSL != nil || req.SSLAlertDays > 0 {
+		if monitor.CheckSSL && monitor.SSLAlertDays > 0 {
+			if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
+				fmt.Printf("Warning: Failed to update SSL alert rule for monitor %s: %v\n", monitor.Name, err)
+			}
+		} else {
+			// Disable SSL alert rule if SSL checking is disabled
+			if err := h.disableSSLAlertRule(tenantID, monitor.ID); err != nil {
+				fmt.Printf("Warning: Failed to disable SSL alert rule for monitor %s: %v\n", monitor.Name, err)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, monitor)
 }
 
@@ -274,6 +301,11 @@ func (h *MonitorHandler) Delete(c *gin.Context) {
 	if monitor.TenantID != tenantID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
+	}
+
+	// Delete associated SSL alert rule first
+	if err := h.disableSSLAlertRule(tenantID, id); err != nil {
+		fmt.Printf("Warning: Failed to delete SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 	}
 
 	if err := h.monitorRepo.Delete(id); err != nil {
@@ -407,4 +439,94 @@ func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
 		"ssl_status": sslStatus,
 		"alert_threshold": monitor.SSLAlertDays,
 	})
+}
+
+// createOrUpdateSSLAlertRule creates or updates an SSL expiry alert rule for a monitor
+func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entities.Monitor) error {
+	ruleName := fmt.Sprintf("SSL Expiry Alert - %s (%d days)", monitor.Name, monitor.SSLAlertDays)
+
+	// Check if alert rule already exists for this monitor
+	existingRules, err := h.alertRuleRepo.GetAllWithChannelsByTenantID(tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to check existing alert rules: %w", err)
+	}
+
+	var existingRule *entities.AlertRuleWithChannels
+	for _, rule := range existingRules {
+		// Check if this is an auto-generated SSL rule for this monitor
+		if rule.MonitorID.Valid && rule.MonitorID.String == monitor.ID && 
+		   rule.TriggerType == "ssl_expiry" && 
+		   strings.HasPrefix(rule.Name, "SSL Expiry Alert - ") {
+			existingRule = rule
+			break
+		}
+	}
+
+	if existingRule != nil {
+		// Update existing rule
+		existingRule.Name = ruleName
+		existingRule.ThresholdValue = monitor.SSLAlertDays
+		existingRule.Enabled = monitor.Enabled
+
+		alertRule := &entities.AlertRule{
+			ID:             existingRule.ID,
+			TenantID:       existingRule.TenantID,
+			MonitorID:      existingRule.MonitorID,
+			Name:           existingRule.Name,
+			TriggerType:    existingRule.TriggerType,
+			ThresholdValue: existingRule.ThresholdValue,
+			Enabled:        existingRule.Enabled,
+		}
+
+		return h.alertRuleRepo.Update(alertRule)
+	} else {
+		// Create new rule
+		alertRule := &entities.AlertRule{
+			TenantID:       tenantID,
+			MonitorID:      sql.NullString{String: monitor.ID, Valid: true},
+			Name:           ruleName,
+			TriggerType:    "ssl_expiry",
+			ThresholdValue: monitor.SSLAlertDays,
+			Enabled:        monitor.Enabled,
+		}
+
+		if err := h.alertRuleRepo.Create(alertRule); err != nil {
+			return fmt.Errorf("failed to create SSL alert rule: %w", err)
+		}
+
+		return nil
+	}
+}
+
+// disableSSLAlertRule disables SSL alert rules for a monitor
+func (h *MonitorHandler) disableSSLAlertRule(tenantID int, monitorID string) error {
+	// Find and disable all auto-generated SSL expiry rules for this monitor
+	rules, err := h.alertRuleRepo.GetAllWithChannelsByTenantID(tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to get alert rules: %w", err)
+	}
+
+	for _, rule := range rules {
+		if rule.MonitorID.Valid && rule.MonitorID.String == monitorID && 
+		   rule.TriggerType == "ssl_expiry" && 
+		   strings.HasPrefix(rule.Name, "SSL Expiry Alert - ") {
+			// Disable the auto-generated rule
+			rule.Enabled = false
+			alertRule := &entities.AlertRule{
+				ID:             rule.ID,
+				TenantID:       rule.TenantID,
+				MonitorID:      rule.MonitorID,
+				Name:           rule.Name,
+				TriggerType:    rule.TriggerType,
+				ThresholdValue: rule.ThresholdValue,
+				Enabled:        rule.Enabled,
+			}
+
+			if err := h.alertRuleRepo.Update(alertRule); err != nil {
+				return fmt.Errorf("failed to disable SSL alert rule %s: %w", rule.ID, err)
+			}
+		}
+	}
+
+	return nil
 }

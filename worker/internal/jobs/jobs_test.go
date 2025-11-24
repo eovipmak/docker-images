@@ -3,8 +3,6 @@ package jobs
 import (
 	"context"
 	"testing"
-
-	"github.com/eovipmak/v-insight/worker/internal/database"
 )
 
 func TestHealthCheckJob_Name(t *testing.T) {

@@ -13,6 +13,9 @@ type AlertChannelRepository interface {
 	// GetByTenantID retrieves all alert channels for a specific tenant
 	GetByTenantID(tenantID int) ([]*entities.AlertChannel, error)
 
+	// GetByAlertRuleID retrieves all alert channels associated with a specific alert rule
+	GetByAlertRuleID(tenantID int, alertRuleID string) ([]*entities.AlertChannel, error)
+
 	// Update updates an existing alert channel
 	Update(channel *entities.AlertChannel) error
 
