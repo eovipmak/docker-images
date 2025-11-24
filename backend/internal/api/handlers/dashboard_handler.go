@@ -5,29 +5,34 @@ import (
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
 )
 
 // DashboardHandler handles dashboard-related HTTP requests
 type DashboardHandler struct {
-	monitorRepo  repository.MonitorRepository
-	incidentRepo repository.IncidentRepository
+	monitorRepo    repository.MonitorRepository
+	incidentRepo   repository.IncidentRepository
+	metricsService *service.MetricsService
 }
 
 // NewDashboardHandler creates a new dashboard handler
-func NewDashboardHandler(monitorRepo repository.MonitorRepository, incidentRepo repository.IncidentRepository) *DashboardHandler {
+func NewDashboardHandler(monitorRepo repository.MonitorRepository, incidentRepo repository.IncidentRepository, metricsService *service.MetricsService) *DashboardHandler {
 	return &DashboardHandler{
-		monitorRepo:  monitorRepo,
-		incidentRepo: incidentRepo,
+		monitorRepo:    monitorRepo,
+		incidentRepo:   incidentRepo,
+		metricsService: metricsService,
 	}
 }
 
 // DashboardStats represents the dashboard statistics response
 type DashboardStats struct {
-	TotalMonitors int `json:"total_monitors"`
-	UpCount       int `json:"up_count"`
-	DownCount     int `json:"down_count"`
-	OpenIncidents int `json:"open_incidents"`
+	TotalMonitors       int     `json:"total_monitors"`
+	UpCount             int     `json:"up_count"`
+	DownCount           int     `json:"down_count"`
+	OpenIncidents       int     `json:"open_incidents"`
+	AverageResponseTime float64 `json:"average_response_time"`
+	OverallUptime       float64 `json:"overall_uptime"`
 }
 
 // MonitorCheckWithMonitor represents a monitor check with associated monitor details
@@ -110,6 +115,18 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 		UpCount:       upCount,
 		DownCount:     downCount,
 		OpenIncidents: openIncidentsCount,
+	}
+
+	// Get global average response time (24h period)
+	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(tenantID, "24h")
+	if err == nil {
+		stats.AverageResponseTime = avgResponseTime
+	}
+
+	// Get overall uptime (24h period)
+	uptime, err := h.metricsService.GetGlobalUptime(tenantID, "24h")
+	if err == nil && uptime != nil {
+		stats.OverallUptime = uptime.Percentage
 	}
 
 	c.JSON(http.StatusOK, stats)
@@ -200,6 +217,18 @@ func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 		UpCount:       upCount,
 		DownCount:     downCount,
 		OpenIncidents: openIncidentsCount,
+	}
+
+	// Get global average response time (24h period)
+	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(tenantID, "24h")
+	if err == nil {
+		stats.AverageResponseTime = avgResponseTime
+	}
+
+	// Get overall uptime (24h period)
+	uptime, err := h.metricsService.GetGlobalUptime(tenantID, "24h")
+	if err == nil && uptime != nil {
+		stats.OverallUptime = uptime.Percentage
 	}
 
 	dashboardData := DashboardData{

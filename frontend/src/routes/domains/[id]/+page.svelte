@@ -4,12 +4,18 @@
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
+	import LineChart from '$lib/components/charts/LineChart.svelte';
+	import DonutChart from '$lib/components/charts/DonutChart.svelte';
+	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
 	let monitorId: string = '';
 	let monitor: any = null;
 	let checks: any[] = [];
 	let sslStatus: any = null;
+	let metrics24h: any = null;
+	let metrics7d: any = null;
+	let metrics30d: any = null;
 	let isLoading = true;
 	let error = '';
 
@@ -42,6 +48,23 @@
 			const checksResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/checks?limit=100`);
 			if (checksResponse.ok) {
 				checks = await checksResponse.json();
+			}
+
+			// Load metrics for different periods
+			const [metrics24hRes, metrics7dRes, metrics30dRes] = await Promise.all([
+				fetchAPI(`/api/v1/monitors/${monitorId}/metrics?period=24h`),
+				fetchAPI(`/api/v1/monitors/${monitorId}/metrics?period=7d`),
+				fetchAPI(`/api/v1/monitors/${monitorId}/metrics?period=30d`)
+			]);
+
+			if (metrics24hRes.ok) {
+				metrics24h = await metrics24hRes.json();
+			}
+			if (metrics7dRes.ok) {
+				metrics7d = await metrics7dRes.json();
+			}
+			if (metrics30dRes.ok) {
+				metrics30d = await metrics30dRes.json();
 			}
 
 			if (monitor.check_ssl && monitor.url.startsWith('https')) {
@@ -213,7 +236,16 @@
 
 		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
 			<h2 class="text-xl font-bold text-gray-900 mb-4">Response Time (Last 24 Hours)</h2>
-			{#if checks && checks.length > 0}
+			{#if metrics24h && metrics24h.response_time_history && metrics24h.response_time_history.length > 0}
+				<div class="h-64">
+					<LineChart 
+						data={metrics24h.response_time_history} 
+						label="Response Time" 
+						color="#3B82F6"
+						yAxisLabel="Response Time (ms)"
+					/>
+				</div>
+			{:else if checks && checks.length > 0}
 				{@const responseTimes = checks
 					.filter((c) => isValidSqlNull(c.response_time_ms))
 					.slice(0, 48)
@@ -236,6 +268,54 @@
 				</div>
 			{:else}
 				<p class="text-gray-500">No response time data available</p>
+			{/if}
+		</div>
+
+		<!-- Uptime Charts -->
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+			<div class="bg-white rounded-lg shadow-md p-6">
+				<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime - Last 7 Days</h2>
+				{#if metrics7d && metrics7d.uptime}
+					<div class="h-64">
+						<DonutChart 
+							percentage={metrics7d.uptime.percentage} 
+							label="Uptime"
+						/>
+					</div>
+					<div class="mt-4 text-center text-sm text-gray-600">
+						<p>{metrics7d.uptime.success_checks} successful / {metrics7d.uptime.total_checks} total checks</p>
+					</div>
+				{:else}
+					<p class="text-gray-500">No uptime data available</p>
+				{/if}
+			</div>
+			<div class="bg-white rounded-lg shadow-md p-6">
+				<h2 class="text-xl font-bold text-gray-900 mb-4">Uptime - Last 30 Days</h2>
+				{#if metrics30d && metrics30d.uptime}
+					<div class="h-64">
+						<DonutChart 
+							percentage={metrics30d.uptime.percentage} 
+							label="Uptime"
+						/>
+					</div>
+					<div class="mt-4 text-center text-sm text-gray-600">
+						<p>{metrics30d.uptime.success_checks} successful / {metrics30d.uptime.total_checks} total checks</p>
+					</div>
+				{:else}
+					<p class="text-gray-500">No uptime data available</p>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Status Code Distribution -->
+		<div class="bg-white rounded-lg shadow-md p-6 mb-8">
+			<h2 class="text-xl font-bold text-gray-900 mb-4">Status Code Distribution (Last 24 Hours)</h2>
+			{#if metrics24h && metrics24h.status_code_distribution && metrics24h.status_code_distribution.length > 0}
+				<div class="h-64">
+					<BarChart data={metrics24h.status_code_distribution} />
+				</div>
+			{:else}
+				<p class="text-gray-500">No status code data available</p>
 			{/if}
 		</div>
 
