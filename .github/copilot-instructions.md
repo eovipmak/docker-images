@@ -161,6 +161,13 @@ git status                             # No tmp/, node_modules/ committed
    - Alert evaluation: every minute
    - Notifications: every 30 seconds
 
+## Debugging Tips
+
+- When debugging, check logs periodically using `make logs-backend`, `make logs-worker`, or `make logs-frontend` to identify errors, but avoid continuous monitoring to prevent getting stuck in log viewing loops.
+- Use specific log filters (e.g., `grep` or `tail -f` with filters) to find relevant information quickly without overwhelming output.
+- Prefer using breakpoints in code editors, unit tests, or curl commands for step-by-step debugging instead of relying solely on logs.
+- If logs are not showing expected output, ensure services are running with `docker compose ps` and check for syntax errors in code.
+
 ## Development Workflow
 
 1. Start services: `make up` (wait ~30s)
