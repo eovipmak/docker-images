@@ -1,7 +1,7 @@
 -- Seed demo user for automated testing
 -- Email: test@gmail.com
 -- Password: Password!
--- Pre-computed bcrypt hash (cost=10): $2a$10$YourHashHere
+-- Pre-computed bcrypt hash (cost=10): $2a$10$fCeLy86IPRPiYypijBxAvO6cYAbaS79f80yH8/mDD18a0gIMQnTwO
 
 DO $$
 DECLARE
@@ -16,7 +16,7 @@ BEGIN
         INSERT INTO users (email, password_hash, created_at, updated_at)
         VALUES (
             'test@gmail.com',
-            '$2a$10$N9qo8uLOickgx2ZMRZoMye7.9VQ/T7dcCXL0V8LlQIl2iu0fvO1d6',
+            '$2a$10$fCeLy86IPRPiYypijBxAvO6cYAbaS79f80yH8/mDD18a0gIMQnTwO',
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
         )
