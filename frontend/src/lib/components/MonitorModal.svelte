@@ -99,235 +99,209 @@
 		isSubmitting = true;
 
 		try {
-			const endpoint = isEditMode ? `/api/v1/monitors/${monitor.id}` : '/api/v1/monitors';
+			const url = isEditMode ? `/api/v1/monitors/${monitor.id}` : '/api/v1/monitors';
 			const method = isEditMode ? 'PUT' : 'POST';
 
-			const response = await fetchAPI(endpoint, {
+			const response = await fetchAPI(url, {
 				method,
 				body: JSON.stringify(formData)
 			});
 
 			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to save monitor');
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to save monitor');
 			}
 
 			const savedMonitor = await response.json();
 			dispatch('save', savedMonitor);
-			closeModal();
-		} catch (error: any) {
-			errors.submit = error.message || 'An error occurred';
+			handleClose();
+		} catch (err: any) {
+			console.error('Error saving monitor:', err);
+			alert(err.message || 'Failed to save monitor');
 		} finally {
 			isSubmitting = false;
 		}
 	}
 
-	function closeModal() {
-		isOpen = false;
-		formData = {
-			name: '',
-			url: '',
-			check_interval: 60,
-			timeout: 30,
-			enabled: true,
-			check_ssl: true,
-			ssl_alert_days: 30
-		};
-		errors = {};
+	function handleClose() {
 		dispatch('close');
-	}
-
-	function handleBackdropClick(event: MouseEvent) {
-		if (event.target === event.currentTarget) {
-			closeModal();
-		}
 	}
 </script>
 
 {#if isOpen}
-	<div
-		class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-		on:click={handleBackdropClick}
-		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="modal-title"
-		tabindex="-1"
-	>
-		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-				<h2 id="modal-title" class="text-2xl font-bold text-gray-900">
-					{isEditMode ? 'Edit Monitor' : 'Add Monitor'}
-				</h2>
-				<button
-					type="button"
-					on:click={closeModal}
-					class="text-gray-400 hover:text-gray-600 transition-colors"
-					aria-label="Close modal"
-				>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-				</button>
-			</div>
+	<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+		<div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+			<!-- Backdrop -->
+			<div 
+                class="fixed inset-0 bg-slate-900/75 transition-opacity backdrop-blur-sm" 
+                aria-hidden="true"
+                on:click={handleClose}
+            ></div>
 
-			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
-				{#if errors.submit}
-					<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-						{errors.submit}
-					</div>
-				{/if}
+			<!-- This element is to trick the browser into centering the modal contents. -->
+			<span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-				<!-- Name -->
-				<div>
-					<label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-						Name <span class="text-red-500">*</span>
-					</label>
-					<input
-						type="text"
-						id="name"
-						bind:value={formData.name}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="My Website"
-					/>
-					{#if errors.name}
-						<p class="text-sm text-red-600 mt-1">{errors.name}</p>
-					{/if}
-				</div>
-
-				<!-- URL -->
-				<div>
-					<label for="url" class="block text-sm font-medium text-gray-700 mb-1">
-						URL <span class="text-red-500">*</span>
-					</label>
-					<input
-						type="text"
-						id="url"
-						bind:value={formData.url}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="https://example.com"
-					/>
-					{#if errors.url}
-						<p class="text-sm text-red-600 mt-1">{errors.url}</p>
-					{/if}
-				</div>
-
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<!-- Check Interval -->
-					<div>
-						<label for="check_interval" class="block text-sm font-medium text-gray-700 mb-1">
-							Check Interval (seconds)
-						</label>
-						<input
-							type="number"
-							id="check_interval"
-							bind:value={formData.check_interval}
-							min="60"
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-						{#if errors.check_interval}
-							<p class="text-sm text-red-600 mt-1">{errors.check_interval}</p>
-						{/if}
-					</div>
-
-					<!-- Timeout -->
-					<div>
-						<label for="timeout" class="block text-sm font-medium text-gray-700 mb-1">
-							Timeout (seconds)
-						</label>
-						<input
-							type="number"
-							id="timeout"
-							bind:value={formData.timeout}
-							min="5"
-							max="120"
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
-						{#if errors.timeout}
-							<p class="text-sm text-red-600 mt-1">{errors.timeout}</p>
-						{/if}
-					</div>
-				</div>
-
-				<!-- SSL Settings -->
-				<div class="border-t border-gray-200 pt-4">
-					<h3 class="text-lg font-medium text-gray-900 mb-3">SSL/TLS Settings</h3>
-					<p class="text-sm text-gray-600 mb-3">
-						Configure SSL certificate monitoring. An alert rule will be automatically created when SSL checking is enabled.
-					</p>
-
-					<div class="space-y-3">
-						<!-- Check SSL -->
-						<div class="flex items-center">
-							<input
-								type="checkbox"
-								id="check_ssl"
-								bind:checked={formData.check_ssl}
-								class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-							/>
-							<label for="check_ssl" class="ml-2 block text-sm text-gray-700">
-								Check SSL Certificate
-							</label>
+			<div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-200">
+				<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+					<div class="sm:flex sm:items-start">
+						<div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            {#if isEditMode}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                </svg>
+                            {:else}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                            {/if}
 						</div>
+						<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+							<h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">
+								{isEditMode ? 'Edit Monitor' : 'Add New Monitor'}
+							</h3>
+							<div class="mt-4 space-y-4">
+								<!-- Name -->
+								<div>
+									<label for="name" class="block text-sm font-medium text-slate-700">Name</label>
+									<input
+										type="text"
+										name="name"
+										id="name"
+										bind:value={formData.name}
+										class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										placeholder="My Website"
+									/>
+									{#if errors.name}
+										<p class="mt-1 text-sm text-red-600">{errors.name}</p>
+									{/if}
+								</div>
 
-						<!-- SSL Alert Days -->
-						{#if formData.check_ssl}
-							<div>
-								<label for="ssl_alert_days" class="block text-sm font-medium text-gray-700 mb-1">
-									Alert Before Expiry (days)
-								</label>
-								<input
-									type="number"
-									id="ssl_alert_days"
-									bind:value={formData.ssl_alert_days}
-									min="1"
-									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								/>
-								{#if errors.ssl_alert_days}
-									<p class="text-sm text-red-600 mt-1">{errors.ssl_alert_days}</p>
-								{/if}
-								<p class="text-xs text-blue-600 mt-1">
-									ℹ️ An alert rule will be automatically created to notify when SSL expires within this many days
-								</p>
+								<!-- URL -->
+								<div>
+									<label for="url" class="block text-sm font-medium text-slate-700">URL</label>
+									<input
+										type="text"
+										name="url"
+										id="url"
+										bind:value={formData.url}
+										class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										placeholder="https://example.com"
+									/>
+									{#if errors.url}
+										<p class="mt-1 text-sm text-red-600">{errors.url}</p>
+									{/if}
+								</div>
+
+								<div class="grid grid-cols-2 gap-4">
+									<!-- Check Interval -->
+									<div>
+										<label for="check_interval" class="block text-sm font-medium text-slate-700">Interval (sec)</label>
+										<input
+											type="number"
+											name="check_interval"
+											id="check_interval"
+											bind:value={formData.check_interval}
+											min="60"
+											class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										/>
+										{#if errors.check_interval}
+											<p class="mt-1 text-sm text-red-600">{errors.check_interval}</p>
+										{/if}
+									</div>
+
+									<!-- Timeout -->
+									<div>
+										<label for="timeout" class="block text-sm font-medium text-slate-700">Timeout (sec)</label>
+										<input
+											type="number"
+											name="timeout"
+											id="timeout"
+											bind:value={formData.timeout}
+											min="5"
+											max="120"
+											class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										/>
+										{#if errors.timeout}
+											<p class="mt-1 text-sm text-red-600">{errors.timeout}</p>
+										{/if}
+									</div>
+								</div>
+
+								<!-- SSL Settings -->
+								<div class="space-y-3 pt-2">
+									<div class="flex items-start">
+										<div class="flex items-center h-5">
+											<input
+												id="check_ssl"
+												name="check_ssl"
+												type="checkbox"
+												bind:checked={formData.check_ssl}
+												class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
+											/>
+										</div>
+										<div class="ml-3 text-sm">
+											<label for="check_ssl" class="font-medium text-slate-700">Check SSL Certificate</label>
+											<p class="text-slate-500">Monitor SSL certificate validity and expiration.</p>
+										</div>
+									</div>
+
+									{#if formData.check_ssl}
+										<div>
+											<label for="ssl_alert_days" class="block text-sm font-medium text-slate-700">Alert before expiry (days)</label>
+											<input
+												type="number"
+												name="ssl_alert_days"
+												id="ssl_alert_days"
+												bind:value={formData.ssl_alert_days}
+												min="1"
+												class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+											/>
+											{#if errors.ssl_alert_days}
+												<p class="mt-1 text-sm text-red-600">{errors.ssl_alert_days}</p>
+											{/if}
+										</div>
+									{/if}
+								</div>
+
+                                <!-- Enabled -->
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input
+                                            id="enabled"
+                                            name="enabled"
+                                            type="checkbox"
+                                            bind:checked={formData.enabled}
+                                            class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
+                                        />
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="enabled" class="font-medium text-slate-700">Enabled</label>
+                                        <p class="text-slate-500">Pause monitoring without deleting the configuration.</p>
+                                    </div>
+                                </div>
 							</div>
-						{/if}
+						</div>
 					</div>
 				</div>
-
-				<!-- Enabled -->
-				<div class="border-t border-gray-200 pt-4">
-					<div class="flex items-center">
-						<input
-							type="checkbox"
-							id="enabled"
-							bind:checked={formData.enabled}
-							class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-						/>
-						<label for="enabled" class="ml-2 block text-sm text-gray-700">
-							Enable monitoring
-						</label>
-					</div>
-				</div>
-
-				<!-- Actions -->
-				<div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+				<div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-200">
 					<button
 						type="button"
-						on:click={closeModal}
-						class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+						class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+						on:click={handleSubmit}
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? 'Saving...' : 'Save'}
+					</button>
+					<button
+						type="button"
+						class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+						on:click={handleClose}
 						disabled={isSubmitting}
 					>
 						Cancel
 					</button>
-					<button
-						type="submit"
-						class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-						disabled={isSubmitting}
-					>
-						{isSubmitting ? 'Saving...' : isEditMode ? 'Update Monitor' : 'Create Monitor'}
-					</button>
 				</div>
-			</form>
+			</div>
 		</div>
 	</div>
 {/if}

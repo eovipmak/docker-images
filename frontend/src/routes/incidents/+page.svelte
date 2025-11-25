@@ -49,10 +49,9 @@
 				const toDateTime = new Date(toDate + 'T23:59:59').toISOString();
 				params.append('to', toDateTime);
 			}
-			params.append('limit', '100');
 
 			const queryString = params.toString();
-			const url = `/api/v1/incidents${queryString ? '?' + queryString : ''}`;
+			const url = `/api/v1/incidents${queryString ? `?${queryString}` : ''}`;
 
 			const response = await fetchAPI(url);
 			if (!response.ok) {
@@ -68,11 +67,11 @@
 		}
 	}
 
-	function handleFilterChange() {
+	function handleFilterSubmit() {
 		loadIncidents();
 	}
 
-	function handleClearFilters() {
+	function handleResetFilters() {
 		statusFilter = '';
 		monitorFilter = '';
 		fromDate = '';
@@ -85,43 +84,39 @@
 	<title>Incidents - V-Insight</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8">
-	<div class="max-w-7xl mx-auto">
-		<div class="mb-6">
-			<h1 class="text-3xl font-bold text-gray-900 mb-2">Incidents History</h1>
-			<p class="text-gray-600">View and manage all incident history</p>
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+	<div class="sm:flex sm:items-center">
+		<div class="sm:flex-auto">
+			<h1 class="text-2xl font-semibold leading-6 text-slate-900">Incidents</h1>
+			<p class="mt-2 text-sm text-slate-600">View and manage incidents detected by your monitors.</p>
 		</div>
+	</div>
 
-		<!-- Filters -->
-		<div class="bg-white rounded-lg shadow-md p-4 mb-6">
-			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<!-- Status filter -->
-				<div>
-					<label for="status-filter" class="block text-sm font-medium text-gray-700 mb-1">
-						Status
-					</label>
+	<!-- Filters -->
+	<div class="mt-8 bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg p-6">
+		<form on:submit|preventDefault={handleFilterSubmit} class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+			<div class="sm:col-span-2">
+				<label for="status" class="block text-sm font-medium leading-6 text-slate-900">Status</label>
+				<div class="mt-2">
 					<select
-						id="status-filter"
+						id="status"
 						bind:value={statusFilter}
-						on:change={handleFilterChange}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					>
-						<option value="">All</option>
+						<option value="">All Statuses</option>
 						<option value="open">Open</option>
 						<option value="resolved">Resolved</option>
 					</select>
 				</div>
+			</div>
 
-				<!-- Monitor filter -->
-				<div>
-					<label for="monitor-filter" class="block text-sm font-medium text-gray-700 mb-1">
-						Monitor
-					</label>
+			<div class="sm:col-span-2">
+				<label for="monitor" class="block text-sm font-medium leading-6 text-slate-900">Monitor</label>
+				<div class="mt-2">
 					<select
-						id="monitor-filter"
+						id="monitor"
 						bind:value={monitorFilter}
-						on:change={handleFilterChange}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					>
 						<option value="">All Monitors</option>
 						{#each monitors as monitor}
@@ -129,64 +124,71 @@
 						{/each}
 					</select>
 				</div>
+			</div>
 
-				<!-- From date -->
-				<div>
-					<label for="from-date" class="block text-sm font-medium text-gray-700 mb-1">
-						From Date
-					</label>
+			<div class="sm:col-span-1">
+				<label for="from-date" class="block text-sm font-medium leading-6 text-slate-900">From</label>
+				<div class="mt-2">
 					<input
 						type="date"
 						id="from-date"
 						bind:value={fromDate}
-						on:change={handleFilterChange}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					/>
 				</div>
+			</div>
 
-				<!-- To date -->
-				<div>
-					<label for="to-date" class="block text-sm font-medium text-gray-700 mb-1">
-						To Date
-					</label>
+			<div class="sm:col-span-1">
+				<label for="to-date" class="block text-sm font-medium leading-6 text-slate-900">To</label>
+				<div class="mt-2">
 					<input
 						type="date"
 						id="to-date"
 						bind:value={toDate}
-						on:change={handleFilterChange}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					/>
 				</div>
 			</div>
 
-			<!-- Clear filters button -->
-			{#if statusFilter || monitorFilter || fromDate || toDate}
-				<div class="mt-4">
-					<button
-						on:click={handleClearFilters}
-						class="text-sm text-blue-600 hover:text-blue-800 font-medium"
-					>
-						Clear all filters
-					</button>
-				</div>
-			{/if}
-		</div>
+			<div class="sm:col-span-6 flex justify-end gap-3 pt-2">
+				<button
+					type="button"
+					on:click={handleResetFilters}
+					class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+				>
+					Reset
+				</button>
+				<button
+					type="submit"
+					class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+				>
+					Apply Filters
+				</button>
+			</div>
+		</form>
+	</div>
 
-		<!-- Results count -->
-		<div class="mb-4">
-			<p class="text-sm text-gray-600">
-				{incidents.length} incident{incidents.length !== 1 ? 's' : ''} found
-			</p>
-		</div>
-
-		<!-- Incidents table -->
+	<!-- Incidents List -->
+	<div class="mt-8">
 		{#if isLoading}
 			<div class="flex items-center justify-center py-12">
-				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
 			</div>
 		{:else if error}
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-				{error}
+			<div class="rounded-md bg-red-50 p-4 border border-red-200">
+				<div class="flex">
+					<div class="flex-shrink-0">
+						<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+							<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+						</svg>
+					</div>
+					<div class="ml-3">
+						<h3 class="text-sm font-medium text-red-800">Error loading incidents</h3>
+						<div class="mt-2 text-sm text-red-700">
+							<p>{error}</p>
+						</div>
+					</div>
+				</div>
 			</div>
 		{:else}
 			<IncidentTable {incidents} />

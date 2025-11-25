@@ -55,69 +55,71 @@
 
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
-		return date.toLocaleString();
-	}
-
-	function getTimelineIcon(type: string): string {
-		switch (type) {
-			case 'start':
-				return '⚠️';
-			case 'notify':
-				return '📧';
-			case 'resolve':
-				return '✅';
-			default:
-				return '•';
-		}
-	}
-
-	function getTimelineColor(type: string): string {
-		switch (type) {
-			case 'start':
-				return 'border-red-500 bg-red-50';
-			case 'notify':
-				return 'border-blue-500 bg-blue-50';
-			case 'resolve':
-				return 'border-green-500 bg-green-50';
-			default:
-				return 'border-gray-500 bg-gray-50';
-		}
+		return date.toLocaleString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 </script>
 
-<div class="bg-white rounded-lg shadow-md p-6">
-	<h3 class="text-lg font-semibold text-gray-900 mb-4">Incident Timeline</h3>
-	
-	{#if events.length === 0}
-		<p class="text-gray-500">No timeline events available</p>
-	{:else}
-		<div class="relative">
-			<!-- Vertical line -->
-			<div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-			
-			<!-- Timeline events -->
-			<div class="space-y-6">
-				{#each events as event, index (index)}
-					<div class="relative flex items-start gap-4">
-						<!-- Icon -->
-						<div class="flex-shrink-0 w-8 h-8 rounded-full border-2 {getTimelineColor(event.type)} flex items-center justify-center text-base z-10">
-							{getTimelineIcon(event.type)}
-						</div>
-						
-						<!-- Content -->
-						<div class="flex-1 pt-0.5">
-							<div class="flex items-center justify-between mb-1">
-								<h4 class="text-sm font-medium text-gray-900">{event.title}</h4>
-								<span class="text-xs text-gray-500">{formatDate(event.timestamp)}</span>
+<div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg overflow-hidden">
+	<div class="px-4 py-5 sm:p-6">
+		<h3 class="text-base font-semibold leading-6 text-slate-900 mb-6">Incident Timeline</h3>
+		
+		{#if events.length === 0}
+			<p class="text-sm text-slate-500">No timeline events available</p>
+		{:else}
+			<div class="flow-root">
+				<ul role="list" class="-mb-8">
+					{#each events as event, index (index)}
+						<li>
+							<div class="relative pb-8">
+								{#if index !== events.length - 1}
+									<span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true"></span>
+								{/if}
+								<div class="relative flex space-x-3">
+									<div>
+										{#if event.type === 'start'}
+											<span class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center ring-8 ring-white">
+												<svg class="h-5 w-5 text-red-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+												</svg>
+											</span>
+										{:else if event.type === 'notify'}
+											<span class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-8 ring-white">
+												<svg class="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z" />
+													<path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" />
+												</svg>
+											</span>
+										{:else if event.type === 'resolve'}
+											<span class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center ring-8 ring-white">
+												<svg class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+													<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+												</svg>
+											</span>
+										{/if}
+									</div>
+									<div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+										<div>
+											<p class="text-sm text-slate-500">
+												<span class="font-medium text-slate-900">{event.title}</span>
+												<span class="block mt-1">{event.description}</span>
+											</p>
+										</div>
+										<div class="whitespace-nowrap text-right text-sm text-slate-500">
+											<time datetime={event.timestamp}>{formatDate(event.timestamp)}</time>
+										</div>
+									</div>
+								</div>
 							</div>
-							<p class="text-sm text-gray-600">{event.description}</p>
-							{#if event.type === 'start' && incident.trigger_value}
-								<p class="text-xs text-gray-500 mt-1">Trigger value: {incident.trigger_value}</p>
-							{/if}
-						</div>
-					</div>
-				{/each}
+						</li>
+					{/each}
+				</ul>
 			</div>
-		</div>
-	{/if}
+		{/if}
+	</div>
 </div>

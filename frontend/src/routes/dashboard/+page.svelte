@@ -176,78 +176,129 @@
 	<title>Dashboard - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto">
-	<div class="flex items-center justify-between mb-6">
+<div class="max-w-7xl mx-auto space-y-8">
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-			<p class="text-gray-600">Monitor your domains and view system metrics</p>
+			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+			<p class="mt-1 text-sm text-slate-500">Overview of your monitoring status and system metrics.</p>
 		</div>
 	</div>
 
 	{#if isLoading}
-		<div class="flex items-center justify-center py-12">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-		</div>
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {#each Array(6) as _}
+                <div class="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
+            {/each}
+        </div>
 	{:else if error}
-		<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-8">
+		<div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
 			{error}
 		</div>
 	{:else}
 		<!-- Stats Cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
-			<StatCard title="Total Monitors" value={stats.total_monitors} valueColor="text-gray-900" />
-			<StatCard title="Monitors Up" value={stats.up_count} valueColor="text-green-600" />
-			<StatCard title="Monitors Down" value={stats.down_count} valueColor="text-red-600" />
-			<StatCard title="Open Incidents" value={stats.open_incidents} valueColor="text-yellow-600" />
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 			<StatCard 
-				title="Avg Response Time (24h)" 
+                title="Total Monitors" 
+                value={stats.total_monitors} 
+                valueColor="text-slate-900" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />'
+            />
+			<StatCard 
+                title="Operational" 
+                value={stats.up_count} 
+                valueColor="text-emerald-600" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />'
+            />
+			<StatCard 
+                title="Downtime" 
+                value={stats.down_count} 
+                valueColor="text-rose-600" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />'
+            />
+			<StatCard 
+                title="Open Incidents" 
+                value={stats.open_incidents} 
+                valueColor="text-amber-600" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />'
+            />
+			<StatCard 
+				title="Avg Response" 
 				value={stats.average_response_time ? `${Math.round(stats.average_response_time)}ms` : 'N/A'} 
-				valueColor="text-blue-600" 
+				valueColor="text-sky-600" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />'
 			/>
 			<StatCard 
-				title="Overall Uptime (24h)" 
+				title="Uptime (24h)" 
 				value={stats.overall_uptime ? `${stats.overall_uptime.toFixed(2)}%` : 'N/A'} 
-				valueColor="text-green-600" 
+				valueColor="text-emerald-600" 
+                icon='<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />'
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 			<!-- Open Incidents -->
-			<div class="bg-white rounded-lg shadow-md p-6">
-				<h2 class="text-xl font-semibold text-gray-800 mb-4">Open Incidents</h2>
-				{#if openIncidents.length === 0}
-					<p class="text-gray-500">No open incidents</p>
-				{:else}
-					<div class="space-y-4">
-						{#each openIncidents as { incident, monitor }}
-							<div class="border-b border-gray-200 pb-3 last:border-0">
-								<div class="flex items-start justify-between">
-									<div class="flex-1">
-										<div class="flex items-center gap-2 mb-1">
-											<IncidentBadge 
-												status={incident.status} 
-												severity={getIncidentSeverity(incident.trigger_value)} 
-											/>
-											<span class="font-medium text-gray-900">{monitor.name}</span>
-										</div>
-										<p class="text-sm text-gray-600 truncate">{monitor.url}</p>
-										{#if incident.trigger_value}
-											<p class="text-xs text-gray-500 mt-1">
-												Trigger: {incident.trigger_value}
-											</p>
-										{/if}
-									</div>
-									<div class="text-right">
-										<p class="text-xs text-gray-500">
-											Started {formatRelativeTime(incident.started_at)}
-										</p>
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
+			<div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h2 class="text-lg font-semibold text-slate-900">Open Incidents</h2>
+                        {#if openIncidents.length > 0}
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200">
+                                {openIncidents.length} Active
+                            </span>
+                        {/if}
+                    </div>
+                    
+                    {#if openIncidents.length === 0}
+                        <div class="p-12 text-center">
+                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-medium text-slate-900">All systems operational</h3>
+                            <p class="mt-1 text-sm text-slate-500">No active incidents reported at this time.</p>
+                        </div>
+                    {:else}
+                        <div class="divide-y divide-slate-100">
+                            {#each openIncidents as { incident, monitor }}
+                                <div class="p-4 sm:p-6 hover:bg-slate-50 transition-colors">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-3 mb-1">
+                                                <IncidentBadge 
+                                                    status={incident.status} 
+                                                    severity={getIncidentSeverity(incident.trigger_value)} 
+                                                />
+                                                <span class="font-medium text-slate-900 truncate">{monitor.name}</span>
+                                            </div>
+                                            <p class="text-sm text-slate-500 truncate mb-2">{monitor.url}</p>
+                                            {#if incident.trigger_value}
+                                                <div class="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs text-slate-600">
+                                                    <span class="font-medium mr-1">Trigger:</span> {incident.trigger_value}
+                                                </div>
+                                            {/if}
+                                        </div>
+                                        <div class="text-right ml-4 flex-shrink-0">
+                                            <p class="text-xs font-medium text-slate-500">
+                                                Started {formatRelativeTime(incident.started_at)}
+                                            </p>
+                                            <p class="text-xs text-slate-400 mt-1">
+                                                {formatDate(incident.started_at)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
 			</div>
+            
+            <!-- Recent Checks (Optional, if we want to show it) -->
+            <!-- For now, leaving empty or adding a placeholder for future widgets -->
 		</div>
 	{/if}
 </div>

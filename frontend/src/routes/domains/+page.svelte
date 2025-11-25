@@ -82,6 +82,11 @@
 		isModalOpen = true;
 	}
 
+	function handleViewMonitor(event: CustomEvent) {
+		const monitor = event.detail;
+		goto(`/domains/${monitor.id}`);
+	}
+
 	async function handleEditMonitor(event: CustomEvent) {
 		await loadModal();
 		selectedMonitor = event.detail;
@@ -104,28 +109,22 @@
 				throw new Error('Failed to delete monitor');
 			}
 
-			// Reload monitors after deletion
-			await loadMonitors();
+			monitors = monitors.filter((m) => m.id !== monitor.id);
 		} catch (err: any) {
 			console.error('Error deleting monitor:', err);
 			alert(err.message || 'Failed to delete monitor');
 		}
 	}
 
-	function handleViewMonitor(event: CustomEvent) {
-		const monitor = event.detail;
-		goto(`/domains/${monitor.id}`);
-	}
+	function handleMonitorSaved(event: CustomEvent) {
+		const savedMonitor = event.detail;
+		const index = monitors.findIndex((m) => m.id === savedMonitor.id);
 
-	function handleModalSave() {
-		isModalOpen = false;
-		selectedMonitor = null;
-		loadMonitors();
-	}
-
-	function handleModalClose() {
-		isModalOpen = false;
-		selectedMonitor = null;
+		if (index !== -1) {
+			monitors[index] = savedMonitor;
+		} else {
+			monitors = [savedMonitor, ...monitors];
+		}
 	}
 </script>
 
@@ -133,28 +132,38 @@
 	<title>Monitors - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto">
-	<div class="flex justify-between items-center mb-6">
+<div class="max-w-7xl mx-auto space-y-8">
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900 mb-2">Monitors</h1>
-			<p class="text-gray-600">Manage and monitor your websites and services</p>
+			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Monitors</h1>
+			<p class="mt-1 text-sm text-slate-500">Manage your website and service monitors.</p>
 		</div>
 		<button
 			on:click={handleAddMonitor}
-			class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium"
+			class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+			</svg>
 			Add Monitor
 		</button>
 	</div>
 
-	{#if isLoading}
-		<div class="flex items-center justify-center py-12">
-			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-		</div>
-	{:else if error}
-		<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+	{#if error}
+		<div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 flex items-center">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+			</svg>
 			{error}
 		</div>
+	{/if}
+
+	{#if isLoading}
+		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+            {#each Array(5) as _}
+                <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+            {/each}
+        </div>
 	{:else}
 		<MonitorTable
 			{monitors}
@@ -165,12 +174,12 @@
 	{/if}
 </div>
 
-{#if modalLoaded && MonitorModal}
+{#if modalLoaded}
 	<svelte:component
 		this={MonitorModal}
-		bind:isOpen={isModalOpen}
+		isOpen={isModalOpen}
 		monitor={selectedMonitor}
-		on:save={handleModalSave}
-		on:close={handleModalClose}
+		on:close={() => (isModalOpen = false)}
+		on:save={handleMonitorSaved}
 	/>
 {/if}

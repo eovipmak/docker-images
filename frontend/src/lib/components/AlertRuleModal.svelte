@@ -255,7 +255,7 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+		class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
 		on:click={handleBackdropClick}
 		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
 		role="dialog"
@@ -263,167 +263,193 @@
 		aria-labelledby="modal-title"
 		tabindex="-1"
 	>
-		<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-				<h2 id="modal-title" class="text-2xl font-bold text-gray-900">
+		<div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5">
+			<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+				<h2 id="modal-title" class="text-lg font-semibold text-slate-900">
 					{isEditMode ? 'Edit Alert Rule' : 'Create Alert Rule'}
 				</h2>
 				<button
 					type="button"
 					on:click={closeModal}
-					class="text-gray-400 hover:text-gray-600 transition-colors"
+					class="text-slate-400 hover:text-slate-500 transition-colors"
 					aria-label="Close modal"
 				>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 				</button>
 			</div>
 
-			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
 				{#if errors.submit}
-					<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-						{errors.submit}
+					<div class="rounded-md bg-red-50 p-4 border border-red-200">
+						<div class="flex">
+							<div class="flex-shrink-0">
+								<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<div class="ml-3">
+								<h3 class="text-sm font-medium text-red-800">Error</h3>
+								<div class="mt-2 text-sm text-red-700">
+									<p>{errors.submit}</p>
+								</div>
+							</div>
+						</div>
 					</div>
 				{/if}
 
 				<!-- Name -->
 				<div>
-					<label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="name" class="block text-sm font-medium leading-6 text-slate-900">
 						Name <span class="text-red-500">*</span>
 					</label>
-					<input
-						type="text"
-						id="name"
-						bind:value={formData.name}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						placeholder="Website Down Alert"
-					/>
+					<div class="mt-2">
+						<input
+							type="text"
+							id="name"
+							bind:value={formData.name}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							placeholder="e.g., Website Down Alert"
+						/>
+					</div>
 					{#if errors.name}
-						<p class="text-sm text-red-600 mt-1">{errors.name}</p>
+						<p class="mt-2 text-sm text-red-600">{errors.name}</p>
 					{/if}
 				</div>
 
 				<!-- Monitor -->
 				<div>
-					<label for="monitor_id" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="monitor_id" class="block text-sm font-medium leading-6 text-slate-900">
 						Monitor
 					</label>
-					<select
-						id="monitor_id"
-						bind:value={formData.monitor_id}
-						class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					>
-						<option value="">All monitors</option>
-						{#each monitors as monitor}
-							<option value={monitor.id}>{monitor.name}</option>
-						{/each}
-					</select>
-					<p class="text-xs text-gray-500 mt-1">Leave empty to apply to all monitors</p>
+					<div class="mt-2">
+						<select
+							id="monitor_id"
+							bind:value={formData.monitor_id}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						>
+							<option value="">All monitors</option>
+							{#each monitors as monitor}
+								<option value={monitor.id}>{monitor.name}</option>
+							{/each}
+						</select>
+					</div>
+					<p class="mt-2 text-sm text-slate-500">Leave empty to apply to all monitors.</p>
 				</div>
 
-				<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
 					<!-- Trigger Type -->
 					<div>
-						<label for="trigger_type" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="trigger_type" class="block text-sm font-medium leading-6 text-slate-900">
 							Trigger Type <span class="text-red-500">*</span>
 						</label>
-						<select
-							id="trigger_type"
-							bind:value={formData.trigger_type}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							on:change={() => {
-								formData.threshold_value = getDefaultThreshold(formData.trigger_type);
-							}}
-						>
-							<option value="down">Down</option>
-							<option value="slow_response">Slow Response</option>
-							<option value="ssl_expiry">SSL Expiry</option>
-						</select>
+						<div class="mt-2">
+							<select
+								id="trigger_type"
+								bind:value={formData.trigger_type}
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+								on:change={() => {
+									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
+								}}
+							>
+								<option value="down">Down</option>
+								<option value="slow_response">Slow Response</option>
+								<option value="ssl_expiry">SSL Expiry</option>
+							</select>
+						</div>
 						{#if errors.trigger_type}
-							<p class="text-sm text-red-600 mt-1">{errors.trigger_type}</p>
+							<p class="mt-2 text-sm text-red-600">{errors.trigger_type}</p>
 						{/if}
 					</div>
 
 					<!-- Threshold Value -->
 					<div>
-						<label for="threshold_value" class="block text-sm font-medium text-gray-700 mb-1">
+						<label for="threshold_value" class="block text-sm font-medium leading-6 text-slate-900">
 							{thresholdLabel} <span class="text-red-500">*</span>
 						</label>
-						<input
-							type="number"
-							id="threshold_value"
-							bind:value={formData.threshold_value}
-							min="0"
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						/>
+						<div class="mt-2">
+							<input
+								type="number"
+								id="threshold_value"
+								bind:value={formData.threshold_value}
+								min="0"
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							/>
+						</div>
 						{#if errors.threshold_value}
-							<p class="text-sm text-red-600 mt-1">{errors.threshold_value}</p>
+							<p class="mt-2 text-sm text-red-600">{errors.threshold_value}</p>
 						{:else if thresholdHelp}
-							<p class="text-xs text-gray-500 mt-1">{thresholdHelp}</p>
+							<p class="mt-2 text-sm text-slate-500">{thresholdHelp}</p>
 						{/if}
 					</div>
 				</div>
 
 				<!-- Alert Channels -->
-				<div class="border-t border-gray-200 pt-4">
-					<h3 class="text-lg font-medium text-gray-900 mb-3">Alert Channels</h3>
+				<div class="border-t border-slate-200 pt-6">
+					<h3 class="text-base font-semibold leading-6 text-slate-900 mb-4">Alert Channels</h3>
 					{#if channels.length === 0}
-						<p class="text-sm text-gray-500">No alert channels configured yet</p>
+						<p class="text-sm text-slate-500">No alert channels configured yet.</p>
 					{:else}
-						<div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 p-4 bg-slate-50">
 							{#each channels as channel}
-								<div class="flex items-center">
-									<input
-										type="checkbox"
-										id="channel-{channel.id}"
-										checked={formData.channel_ids.includes(channel.id)}
-										on:change={() => toggleChannel(channel.id)}
-										class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-									/>
-									<label for="channel-{channel.id}" class="ml-2 block text-sm text-gray-700">
-										{channel.name}
-										<span class="text-gray-500">({channel.type})</span>
-									</label>
+								<div class="relative flex items-start">
+									<div class="flex h-6 items-center">
+										<input
+											id="channel-{channel.id}"
+											type="checkbox"
+											checked={formData.channel_ids.includes(channel.id)}
+											on:change={() => toggleChannel(channel.id)}
+											class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+										/>
+									</div>
+									<div class="ml-3 text-sm leading-6">
+										<label for="channel-{channel.id}" class="font-medium text-slate-900">
+											{channel.name}
+											<span class="font-normal text-slate-500">({channel.type})</span>
+										</label>
+									</div>
 								</div>
 							{/each}
 						</div>
-						<p class="text-xs text-gray-500 mt-1">
-							Selected: {formData.channel_ids.length} channel{formData.channel_ids.length !== 1
-								? 's'
-								: ''}
+						<p class="mt-2 text-sm text-slate-500">
+							Selected: {formData.channel_ids.length} channel{formData.channel_ids.length !== 1 ? 's' : ''}
 						</p>
 					{/if}
 				</div>
 
 				<!-- Enabled -->
-				<div class="border-t border-gray-200 pt-4">
-					<div class="flex items-center">
-						<input
-							type="checkbox"
-							id="enabled"
-							bind:checked={formData.enabled}
-							class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-						/>
-						<label for="enabled" class="ml-2 block text-sm text-gray-700">
-							Enable this alert rule
-						</label>
+				<div class="border-t border-slate-200 pt-6">
+					<div class="relative flex gap-x-3">
+						<div class="flex h-6 items-center">
+							<input
+								id="enabled"
+								name="enabled"
+								type="checkbox"
+								bind:checked={formData.enabled}
+								class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+							/>
+						</div>
+						<div class="text-sm leading-6">
+							<label for="enabled" class="font-medium text-slate-900">Enable this alert rule</label>
+							<p class="text-slate-500">If disabled, this rule will not trigger any alerts.</p>
+						</div>
 					</div>
 				</div>
 
 				<!-- Actions -->
-				<div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+				<div class="mt-6 flex items-center justify-end gap-x-6 border-t border-slate-200 pt-6">
 					<button
 						type="button"
 						on:click={closeModal}
-						class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+						class="text-sm font-semibold leading-6 text-slate-900 hover:text-slate-700"
 						disabled={isSubmitting}
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
 						disabled={isSubmitting}
 					>
 						{isSubmitting ? 'Saving...' : isEditMode ? 'Update Rule' : 'Create Rule'}

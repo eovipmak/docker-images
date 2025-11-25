@@ -4,18 +4,21 @@
 
 	const statusConfig = {
 		up: {
-			color: 'text-green-600',
-			bg: 'bg-green-100',
-			text: 'Up'
+			color: 'text-emerald-700',
+			bg: 'bg-emerald-50 border-emerald-200',
+            dot: 'bg-emerald-500',
+			text: 'Operational'
 		},
 		down: {
-			color: 'text-red-600',
-			bg: 'bg-red-100',
-			text: 'Down'
+			color: 'text-rose-700',
+			bg: 'bg-rose-50 border-rose-200',
+            dot: 'bg-rose-500',
+			text: 'Downtime'
 		},
 		unknown: {
-			color: 'text-gray-600',
-			bg: 'bg-gray-100',
+			color: 'text-slate-700',
+			bg: 'bg-slate-50 border-slate-200',
+            dot: 'bg-slate-400',
 			text: 'Unknown'
 		}
 	};
@@ -23,12 +26,14 @@
 	const config = statusConfig[status] || statusConfig.unknown;
 </script>
 
-<span class="inline-flex items-center gap-2">
-	<span class="flex h-3 w-3 relative">
-		<span class="animate-ping absolute inline-flex h-full w-full rounded-full {config.bg} opacity-75"></span>
-		<span class="relative inline-flex rounded-full h-3 w-3 {config.bg}"></span>
-	</span>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {config.bg} {config.color}">
+    <span class="relative flex h-2 w-2 mr-2">
+        {#if status === 'down'}
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full {config.dot} opacity-75"></span>
+        {/if}
+        <span class="relative inline-flex rounded-full h-2 w-2 {config.dot}"></span>
+    </span>
 	{#if showText}
-		<span class="text-sm font-medium {config.color}">{config.text}</span>
+		{config.text}
 	{/if}
 </span>
