@@ -64,33 +64,13 @@ export function connectEventStream(): void {
 	console.log('[SSE] Connecting to event stream...');
 
 	// Determine the backend URL for SSE connection
-	// EventSource must connect directly to the backend, not through SvelteKit proxy
-	// Try to get PUBLIC_API_URL from window (injected at runtime) or environment
+	// Use the proxy to avoid CORS issues
 	let backendUrl = '';
 	
-	if (browser) {
-		// Check if PUBLIC_API_URL was injected via script tag
-		backendUrl = (window as any).__PUBLIC_API_URL__ || '';
-		
-		console.log('[SSE] PUBLIC_API_URL from window:', backendUrl);
-
-		// If not found, try to construct from current location
-		// In development: use localhost:8080
-		// In production: use current origin (assumes reverse proxy or same-origin setup)
-		if (!backendUrl) {
-			const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-			if (isDevelopment) {
-				// Development: backend on port 8080
-				backendUrl = `http://${window.location.hostname}:8080`;
-			} else {
-				// Production: assume backend is on port 8081 or use current origin
-				// This should be configured via PUBLIC_API_URL environment variable
-				const port = window.location.hostname.includes('localhost') ? '8081' : window.location.port;
-				backendUrl = `${window.location.protocol}//${window.location.hostname}${port ? ':' + (port === '3001' ? '8081' : port) : ''}`;
-			}
-			console.log('[SSE] Constructed backend URL:', backendUrl);
-		}
-	}
+	// Use current origin to go through the SvelteKit proxy
+	backendUrl = window.location.origin;
+	
+	console.log('[SSE] Using proxy URL:', backendUrl);
 	
 	// Create EventSource with auth token as query parameter
 	// EventSource doesn't support custom headers, so we pass token in URL

@@ -82,7 +82,7 @@ func main() {
 	tenantMiddleware := middleware.NewTenantMiddleware(tenantUserRepo)
 
 	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
+	healthHandler := func(c *gin.Context) {
 		// Create context with timeout for health check
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
@@ -100,7 +100,9 @@ func main() {
 			"status":   "ok",
 			"database": "connected",
 		})
-	})
+	}
+	router.GET("/health", healthHandler)
+	router.HEAD("/health", healthHandler)
 
 	// API routes
 	api := router.Group("/api/v1")

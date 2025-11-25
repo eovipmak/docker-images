@@ -52,13 +52,22 @@ async function proxyRequest(
 			if (
 				key.toLowerCase() !== 'transfer-encoding' &&
 				key.toLowerCase() !== 'connection' &&
-				key.toLowerCase() !== 'keep-alive'
+				key.toLowerCase() !== 'keep-alive' &&
+				key.toLowerCase() !== 'content-encoding' &&
+				key.toLowerCase() !== 'content-length'
 			) {
 				responseHeaders.set(key, value);
 			}
 		});
 
-		return new Response(response.body, {
+		// Add CORS headers
+		responseHeaders.set('access-control-allow-origin', '*');
+		responseHeaders.set('access-control-allow-methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+		responseHeaders.set('access-control-allow-headers', '*');
+
+		const responseBody = await response.text();
+
+		return new Response(responseBody, {
 			status: response.status,
 			statusText: response.statusText,
 			headers: responseHeaders
