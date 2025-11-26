@@ -14,11 +14,23 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
+	Security SecurityConfig
+	RateLimit RateLimitConfig
 }
 
 type ServerConfig struct {
 	Port string
 	Env  string
+}
+
+type SecurityConfig struct {
+	HSTSMaxAge            int
+	HSTSIncludeSubdomains bool
+}
+
+type RateLimitConfig struct {
+	PerIP   int
+	PerUser int
 }
 
 type DatabaseConfig struct {
@@ -61,6 +73,14 @@ func Load() (*Config, error) {
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		},
+		Security: SecurityConfig{
+			HSTSMaxAge:            getEnvInt("HSTS_MAX_AGE", 31536000), // 1 year default
+			HSTSIncludeSubdomains: getEnv("HSTS_INCLUDE_SUBDOMAINS", "true") == "true",
+		},
+		RateLimit: RateLimitConfig{
+			PerIP:   getEnvInt("RATE_LIMIT_PER_IP", 100),   // 100 requests per minute
+			PerUser: getEnvInt("RATE_LIMIT_PER_USER", 1000), // 1000 requests per hour
 		},
 	}
 

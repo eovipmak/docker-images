@@ -11,6 +11,7 @@ import (
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,6 +60,13 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
+	// Sanitize name to prevent XSS
+	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
+	if !valid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "channel name must be between 1 and 255 characters"})
+		return
+	}
+
 	// Set defaults
 	enabled := true
 	if req.Enabled != nil {
@@ -68,7 +76,7 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 	channel := &entities.AlertChannel{
 		TenantID: tenantID,
 		Type:     req.Type,
-		Name:     req.Name,
+		Name:     sanitizedName,
 		Config:   req.Config,
 		Enabled:  enabled,
 	}

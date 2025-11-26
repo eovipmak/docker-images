@@ -46,6 +46,20 @@ This application uses a proxy architecture that completely eliminates CORS:
 - **Alert Evaluator Job**: Runs every minute to evaluate alert conditions
 - **Notification Job**: Runs every 30 seconds to send notifications
 
+### Security Features
+- **Rate Limiting**: 
+  - Per-IP: 100 requests/minute (configurable via `RATE_LIMIT_PER_IP`)
+  - Per-User: 1000 requests/hour (configurable via `RATE_LIMIT_PER_USER`)
+  - Applied to public endpoints (login, register)
+- **Security Headers**:
+  - `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing
+  - `X-Frame-Options: DENY` - Prevents clickjacking attacks
+  - `X-XSS-Protection: 1; mode=block` - Enables XSS protection
+  - `Strict-Transport-Security` - Enforces HTTPS (configurable via `HSTS_MAX_AGE`)
+- **Request ID Tracking**: Unique ID per request for logging and debugging
+- **Request Size Limits**: 10MB default limit on request body size
+- **Input Sanitization**: HTML escaping and validation for user inputs
+
 ## Quick Start
 
 ### Prerequisites
@@ -116,6 +130,30 @@ docker-compose up -d
 - Password: `postgres`
 
 **Migrations:** The backend service automatically runs database migrations on startup using the `migrate` tool. Migration files are located in `backend/migrations/`.
+
+## Configuration
+
+The application is configured using environment variables. Copy `.env.example` to `.env` and customize as needed:
+
+### Core Configuration
+- `ENV` - Environment mode (`development`, `production`) - Default: `development`
+- `PORT` - Backend API port - Default: `8080`
+- `POSTGRES_HOST` - PostgreSQL host - Default: `localhost`
+- `POSTGRES_PORT` - PostgreSQL port - Default: `5432`
+- `POSTGRES_USER` - Database user - Default: `postgres`
+- `POSTGRES_PASSWORD` - Database password - Default: `postgres`
+- `POSTGRES_DB` - Database name - Default: `v_insight`
+- `JWT_SECRET` - Secret key for JWT tokens - **Change in production!**
+
+### Security Configuration
+- `HSTS_MAX_AGE` - HSTS header max-age in seconds - Default: `31536000` (1 year)
+- `HSTS_INCLUDE_SUBDOMAINS` - Include subdomains in HSTS policy - Default: `true`
+
+### Rate Limiting Configuration
+- `RATE_LIMIT_PER_IP` - Requests per minute per IP address - Default: `100`
+- `RATE_LIMIT_PER_USER` - Requests per hour per authenticated user - Default: `1000`
+
+**Note:** Rate limiting is applied only to public endpoints (login, register) to prevent abuse while allowing normal API usage for authenticated users.
 
 ## API Endpoints
 

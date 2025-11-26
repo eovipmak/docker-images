@@ -10,6 +10,7 @@ import (
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
+	"github.com/eovipmak/v-insight/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -70,6 +71,13 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
+	// Sanitize user inputs to prevent XSS
+	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
+	if !valid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "monitor name must be between 1 and 255 characters"})
+		return
+	}
+
 	// Set defaults if not provided
 	checkInterval := req.CheckInterval
 	if checkInterval == 0 {
@@ -98,7 +106,7 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 
 	monitor := &entities.Monitor{
 		TenantID:      tenantID,
-		Name:          req.Name,
+		Name:          sanitizedName,
 		URL:           req.URL,
 		CheckInterval: checkInterval,
 		Timeout:       timeout,
@@ -226,7 +234,13 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 
 	// Update fields if provided
 	if req.Name != "" {
-		monitor.Name = req.Name
+		// Sanitize name to prevent XSS
+		sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
+		if !valid {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "monitor name must be between 1 and 255 characters"})
+			return
+		}
+		monitor.Name = sanitizedName
 	}
 	if req.URL != "" {
 		monitor.URL = req.URL
