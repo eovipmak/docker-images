@@ -7,6 +7,7 @@ import (
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -107,10 +108,17 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 		enabled = *req.Enabled
 	}
 
+	// Sanitize name to prevent XSS
+	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
+	if !valid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "rule name must be between 1 and 255 characters"})
+		return
+	}
+
 	rule := &entities.AlertRule{
 		TenantID:       tenantID,
 		MonitorID:      monitorID,
-		Name:           req.Name,
+		Name:           sanitizedName,
 		TriggerType:    req.TriggerType,
 		ThresholdValue: req.ThresholdValue,
 		Enabled:        enabled,
