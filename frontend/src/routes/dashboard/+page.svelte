@@ -89,7 +89,6 @@
 
 	// Load dashboard data
 	async function loadDashboardData() {
-		console.log('[Dashboard] Starting to load dashboard data');
 		try {
 			isLoading = true;
 			error = '';
@@ -97,21 +96,19 @@
 
 			if (!response.ok) {
 				error = 'Failed to load dashboard data';
-				console.error('[Dashboard] Failed to load dashboard data:', response.status);
+				console.error('Failed to load dashboard data:', response.status);
 				return;
 			}
 
 			const data: DashboardData = await response.json();
-			console.log('[Dashboard] Dashboard data loaded successfully:', data);
 			stats = data.stats;
 			recentChecks = data.recent_checks || [];
 			openIncidents = data.open_incidents || [];
 		} catch (err) {
-			console.error('[Dashboard] Error loading dashboard:', err);
+			console.error('Error loading dashboard:', err);
 			error = 'An error occurred while loading dashboard data';
 		} finally {
 			isLoading = false;
-			console.log('[Dashboard] Finished loading dashboard data, isLoading:', isLoading);
 		}
 	}
 
@@ -125,24 +122,16 @@
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
 			// When SSE events arrive, refresh dashboard data to get updated stats
 			// This ensures we have accurate data while still benefiting from real-time notifications
-			console.log('[Dashboard] Monitor checks store updated, size:', checks.size);
 			if (!isLoading) {
-				console.log('[Dashboard] Received monitor check updates, refreshing data');
 				loadDashboardData();
-			} else {
-				console.log('[Dashboard] Skipping refresh because isLoading is true');
 			}
 		});
 
 		// Subscribe to incident events
 		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
 			// When incident events arrive, refresh dashboard data
-			console.log('[Dashboard] Incidents store updated, length:', incidents.length);
 			if (!isLoading) {
-				console.log('[Dashboard] Received incident updates, refreshing data');
 				loadDashboardData();
-			} else {
-				console.log('[Dashboard] Skipping refresh because isLoading is true');
 			}
 		});
 	});

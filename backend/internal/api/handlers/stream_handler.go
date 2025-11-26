@@ -96,7 +96,7 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 	h.clients[clientID] = client
 	h.mu.Unlock()
 
-	log.Printf("[SSE] Client %s connected (tenant: %d)", clientID, tenantID)
+	log.Printf("Client %s connected (tenant: %d)", clientID, tenantID)
 
 	// Remove client on disconnect
 	defer func() {
@@ -104,7 +104,7 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 		delete(h.clients, clientID)
 		close(client.Channel)
 		h.mu.Unlock()
-		log.Printf("[SSE] Client %s disconnected", clientID)
+		log.Printf("Client %s disconnected", clientID)
 	}()
 
 	// Send initial connection event
@@ -152,15 +152,15 @@ func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interfa
 			select {
 			case client.Channel <- event:
 				count++
-				log.Printf("[SSE] Sent %s event to client %s (tenant: %d)", eventType, client.ID, tenantID)
+				log.Printf("Sent %s event to client %s (tenant: %d)", eventType, client.ID, tenantID)
 			default:
 				// Channel full, skip this client
-				log.Printf("[SSE] Warning: Client %s channel full, dropping event %s (tenant: %d)", client.ID, eventType, tenantID)
+				log.Printf("Warning: Client %s channel full, dropping event %s (tenant: %d)", client.ID, eventType, tenantID)
 			}
 		}
 	}
 
-	log.Printf("[SSE] Broadcasted %s event to %d/%d clients (tenant: %d)", eventType, count, len(h.clients), tenantID)
+	log.Printf("Broadcasted %s event to %d/%d clients (tenant: %d)", eventType, count, len(h.clients), tenantID)
 }
 
 // HandleBroadcast handles HTTP POST requests to broadcast events
@@ -168,12 +168,12 @@ func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interfa
 func (h *StreamHandler) HandleBroadcast(c *gin.Context) {
 	var req BroadcastRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[SSE] Broadcast request failed: invalid JSON - %v", err)
+		log.Printf("Broadcast request failed: invalid JSON - %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	log.Printf("[SSE] Received broadcast request: type=%s, tenant=%d", req.Type, req.TenantID)
+	log.Printf("Received broadcast request: type=%s, tenant=%d", req.Type, req.TenantID)
 
 	h.BroadcastEvent(req.Type, req.Data, req.TenantID)
 
@@ -212,7 +212,7 @@ func (h *StreamHandler) formatEventData(event Event) string {
 		"timestamp": event.Timestamp.Format(time.RFC3339),
 	})
 	if err != nil {
-		log.Printf("[SSE] Error marshaling event data: %v", err)
+		log.Printf("Error marshaling event data: %v", err)
 		return "{}"
 	}
 	return string(jsonData)

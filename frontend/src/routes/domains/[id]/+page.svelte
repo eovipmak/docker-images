@@ -46,7 +46,7 @@
 			// Check if any of the recent checks belong to this monitor
 			const hasUpdates = Array.from(checks.values()).some(check => check.monitor_id === monitorId);
 			if (hasUpdates && !isLoading) {
-				console.log('[Monitor Details] Received check updates for this monitor, refreshing data');
+				console.log('Received check updates for this monitor, refreshing data');
 				loadMonitorData();
 			}
 		});
@@ -279,10 +279,6 @@
 			
 			<div class="flex items-center gap-3">
 				<!-- Real-time updates via SSE -->
-				<div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-					<div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-					<span class="text-sm text-emerald-700 font-medium">Live Updates</span>
-				</div>
 			</div>
 		</div>
 

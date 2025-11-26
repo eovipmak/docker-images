@@ -55,11 +55,10 @@ async function getPublicApiUrl(): Promise<string> {
 		if (response.ok) {
 			const config = await response.json();
 			cachedPublicApiUrl = config.publicApiUrl || '';
-			console.log('[SSE] Fetched PUBLIC_API_URL from config:', cachedPublicApiUrl);
 			return cachedPublicApiUrl as string;
 		}
 	} catch (error) {
-		console.warn('[SSE] Failed to fetch config:', error);
+		console.warn('Failed to fetch config:', error);
 	}
 	
 	// Fallback: use window variable or auto-detect
@@ -77,7 +76,6 @@ async function getPublicApiUrl(): Promise<string> {
 		cachedPublicApiUrl = currentOrigin.replace(/:\d+$/, '') + ':8080';
 	}
 	
-	console.log('[SSE] Using auto-detected backend URL:', cachedPublicApiUrl);
 	return cachedPublicApiUrl as string;
 }
 
@@ -86,36 +84,27 @@ async function getPublicApiUrl(): Promise<string> {
  */
 export async function connectEventStream(): Promise<void> {
 	if (!browser) {
-		console.log('[SSE] Not in browser, skipping connection');
 		return;
 	}
 
 	// Don't reconnect if already connected
 	if (eventSource && eventSource.readyState === EventSource.OPEN) {
-		console.log('[SSE] Already connected');
 		return;
 	}
 
 	// Get auth token
 	const token = localStorage.getItem('auth_token');
 	if (!token) {
-		console.log('[SSE] No auth token, skipping connection');
 		return;
 	}
 
-	console.log('[SSE] Connecting to event stream...');
-
 	// Get the backend URL for SSE connection
 	const backendUrl = await getPublicApiUrl();
-	
-	console.log('[SSE] Using backend URL for SSE:', backendUrl);
 	
 	// Create EventSource with auth token as query parameter
 	// EventSource doesn't support custom headers, so we pass token in URL
 	const url = `${backendUrl}/api/v1/stream/events?token=${encodeURIComponent(token)}`;
 	
-	console.log('[SSE] Connecting to:', url.replace(token, '***'));
-
 	try {
 		// Note: We don't use withCredentials since token is passed via URL query param
 		// This avoids CORS issues with credentials and wildcard origins
@@ -123,63 +112,50 @@ export async function connectEventStream(): Promise<void> {
 
 		// Connection opened
 		eventSource.addEventListener('open', () => {
-			console.log('[SSE] Connected to event stream');
 			reconnectAttempts = 0; // Reset reconnect attempts on successful connection
 		});
 
 		// Connection established
 		eventSource.addEventListener('connected', (e) => {
-			console.log('[SSE] Connection established:', e.data);
 		});
 
 		// Monitor check events
 		eventSource.addEventListener('monitor_check', (e) => {
-			console.log('[SSE] Raw monitor_check event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const checkData = eventData.data as MonitorCheckEvent;
-
-				console.log('[SSE] Monitor check event parsed:', checkData);
-				console.log('[SSE] Updating latestMonitorChecks store');
 
 				// Update store
 				latestMonitorChecks.update((checks) => {
 					const newChecks = new Map(checks);
 					newChecks.set(checkData.monitor_id, checkData);
-					console.log('[SSE] Store updated, new size:', newChecks.size);
 					return newChecks;
 				});
 			} catch (error) {
-				console.error('[SSE] Error parsing monitor_check event:', error);
+				console.error('Error parsing monitor_check event:', error);
 			}
 		});
 
 		// Incident created events
 		eventSource.addEventListener('incident_created', (e) => {
-			console.log('[SSE] Raw incident_created event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const incidentData = eventData.data as IncidentEvent;
-
-				console.log('[SSE] Incident created event parsed:', incidentData);
 
 				// Add to incidents store
 				latestIncidents.update((incidents) => {
 					return [incidentData, ...incidents];
 				});
 			} catch (error) {
-				console.error('[SSE] Error parsing incident_created event:', error);
+				console.error('Error parsing incident_created event:', error);
 			}
 		});
 
 		// Incident resolved events
 		eventSource.addEventListener('incident_resolved', (e) => {
-			console.log('[SSE] Raw incident_resolved event received:', e.data);
 			try {
 				const eventData = JSON.parse(e.data);
 				const incidentData = eventData.data as IncidentEvent;
-
-				console.log('[SSE] Incident resolved event parsed:', incidentData);
 
 				// Update incidents store
 				latestIncidents.update((incidents) => {
@@ -190,21 +166,20 @@ export async function connectEventStream(): Promise<void> {
 					);
 				});
 			} catch (error) {
-				console.error('[SSE] Error parsing incident_resolved event:', error);
+				console.error('Error parsing incident_resolved event:', error);
 			}
 		});
 
 		// Error handler
 		eventSource.addEventListener('error', (e) => {
-			console.error('[SSE] Error:', e);
+			console.error('Error:', e);
 
 			if (eventSource?.readyState === EventSource.CLOSED) {
-				console.log('[SSE] Connection closed, attempting to reconnect...');
 				scheduleReconnect();
 			}
 		});
 	} catch (error) {
-		console.error('[SSE] Failed to create EventSource:', error);
+		console.error('Failed to create EventSource:', error);
 		scheduleReconnect();
 	}
 }
@@ -213,8 +188,6 @@ export async function connectEventStream(): Promise<void> {
  * Disconnect from SSE stream
  */
 export function disconnectEventStream(): void {
-	console.log('[SSE] Disconnecting from event stream');
-
 	if (reconnectTimer) {
 		clearTimeout(reconnectTimer);
 		reconnectTimer = null;
@@ -234,7 +207,7 @@ export function disconnectEventStream(): void {
 function scheduleReconnect(): void {
 	if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
 		console.error(
-			`[SSE] Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`
+			`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`
 		);
 		return;
 	}
@@ -247,14 +220,11 @@ function scheduleReconnect(): void {
 
 	reconnectAttempts++;
 
-	console.log(`[SSE] Scheduling reconnect attempt ${reconnectAttempts} in ${delay}ms`);
-
 	if (reconnectTimer) {
 		clearTimeout(reconnectTimer);
 	}
 
 	reconnectTimer = setTimeout(() => {
-		console.log(`[SSE] Reconnect attempt ${reconnectAttempts}`);
 		connectEventStream();
 	}, delay);
 }
