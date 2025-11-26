@@ -49,7 +49,20 @@ func main() {
 	// Initialize Gin router
 	router := gin.Default()
 
-	// Add performance middleware
+	// Apply global middleware
+	// Security headers (all routes)
+	router.Use(middleware.SecurityHeaders(middleware.SecurityConfig{
+		HSTSMaxAge:            cfg.Security.HSTSMaxAge,
+		HSTSIncludeSubdomains: cfg.Security.HSTSIncludeSubdomains,
+	}))
+
+	// Request ID (all routes)
+	router.Use(middleware.RequestID())
+
+	// Request size limit (all routes) - 10MB default
+	router.Use(middleware.RequestSizeLimit(10 * 1024 * 1024))
+
+	// Performance middleware
 	router.Use(middleware.GzipCompression())
 	router.Use(middleware.CacheHeaders())
 
@@ -113,8 +126,12 @@ func main() {
 		})
 	})
 
-	// Auth routes (public)
+	// Auth routes (public) with rate limiting
 	auth := api.Group("/auth")
+	auth.Use(middleware.RateLimiter(middleware.RateLimiterConfig{
+		PerIP:   cfg.RateLimit.PerIP,
+		PerUser: cfg.RateLimit.PerUser,
+	}))
 	{
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
