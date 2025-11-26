@@ -15,6 +15,7 @@ import (
 	"github.com/eovipmak/v-insight/worker/internal/executor"
 	"github.com/eovipmak/v-insight/worker/internal/jobs"
 	"github.com/eovipmak/v-insight/worker/internal/scheduler"
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -184,11 +185,7 @@ func main() {
 	})
 
 	// Prometheus metrics endpoint
-	app.Get("/metrics", func(c *fiber.Ctx) error {
-		handler := promhttp.Handler()
-		handler.ServeHTTP(c.Response(), c.Request())
-		return nil
-	})
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	// Start HTTP server in a goroutine
 	go func() {

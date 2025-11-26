@@ -15,7 +15,7 @@
 	const authenticatedNavItems = [
 		{ href: '/', label: 'Home' },
 		{ href: '/dashboard', label: 'Dashboard' },
-		{ href: '/domains', label: 'Domains' },
+		{ href: '/monitors', label: 'Monitors' },
 		{ href: '/alerts', label: 'Alerts' },
 		{ href: '/incidents', label: 'Incidents' },
 		{ href: '/settings', label: 'Settings' }

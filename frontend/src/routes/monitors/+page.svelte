@@ -84,7 +84,7 @@
 
 	function handleViewMonitor(event: CustomEvent) {
 		const monitor = event.detail;
-		goto(`/domains/${monitor.id}`);
+		goto(`/monitors/${monitor.id}`);
 	}
 
 	async function handleEditMonitor(event: CustomEvent) {

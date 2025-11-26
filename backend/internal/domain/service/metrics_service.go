@@ -51,8 +51,8 @@ func (s *MetricsService) CalculateUptime(monitorID string, period string) (*Upti
 	query := `
 		SELECT 
 			COUNT(*) as total_checks,
-			SUM(CASE WHEN success = true THEN 1 ELSE 0 END) as success_checks,
-			SUM(CASE WHEN success = false THEN 1 ELSE 0 END) as failed_checks
+			COALESCE(SUM(CASE WHEN success = true THEN 1 ELSE 0 END), 0) as success_checks,
+			COALESCE(SUM(CASE WHEN success = false THEN 1 ELSE 0 END), 0) as failed_checks
 		FROM monitor_checks
 		WHERE monitor_id = $1
 		  AND checked_at >= $2
@@ -220,8 +220,8 @@ func (s *MetricsService) GetGlobalUptime(tenantID int, period string) (*UptimeMe
 	query := `
 		SELECT 
 			COUNT(*) as total_checks,
-			SUM(CASE WHEN mc.success = true THEN 1 ELSE 0 END) as success_checks,
-			SUM(CASE WHEN mc.success = false THEN 1 ELSE 0 END) as failed_checks
+			COALESCE(SUM(CASE WHEN mc.success = true THEN 1 ELSE 0 END), 0) as success_checks,
+			COALESCE(SUM(CASE WHEN mc.success = false THEN 1 ELSE 0 END), 0) as failed_checks
 		FROM monitor_checks mc
 		INNER JOIN monitors m ON mc.monitor_id = m.id
 		WHERE m.tenant_id = $1

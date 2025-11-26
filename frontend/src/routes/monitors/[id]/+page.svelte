@@ -3,7 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
-	import { latestMonitorChecks, connectEventStream, disconnectEventStream } from '$lib/api/events';
+	import { latestMonitorChecks, connectEventStream, disconnectEventStream, type MonitorCheckEvent } from '$lib/api/events';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
@@ -31,7 +31,11 @@
 	$: monitorId = $page.params.id || '';
 
 	// Computed uptime data based on selected period
-	$: currentUptimeData = uptimePeriod === '7d' ? metrics7d?.uptime : metrics30d?.uptime;
+	$: currentUptimeData = uptimePeriod === '7d' ? localUptime7d : localUptime30d;
+
+	// Calculate uptime from checks array for live updates
+	$: localUptime7d = calculateUptimeFromChecks('7d');
+	$: localUptime30d = calculateUptimeFromChecks('30d');
 
 	onMount(async () => {
 		loadMonitorData();
@@ -42,12 +46,11 @@
 		await connectEventStream();
 		
 		// Subscribe to monitor check events for this specific monitor
-		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
-			// Check if any of the recent checks belong to this monitor
-			const hasUpdates = Array.from(checks.values()).some(check => check.monitor_id === monitorId);
-			if (hasUpdates && !isLoading) {
-				console.log('Received check updates for this monitor, refreshing data');
-				loadMonitorData();
+		unsubscribeChecks = latestMonitorChecks.subscribe((latestChecks) => {
+			const check = latestChecks.get(monitorId);
+			if (check && !isLoading) {
+				console.log('Received check update for this monitor:', check);
+				addCheckFromSSE(check);
 			}
 		});
 	});
@@ -80,11 +83,13 @@
 		error = '';
 
 		try {
+			console.log('Loading monitor with ID:', monitorId);
 			const monitorResponse = await fetchAPI(`/api/v1/monitors/${monitorId}`);
 			if (!monitorResponse.ok) {
 				throw new Error('Failed to load monitor');
 			}
 			monitor = await monitorResponse.json();
+			console.log('Monitor loaded:', monitor);
 
 			const checksResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/checks?limit=100`);
 			if (checksResponse.ok) {
@@ -156,7 +161,7 @@
 	}
 
 	function handleBack() {
-		goto('/domains');
+		goto('/monitors');
 	}
 
 	// Get response time data based on selected period
@@ -210,6 +215,60 @@
 	}
 
 	// Get period label for display
+	function addCheckFromSSE(check: MonitorCheckEvent) {
+		// Convert SSE check to API format
+		const newCheck = {
+			id: `sse-${Date.now()}`, // Generate temporary ID
+			monitor_id: check.monitor_id,
+			checked_at: check.checked_at,
+			status_code: check.status_code !== undefined ? { Int64: check.status_code, Valid: true } : null,
+			response_time_ms: check.response_time_ms !== undefined ? { Int64: check.response_time_ms, Valid: true } : null,
+			ssl_valid: check.ssl_valid !== undefined ? { Bool: check.ssl_valid, Valid: true } : null,
+			ssl_expires_at: check.ssl_expires_at ? { Time: check.ssl_expires_at, Valid: true } : null,
+			error_message: check.error_message ? { String: check.error_message, Valid: true } : null,
+			success: check.success
+		};
+
+		// Add to beginning of checks array, keep only last 100
+		checks = [newCheck, ...checks.slice(0, 99)];
+
+		// Update SSL status if SSL data is available
+		if (check.ssl_valid !== undefined && monitor?.check_ssl) {
+			sslStatus = {
+				valid: check.ssl_valid,
+				expires_at: check.ssl_expires_at || null
+			};
+		}
+
+		// Trigger reactivity
+		checks = [...checks];
+	}
+
+	function calculateUptimeFromChecks(period: '7d' | '30d') {
+		if (!checks || checks.length === 0) {
+			return { percentage: 0, success_checks: 0, total_checks: 0 };
+		}
+
+		const now = new Date();
+		const days = period === '7d' ? 7 : 30;
+		const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+		const recentChecks = checks.filter(c => {
+			const checkDate = new Date(c.checked_at);
+			return checkDate >= startDate;
+		});
+
+		const successCount = recentChecks.filter(c => c.success).length;
+		const totalCount = recentChecks.length;
+		const percentage = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
+
+		return {
+			percentage,
+			success_checks: successCount,
+			total_checks: totalCount
+		};
+	}
+
 	function getPeriodLabel() {
 		switch (responseTimePeriod) {
 			case '1h':
@@ -497,37 +556,31 @@
 					</button>
 				</div>
 			</div>
-			{#if chartsLoaded && DonutChart && ((uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime))}
+			{#if chartsLoaded && DonutChart && currentUptimeData}
 				<div class="h-64">
 					<svelte:component 
 						this={DonutChart}
-						percentage={uptimePeriod === '7d' ? metrics7d.uptime.percentage : metrics30d.uptime.percentage} 
+						percentage={currentUptimeData.percentage} 
 						label="Uptime"
 					/>
 				</div>
 				<div class="mt-6 text-center">
 					<p class="text-sm font-medium text-slate-600">
-						{uptimePeriod === '7d' 
-							? `${metrics7d.uptime.success_checks} successful / ${metrics7d.uptime.total_checks} total checks`
-							: `${metrics30d.uptime.success_checks} successful / ${metrics30d.uptime.total_checks} total checks`
-						}
+						{currentUptimeData.success_checks} successful / {currentUptimeData.total_checks} total checks
 					</p>
 				</div>
-			{:else if !chartsLoaded && ((uptimePeriod === '7d' && metrics7d && metrics7d.uptime) || (uptimePeriod === '30d' && metrics30d && metrics30d.uptime))}
+			{:else if !chartsLoaded && currentUptimeData}
 				<div class="h-64 flex items-center justify-center">
 					<div class="text-center">
 						<div class="text-5xl font-bold text-slate-900 mb-2">
-							{uptimePeriod === '7d' ? metrics7d.uptime.percentage.toFixed(1) : metrics30d.uptime.percentage.toFixed(1)}%
+							{currentUptimeData.percentage.toFixed(1)}%
 						</div>
 						<div class="text-sm font-medium text-slate-500 uppercase tracking-wide">Uptime</div>
 					</div>
 				</div>
 				<div class="mt-6 text-center">
 					<p class="text-sm font-medium text-slate-600">
-						{uptimePeriod === '7d' 
-							? `${metrics7d.uptime.success_checks} successful / ${metrics7d.uptime.total_checks} total checks`
-							: `${metrics30d.uptime.success_checks} successful / ${metrics30d.uptime.total_checks} total checks`
-						}
+						{currentUptimeData.success_checks} successful / {currentUptimeData.total_checks} total checks
 					</p>
 				</div>
 			{:else}
