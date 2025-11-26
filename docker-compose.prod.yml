@@ -34,10 +34,7 @@ services:
           memory: 512M
 
   backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-      target: production
+    image: ghcr.io/eovipmak/v-insight/backend:latest
     container_name: v-insight-backend-prod
     environment:
       - ENV=production
@@ -83,10 +80,7 @@ services:
         max-file: "3"
 
   worker:
-    build:
-      context: ./worker
-      dockerfile: ../docker/Dockerfile.worker
-      target: production
+    image: ghcr.io/eovipmak/v-insight/worker:latest
     container_name: v-insight-worker-prod
     environment:
       - ENV=production
@@ -127,10 +121,7 @@ services:
         max-file: "3"
 
   frontend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.frontend
-      target: production
+    image: ghcr.io/eovipmak/v-insight/frontend:latest
     container_name: v-insight-frontend-prod
     environment:
       - NODE_ENV=production

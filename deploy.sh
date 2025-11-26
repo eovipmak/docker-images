@@ -208,8 +208,8 @@ main() {
     # Backup database
     backup_database
     
-    # Build images
-    build_images
+    # Pull latest images
+    pull_images
     
     # Restart services
     restart_services
@@ -234,25 +234,16 @@ case "${1:-}" in
         echo "Options:"
         echo "  --help, -h     Show this help message"
         echo "  --no-backup    Skip database backup (not recommended)"
-        echo "  --pull-only    Only pull images, don't build"
         echo ""
         echo "Examples:"
-        echo "  $0                 # Full deployment with backup"
+        echo "  $0                 # Full deployment with backup and image pull"
         echo "  $0 --no-backup     # Deploy without backup"
-        echo "  $0 --pull-only     # Pull pre-built images"
         exit 0
         ;;
     --no-backup)
         log_warn "Skipping database backup as requested"
         backup_database() { log_warn "Backup skipped"; }
         main
-        ;;
-    --pull-only)
-        log_info "Pull-only mode"
-        check_requirements
-        pull_images
-        restart_services
-        check_health && show_status
         ;;
     "")
         main
