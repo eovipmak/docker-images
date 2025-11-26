@@ -1,38 +1,54 @@
-# Production Docker Compose Example
-# This file shows the recommended configuration for production deployments
+# Production Docker Compose Configuration
+# This file is production-ready with optimized settings for deployment
 
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: v-insight-postgres
+    container_name: v-insight-postgres-prod
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-v_insight}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups  # Mount for database backups
     networks:
       - v-insight-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     restart: unless-stopped
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   backend:
     image: ghcr.io/eovipmak/v-insight/backend:latest
-    container_name: v-insight-backend
+    container_name: v-insight-backend-prod
     environment:
       - ENV=production
       - PORT=8080
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=${POSTGRES_DB:-v_insight}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - JWT_SECRET=${JWT_SECRET}
+      - HSTS_MAX_AGE=${HSTS_MAX_AGE:-31536000}
+      - HSTS_INCLUDE_SUBDOMAINS=${HSTS_INCLUDE_SUBDOMAINS:-true}
+      - RATE_LIMIT_PER_IP=${RATE_LIMIT_PER_IP:-100}
+      - RATE_LIMIT_PER_USER=${RATE_LIMIT_PER_USER:-1000}
     ports:
       - "8080:8080"
     networks:
@@ -41,24 +57,39 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     image: ghcr.io/eovipmak/v-insight/worker:latest
-    container_name: v-insight-worker
+    container_name: v-insight-worker-prod
     environment:
       - ENV=production
       - PORT=8081
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - DB_NAME=${POSTGRES_DB:-v_insight}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
     ports:
       - "8081:8081"
     networks:
@@ -67,31 +98,59 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8081/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image: ghcr.io/eovipmak/v-insight/frontend:latest
-    container_name: v-insight-frontend
+    container_name: v-insight-frontend-prod
     environment:
       - NODE_ENV=production
       - BACKEND_API_URL=http://backend:8080
-      # PUBLIC_API_URL is the URL that the browser uses to connect to the backend
-      # For production without reverse proxy, use the server IP and backend port
-      # Example: PUBLIC_API_URL=http://YOUR_SERVER_IP:8080
       - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8080}
-      # IMPORTANT: Add your domain here when using reverse proxy
-      # Example: VITE_ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.com
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
     ports:
       - "3000:3000"
     networks:
       - v-insight-network
+    depends_on:
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   v-insight-network:
@@ -99,3 +158,4 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local

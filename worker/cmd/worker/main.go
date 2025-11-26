@@ -95,7 +95,7 @@ func main() {
 
 	app.Use(logger.New())
 
-	// Health check endpoint
+	// Health check endpoint (legacy)
 	app.Get("/health", func(c *fiber.Ctx) error {
 		// Check database health
 		ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
@@ -115,6 +115,51 @@ func main() {
 			"service":  "worker",
 			"database": "connected",
 			"jobs":     sched.GetJobs(),
+		})
+	})
+
+	// Liveness probe - checks if the worker is running
+	app.Get("/health/live", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "ok",
+			"service": "worker",
+		})
+	})
+
+	// Readiness probe - checks if the worker is ready to process jobs
+	app.Get("/health/ready", func(c *fiber.Ctx) error {
+		// Check database health
+		ctx, cancel := context.WithTimeout(c.Context(), 2*time.Second)
+		defer cancel()
+
+		if err := db.HealthContext(ctx); err != nil {
+			return c.Status(503).JSON(fiber.Map{
+				"status":   "error",
+				"service":  "worker",
+				"database": "unhealthy",
+				"ready":    false,
+			})
+		}
+
+		// Check if scheduler is running
+		jobs := sched.GetJobs()
+		if len(jobs) == 0 {
+			return c.Status(503).JSON(fiber.Map{
+				"status":    "error",
+				"service":   "worker",
+				"database":  "connected",
+				"scheduler": "no jobs registered",
+				"ready":     false,
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"status":    "ok",
+			"service":   "worker",
+			"database":  "connected",
+			"scheduler": "running",
+			"jobs":      jobs,
+			"ready":     true,
 		})
 	})
 
