@@ -412,6 +412,202 @@ curl -X POST http://localhost:8080/api/v1/alert-rules \
 
 ## Deployment
 
+### Production Deployment
+
+V-Insight provides production-ready Docker configuration with automated deployment scripts.
+
+#### Production Features
+
+- **Multi-stage Builds**: Optimized production images with minimal size
+- **Health Checks**: Liveness and readiness probes for Kubernetes/Docker orchestration
+- **Resource Limits**: CPU and memory constraints for stable performance
+- **Automated Backups**: Database backups before each deployment
+- **Logging**: JSON file logging with rotation (max 10MB, 3 files)
+- **Restart Policy**: Automatic restart on failure
+
+#### Quick Production Deploy
+
+1. **Create production environment file**:
+```bash
+cp .env.production .env
+# Edit .env and update:
+# - POSTGRES_PASSWORD (generate strong password)
+# - JWT_SECRET (generate with: openssl rand -base64 32)
+# - PUBLIC_API_URL (your domain or server IP)
+# - VITE_ALLOWED_HOSTS (add your domain)
+```
+
+2. **Deploy with automated script**:
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+The deployment script automatically:
+- ✅ Checks requirements (Docker, Docker Compose, .env)
+- ✅ Creates database backup in `./backups/`
+- ✅ Builds production Docker images
+- ✅ Runs database migrations
+- ✅ Restarts services with zero-downtime
+- ✅ Validates health checks
+- ✅ Cleans up old backups (keeps last 10)
+
+3. **Verify deployment**:
+```bash
+make prod-status
+```
+
+Expected output:
+```
+✓ Backend Health: Ready
+✓ Worker Health: Ready
+```
+
+#### Production Make Commands
+
+```bash
+make prod-deploy      # Full deployment with backups
+make prod-up          # Start production services
+make prod-down        # Stop production services
+make prod-logs        # View production logs
+make prod-status      # Check service health
+```
+
+#### Health Check Endpoints
+
+All services provide health check endpoints for monitoring:
+
+**Backend (http://localhost:8080):**
+- `/health` - Legacy health check (database connection)
+- `/health/live` - Liveness probe (service is running)
+- `/health/ready` - Readiness probe (service ready for traffic)
+
+**Worker (http://localhost:8081):**
+- `/health` - Legacy health check (database + jobs status)
+- `/health/live` - Liveness probe (worker is running)
+- `/health/ready` - Readiness probe (worker ready to process jobs)
+
+**Example Health Check Response:**
+```json
+{
+  "status": "ok",
+  "service": "backend",
+  "database": "connected",
+  "ready": true
+}
+```
+
+#### Database Backups
+
+Backups are automatically created in `./backups/` directory:
+
+**Backup Strategy:**
+- Automatic backup before each deployment
+- Retention: Last 10 backups
+- Format: PostgreSQL SQL dump
+- Naming: `db_backup_YYYYMMDD_HHMMSS.sql`
+
+**Manual Backup:**
+```bash
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_dump -U $POSTGRES_USER $POSTGRES_DB > backups/manual_$(date +%Y%m%d_%H%M%S).sql
+```
+
+**Restore Backup:**
+```bash
+# Stop services
+docker compose -f docker-compose.prod.yml down
+
+# Start database only
+docker compose -f docker-compose.prod.yml up -d postgres
+sleep 10
+
+# Restore
+cat backups/db_backup_YYYYMMDD_HHMMSS.sql | \
+  docker compose -f docker-compose.prod.yml exec -T postgres \
+  psql -U $POSTGRES_USER $POSTGRES_DB
+
+# Start all services
+docker compose -f docker-compose.prod.yml up -d
+```
+
+#### Resource Limits
+
+Production containers have resource constraints:
+
+- **PostgreSQL**: 2 CPU, 2GB RAM (min: 0.5 CPU, 512MB)
+- **Backend**: 1 CPU, 1GB RAM (min: 0.25 CPU, 256MB)
+- **Worker**: 1 CPU, 1GB RAM (min: 0.25 CPU, 256MB)
+- **Frontend**: 0.5 CPU, 512MB RAM (min: 0.1 CPU, 128MB)
+
+Adjust in `docker-compose.prod.yml` based on your server capacity.
+
+#### Security Best Practices
+
+1. **Strong Credentials**:
+   - Generate secure PostgreSQL password: `openssl rand -base64 32`
+   - Generate JWT secret: `openssl rand -base64 32`
+   - Update `.env` with generated values
+
+2. **HTTPS Setup** (Recommended):
+   - Use reverse proxy (Nginx/Traefik) for SSL termination
+   - Update `PUBLIC_API_URL` to use `https://`
+   - Configure SSL certificates (Let's Encrypt recommended)
+
+3. **Firewall**:
+   ```bash
+   # Example: UFW firewall rules
+   ufw allow 22/tcp    # SSH
+   ufw allow 80/tcp    # HTTP
+   ufw allow 443/tcp   # HTTPS
+   ufw enable
+   ```
+
+4. **Environment Variables**:
+   - Never commit `.env` to version control
+   - Use `.env.production` as template only
+   - Store production secrets securely
+
+#### Monitoring
+
+Monitor service health in production:
+
+```bash
+# Check all services
+make prod-status
+
+# Watch logs
+make prod-logs
+
+# Backend health
+curl http://localhost:8080/health/ready
+
+# Worker health
+curl http://localhost:8081/health/ready
+```
+
+For production monitoring, integrate with:
+- Prometheus + Grafana
+- Datadog
+- New Relic
+- Custom monitoring via health endpoints
+
+#### Rollback
+
+If deployment fails, rollback is automatic. Manual rollback:
+
+```bash
+# The deploy.sh script creates backups before deployment
+# If deployment fails, it shows rollback instructions
+
+# Manual rollback:
+docker compose -f docker-compose.prod.yml down
+
+# Restore backup (see backup section above)
+# Then restart services
+docker compose -f docker-compose.prod.yml up -d
+```
+
 ### Deploying to a VPS
 
 When deploying to a VPS with a public IP address:
