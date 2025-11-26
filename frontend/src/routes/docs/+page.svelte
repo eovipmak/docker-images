@@ -17,7 +17,7 @@
 			// Initialize Swagger UI
 			// @ts-ignore - SwaggerUIBundle is loaded from CDN
 			window.SwaggerUIBundle({
-				url: '/api/v1/../swagger/doc.json',
+				url: '/api/swagger/doc.json',
 				dom_id: '#swagger-ui',
 				deepLinking: true,
 				presets: [
