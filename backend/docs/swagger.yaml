@@ -1,0 +1,1688 @@
+basePath: /api/v1
+definitions:
+  entities.AlertChannel:
+    properties:
+      config:
+        $ref: '#/definitions/entities.ChannelConfig'
+      created_at:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      tenant_id:
+        type: integer
+      type:
+        description: '''webhook'', ''discord'', ''email'''
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entities.AlertRuleWithChannels:
+    properties:
+      channel_ids:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      monitor_id:
+        type: string
+      name:
+        type: string
+      tenant_id:
+        type: integer
+      threshold_value:
+        type: integer
+      trigger_type:
+        description: '''down'', ''ssl_expiry'', ''slow_response'''
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entities.ChannelConfig:
+    additionalProperties: true
+    type: object
+  entities.Incident:
+    properties:
+      alert_rule_id:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      monitor_id:
+        type: string
+      notified_at:
+        type: string
+      resolved_at:
+        type: string
+      started_at:
+        type: string
+      status:
+        description: '''open'', ''resolved'''
+        type: string
+      trigger_value:
+        type: string
+    type: object
+  entities.Monitor:
+    properties:
+      check_interval:
+        description: seconds
+        type: integer
+      check_ssl:
+        description: whether to check SSL certificate
+        type: boolean
+      created_at:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      last_checked_at:
+        type: string
+      name:
+        type: string
+      ssl_alert_days:
+        description: days before expiry to alert
+        type: integer
+      tenant_id:
+        type: integer
+      timeout:
+        description: seconds
+        type: integer
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  entities.MonitorCheck:
+    properties:
+      checked_at:
+        type: string
+      error_message:
+        type: string
+      id:
+        type: string
+      monitor_id:
+        type: string
+      response_time_ms:
+        type: integer
+      ssl_expires_at:
+        type: string
+      ssl_valid:
+        type: boolean
+      status_code:
+        type: integer
+      success:
+        type: boolean
+    type: object
+  handlers.AuthResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  handlers.ChannelInfo:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  handlers.CreateAlertChannelRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      enabled:
+        type: boolean
+      name:
+        type: string
+      type:
+        enum:
+        - webhook
+        - discord
+        - email
+        type: string
+    required:
+    - config
+    - name
+    - type
+    type: object
+  handlers.CreateAlertRuleRequest:
+    properties:
+      channel_ids:
+        items:
+          type: string
+        type: array
+      enabled:
+        type: boolean
+      monitor_id:
+        type: string
+      name:
+        type: string
+      threshold_value:
+        minimum: 0
+        type: integer
+      trigger_type:
+        enum:
+        - down
+        - ssl_expiry
+        - slow_response
+        type: string
+    required:
+    - name
+    - threshold_value
+    - trigger_type
+    type: object
+  handlers.CreateMonitorRequest:
+    properties:
+      check_interval:
+        description: minimum 60 seconds
+        minimum: 60
+        type: integer
+      check_ssl:
+        description: pointer to allow explicit false
+        type: boolean
+      enabled:
+        description: pointer to allow explicit false
+        type: boolean
+      name:
+        type: string
+      ssl_alert_days:
+        description: minimum 1 day
+        minimum: 1
+        type: integer
+      timeout:
+        description: 5-120 seconds
+        maximum: 120
+        minimum: 5
+        type: integer
+      url:
+        type: string
+    required:
+    - name
+    - url
+    type: object
+  handlers.DashboardData:
+    properties:
+      open_incidents:
+        items:
+          $ref: '#/definitions/handlers.IncidentWithDetails'
+        type: array
+      recent_checks:
+        items:
+          $ref: '#/definitions/handlers.MonitorCheckWithMonitor'
+        type: array
+      stats:
+        $ref: '#/definitions/handlers.DashboardStats'
+    type: object
+  handlers.DashboardStats:
+    properties:
+      average_response_time:
+        type: number
+      down_count:
+        type: integer
+      open_incidents:
+        type: integer
+      overall_uptime:
+        type: number
+      total_monitors:
+        type: integer
+      up_count:
+        type: integer
+    type: object
+  handlers.IncidentResponse:
+    properties:
+      alert_rule_id:
+        type: string
+      alert_rule_name:
+        type: string
+      channels:
+        items:
+          $ref: '#/definitions/handlers.ChannelInfo'
+        type: array
+      created_at:
+        type: string
+      duration:
+        description: Duration in seconds
+        type: integer
+      id:
+        type: string
+      monitor_id:
+        type: string
+      monitor_name:
+        type: string
+      monitor_url:
+        type: string
+      notified_at:
+        type: string
+      resolved_at:
+        type: string
+      started_at:
+        type: string
+      status:
+        description: '''open'', ''resolved'''
+        type: string
+      trigger_value:
+        type: string
+    type: object
+  handlers.IncidentWithDetails:
+    properties:
+      incident:
+        $ref: '#/definitions/entities.Incident'
+      monitor:
+        $ref: '#/definitions/entities.Monitor'
+    type: object
+  handlers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  handlers.MonitorCheckWithMonitor:
+    properties:
+      check:
+        $ref: '#/definitions/entities.MonitorCheck'
+      monitor:
+        $ref: '#/definitions/entities.Monitor'
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      tenant_name:
+        type: string
+    required:
+    - email
+    - password
+    - tenant_name
+    type: object
+  handlers.UpdateAlertChannelRequest:
+    properties:
+      config:
+        additionalProperties: true
+        type: object
+      enabled:
+        type: boolean
+      name:
+        type: string
+      type:
+        enum:
+        - webhook
+        - discord
+        - email
+        type: string
+    type: object
+  handlers.UpdateAlertRuleRequest:
+    properties:
+      channel_ids:
+        items:
+          type: string
+        type: array
+      enabled:
+        type: boolean
+      monitor_id:
+        type: string
+      name:
+        type: string
+      threshold_value:
+        minimum: 0
+        type: integer
+      trigger_type:
+        enum:
+        - down
+        - ssl_expiry
+        - slow_response
+        type: string
+    type: object
+  handlers.UpdateMonitorRequest:
+    properties:
+      check_interval:
+        minimum: 60
+        type: integer
+      check_ssl:
+        type: boolean
+      enabled:
+        type: boolean
+      name:
+        type: string
+      ssl_alert_days:
+        minimum: 1
+        type: integer
+      timeout:
+        maximum: 120
+        minimum: 5
+        type: integer
+      url:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@v-insight.com
+    name: API Support
+    url: https://github.com/eovipmak/v-insight
+  description: Multi-tenant monitoring SaaS platform API for website health checks,
+    SSL monitoring, and intelligent alerting.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: V-Insight API
+  version: "1.0"
+paths:
+  /alert-channels:
+    get:
+      consumes:
+      - application/json
+      description: Get all notification channels for the current tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of alert channels
+          schema:
+            items:
+              $ref: '#/definitions/entities.AlertChannel'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all alert channels
+      tags:
+      - Alert Channels
+    post:
+      consumes:
+      - application/json
+      description: Create a new notification channel for alerts (webhook, Discord,
+        or email)
+      parameters:
+      - description: Alert channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAlertChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Alert channel created successfully
+          schema:
+            $ref: '#/definitions/entities.AlertChannel'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new alert channel
+      tags:
+      - Alert Channels
+  /alert-channels/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an alert channel and remove it from associated alert rules
+      parameters:
+      - description: Alert Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert channel deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert channel not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an alert channel
+      tags:
+      - Alert Channels
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific alert channel
+      parameters:
+      - description: Alert Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert channel details
+          schema:
+            $ref: '#/definitions/entities.AlertChannel'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert channel not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get an alert channel by ID
+      tags:
+      - Alert Channels
+    put:
+      consumes:
+      - application/json
+      description: Update an existing alert channel's configuration
+      parameters:
+      - description: Alert Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated alert channel configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateAlertChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert channel updated successfully
+          schema:
+            $ref: '#/definitions/entities.AlertChannel'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert channel not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update an alert channel
+      tags:
+      - Alert Channels
+  /alert-channels/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Send a test notification through the specified alert channel
+      parameters:
+      - description: Alert Channel ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Test notification sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert channel not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Test an alert channel
+      tags:
+      - Alert Channels
+  /alert-rules:
+    get:
+      consumes:
+      - application/json
+      description: Get all alert rules with their associated channels for the current
+        tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of alert rules
+          schema:
+            items:
+              $ref: '#/definitions/entities.AlertRuleWithChannels'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all alert rules
+      tags:
+      - Alert Rules
+    post:
+      consumes:
+      - application/json
+      description: Create a new alert rule with optional alert channels
+      parameters:
+      - description: Alert rule configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAlertRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Alert rule created successfully
+          schema:
+            $ref: '#/definitions/entities.AlertRuleWithChannels'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new alert rule
+      tags:
+      - Alert Rules
+  /alert-rules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an alert rule and its channel associations
+      parameters:
+      - description: Alert Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert rule deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert rule not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an alert rule
+      tags:
+      - Alert Rules
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific alert rule including
+        its channels
+      parameters:
+      - description: Alert Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert rule details
+          schema:
+            $ref: '#/definitions/entities.AlertRuleWithChannels'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert rule not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get an alert rule by ID
+      tags:
+      - Alert Rules
+    put:
+      consumes:
+      - application/json
+      description: Update an existing alert rule's configuration and associated channels
+      parameters:
+      - description: Alert Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated alert rule configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateAlertRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert rule updated successfully
+          schema:
+            $ref: '#/definitions/entities.AlertRuleWithChannels'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert rule not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update an alert rule
+      tags:
+      - Alert Rules
+  /alert-rules/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: Validate an alert rule's configuration
+      parameters:
+      - description: Alert Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alert rule validation result
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Alert rule not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Test an alert rule
+      tags:
+      - Alert Rules
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate with email and password to receive a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged in, returns JWT token
+          schema:
+            $ref: '#/definitions/handlers.AuthResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login to get JWT token
+      tags:
+      - Authentication
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information including id, email, and tenant_id
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user info
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account and create an associated tenant organization
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Successfully registered, returns JWT token
+          schema:
+            $ref: '#/definitions/handlers.AuthResponse'
+        "400":
+          description: Invalid request or user already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user and tenant
+      tags:
+      - Authentication
+  /dashboard:
+    get:
+      consumes:
+      - application/json
+      description: Get comprehensive dashboard data including stats, recent checks,
+        and open incidents
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Complete dashboard data
+          schema:
+            $ref: '#/definitions/handlers.DashboardData'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get complete dashboard data
+      tags:
+      - Dashboard
+  /dashboard/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get summary statistics for the dashboard including monitor counts,
+        incidents, and uptime
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard statistics
+          schema:
+            $ref: '#/definitions/handlers.DashboardStats'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get dashboard statistics
+      tags:
+      - Dashboard
+  /incidents:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of incidents filtered by status, monitor, and date range
+      parameters:
+      - description: Filter by status (open or resolved)
+        in: query
+        name: status
+        type: string
+      - description: Filter by monitor ID
+        in: query
+        name: monitor_id
+        type: string
+      - description: Filter by start date (RFC3339 format)
+        in: query
+        name: from
+        type: string
+      - description: Filter by end date (RFC3339 format)
+        in: query
+        name: to
+        type: string
+      - description: Maximum number of results (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of incidents with details
+          schema:
+            items:
+              $ref: '#/definitions/handlers.IncidentResponse'
+            type: array
+        "400":
+          description: Invalid request parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List incidents with filters
+      tags:
+      - Incidents
+  /incidents/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific incident including monitor
+        and alert rule details
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Incident details
+          schema:
+            $ref: '#/definitions/handlers.IncidentResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Incident not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get an incident by ID
+      tags:
+      - Incidents
+  /incidents/{id}/resolve:
+    post:
+      consumes:
+      - application/json
+      description: Mark an incident as resolved manually
+      parameters:
+      - description: Incident ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Incident resolved successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Incident not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Manually resolve an incident
+      tags:
+      - Incidents
+  /monitors:
+    get:
+      consumes:
+      - application/json
+      description: Get all monitors for the current tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of monitors
+          schema:
+            items:
+              $ref: '#/definitions/entities.Monitor'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all monitors
+      tags:
+      - Monitors
+    post:
+      consumes:
+      - application/json
+      description: Create a new monitoring endpoint for a website or service
+      parameters:
+      - description: Monitor configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateMonitorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Monitor created successfully
+          schema:
+            $ref: '#/definitions/entities.Monitor'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new monitor
+      tags:
+      - Monitors
+  /monitors/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a monitor and its associated alert rules
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Monitor deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a monitor
+      tags:
+      - Monitors
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific monitor
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Monitor details
+          schema:
+            $ref: '#/definitions/entities.Monitor'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a monitor by ID
+      tags:
+      - Monitors
+    put:
+      consumes:
+      - application/json
+      description: Update an existing monitor's configuration
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated monitor configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateMonitorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Monitor updated successfully
+          schema:
+            $ref: '#/definitions/entities.Monitor'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a monitor
+      tags:
+      - Monitors
+  /monitors/{id}/checks:
+    get:
+      consumes:
+      - application/json
+      description: Get the health check history for a specific monitor
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of monitor checks
+          schema:
+            items:
+              $ref: '#/definitions/entities.MonitorCheck'
+            type: array
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get monitor check history
+      tags:
+      - Monitors
+  /monitors/{id}/metrics:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed metrics for a specific monitor including uptime,
+        response times, and status codes
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 24h
+        description: Time period for metrics (24h, 7d, or 30d)
+        in: query
+        name: period
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Monitor metrics including uptime, response time history, and
+            status code distribution
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request or period parameter
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get monitor metrics
+      tags:
+      - Metrics
+  /monitors/{id}/ssl-status:
+    get:
+      consumes:
+      - application/json
+      description: Get SSL certificate information and expiration status for a monitor
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SSL status and alert threshold
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Monitor not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get SSL certificate status
+      tags:
+      - Monitors
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

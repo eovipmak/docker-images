@@ -11,9 +11,9 @@ type Incident struct {
 	MonitorID    string       `db:"monitor_id" json:"monitor_id"`
 	AlertRuleID  string       `db:"alert_rule_id" json:"alert_rule_id"`
 	StartedAt    time.Time    `db:"started_at" json:"started_at"`
-	ResolvedAt   sql.NullTime `db:"resolved_at" json:"resolved_at,omitempty"`
+	ResolvedAt   sql.NullTime `db:"resolved_at" json:"resolved_at,omitempty" swaggertype:"string"`
 	Status       string       `db:"status" json:"status"` // 'open', 'resolved'
 	TriggerValue string       `db:"trigger_value" json:"trigger_value,omitempty"`
-	NotifiedAt   sql.NullTime `db:"notified_at" json:"notified_at,omitempty"`
+	NotifiedAt   sql.NullTime `db:"notified_at" json:"notified_at,omitempty" swaggertype:"string"`
 	CreatedAt    time.Time    `db:"created_at" json:"created_at"`
 }
