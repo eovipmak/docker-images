@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/eovipmak/v-insight/worker/internal"
 	"github.com/eovipmak/v-insight/worker/internal/database"
+	"go.uber.org/zap"
 )
 
 // AlertRule represents an alert rule (worker-side struct)
@@ -54,35 +55,62 @@ func (j *AlertEvaluatorJob) Name() string {
 // Run executes the alert evaluation job
 func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	startTime := time.Now()
-	log.Println("[AlertEvaluatorJob] Starting alert evaluation run")
+	
+	// Record job execution metrics
+	defer func() {
+		duration := time.Since(startTime)
+		internal.JobExecutionDuration.WithLabelValues("AlertEvaluatorJob").Observe(duration.Seconds())
+	}()
+
+	if internal.Log != nil {
+		internal.Log.Info("Starting alert evaluation run")
+	}
 
 	// Get all enabled alert rules
 	rules, err := j.getAllEnabledRules()
 	if err != nil {
-		log.Printf("[AlertEvaluatorJob] Failed to get alert rules: %v", err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to get alert rules", zap.Error(err))
+		}
+		internal.JobExecutionTotal.WithLabelValues("AlertEvaluatorJob", "failure").Inc()
+		internal.AlertEvaluationTotal.WithLabelValues("failure").Inc()
 		return err
 	}
 
 	if len(rules) == 0 {
-		log.Println("[AlertEvaluatorJob] No enabled alert rules found")
+		if internal.Log != nil {
+			internal.Log.Debug("No enabled alert rules found")
+		}
+		internal.JobExecutionTotal.WithLabelValues("AlertEvaluatorJob", "success").Inc()
 		return nil
 	}
 
-	log.Printf("[AlertEvaluatorJob] Found %d enabled alert rules", len(rules))
+	if internal.Log != nil {
+		internal.Log.Info("Found enabled alert rules", zap.Int("count", len(rules)))
+	}
 
 	// Get latest monitor checks (last 5 minutes)
 	checks, err := j.getLatestMonitorChecks(5 * time.Minute)
 	if err != nil {
-		log.Printf("[AlertEvaluatorJob] Failed to get monitor checks: %v", err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to get monitor checks", zap.Error(err))
+		}
+		internal.JobExecutionTotal.WithLabelValues("AlertEvaluatorJob", "failure").Inc()
+		internal.AlertEvaluationTotal.WithLabelValues("failure").Inc()
 		return err
 	}
 
 	if len(checks) == 0 {
-		log.Println("[AlertEvaluatorJob] No recent monitor checks found")
+		if internal.Log != nil {
+			internal.Log.Debug("No recent monitor checks found")
+		}
+		internal.JobExecutionTotal.WithLabelValues("AlertEvaluatorJob", "success").Inc()
 		return nil
 	}
 
-	log.Printf("[AlertEvaluatorJob] Found %d recent monitor checks", len(checks))
+	if internal.Log != nil {
+		internal.Log.Info("Found recent monitor checks", zap.Int("count", len(checks)))
+	}
 
 	// Evaluate each check against rules
 	incidentsCreated := 0
@@ -91,7 +119,12 @@ func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	for _, check := range checks {
 		created, resolved, err := j.evaluateCheckAgainstRules(check, rules)
 		if err != nil {
-			log.Printf("[AlertEvaluatorJob] Failed to evaluate check %s: %v", check.ID, err)
+			if internal.Log != nil {
+				internal.Log.Error("Failed to evaluate check",
+					zap.String("check_id", check.ID),
+					zap.Error(err),
+				)
+			}
 			continue
 		}
 		incidentsCreated += created
@@ -99,8 +132,17 @@ func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	}
 
 	duration := time.Since(startTime)
-	log.Printf("[AlertEvaluatorJob] Evaluation completed in %v - Created: %d incidents, Resolved: %d incidents",
-		duration, incidentsCreated, incidentsResolved)
+	if internal.Log != nil {
+		internal.Log.Info("Alert evaluation completed",
+			zap.Duration("duration", duration),
+			zap.Int("incidents_created", incidentsCreated),
+			zap.Int("incidents_resolved", incidentsResolved),
+		)
+	}
+
+	// Update metrics
+	internal.AlertEvaluationTotal.WithLabelValues("success").Inc()
+	internal.JobExecutionTotal.WithLabelValues("AlertEvaluatorJob", "success").Inc()
 
 	return nil
 }
@@ -162,14 +204,25 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 			// Alert triggered - create incident if not already open
 			created, err := j.createIncidentIfNeeded(check.MonitorID, rule.ID, triggerValue)
 			if err != nil {
-				log.Printf("[AlertEvaluatorJob] Failed to create incident for monitor %s, rule %s: %v",
-					check.MonitorID, rule.ID, err)
+				if internal.Log != nil {
+					internal.Log.Error("Failed to create incident",
+						zap.String("monitor_id", check.MonitorID),
+						zap.String("rule_id", rule.ID),
+						zap.Error(err),
+					)
+				}
 				continue
 			}
 			if created {
 				incidentsCreated++
-				log.Printf("[AlertEvaluatorJob] ⚠ Incident created: Monitor %s triggered rule '%s' - %s",
-					check.MonitorID, rule.Name, triggerValue)
+				internal.IncidentCreated.Inc()
+				if internal.Log != nil {
+					internal.Log.Warn("Incident created",
+						zap.String("monitor_id", check.MonitorID),
+						zap.String("rule_name", rule.Name),
+						zap.String("trigger_value", triggerValue),
+					)
+				}
 				
 				// Get monitor info for tenant ID
 				j.broadcastIncidentCreatedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name, triggerValue)
@@ -178,14 +231,24 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 			// Alert not triggered - resolve incident if open
 			resolved, err := j.resolveIncidentIfOpen(check.MonitorID, rule.ID)
 			if err != nil {
-				log.Printf("[AlertEvaluatorJob] Failed to resolve incident for monitor %s, rule %s: %v",
-					check.MonitorID, rule.ID, err)
+				if internal.Log != nil {
+					internal.Log.Error("Failed to resolve incident",
+						zap.String("monitor_id", check.MonitorID),
+						zap.String("rule_id", rule.ID),
+						zap.Error(err),
+					)
+				}
 				continue
 			}
 			if resolved {
 				incidentsResolved++
-				log.Printf("[AlertEvaluatorJob] ✓ Incident resolved: Monitor %s recovered from rule '%s'",
-					check.MonitorID, rule.Name)
+				internal.IncidentResolved.Inc()
+				if internal.Log != nil {
+					internal.Log.Info("Incident resolved",
+						zap.String("monitor_id", check.MonitorID),
+						zap.String("rule_name", rule.Name),
+					)
+				}
 				
 				// Broadcast incident resolved event
 				j.broadcastIncidentResolvedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name)

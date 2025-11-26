@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/eovipmak/v-insight/worker/internal"
 	"github.com/eovipmak/v-insight/worker/internal/database"
+	"go.uber.org/zap"
 )
 
 // IncidentNotificationData represents the full incident data for notifications
@@ -91,21 +92,38 @@ func (j *NotificationJob) Name() string {
 // Run executes the notification job
 func (j *NotificationJob) Run(ctx context.Context) error {
 	startTime := time.Now()
-	log.Println("[NotificationJob] Starting notification processing run")
+	
+	// Record job execution metrics
+	defer func() {
+		duration := time.Since(startTime)
+		internal.JobExecutionDuration.WithLabelValues("NotificationJob").Observe(duration.Seconds())
+	}()
+
+	if internal.Log != nil {
+		internal.Log.Info("Starting notification processing run")
+	}
 
 	// Get incidents that need notification
 	incidents, err := j.getUnnotifiedIncidents()
 	if err != nil {
-		log.Printf("[NotificationJob] Failed to get unnotified incidents: %v", err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to get unnotified incidents", zap.Error(err))
+		}
+		internal.JobExecutionTotal.WithLabelValues("NotificationJob", "failure").Inc()
 		return err
 	}
 
 	if len(incidents) == 0 {
-		log.Println("[NotificationJob] No unnotified incidents found")
+		if internal.Log != nil {
+			internal.Log.Debug("No unnotified incidents found")
+		}
+		internal.JobExecutionTotal.WithLabelValues("NotificationJob", "success").Inc()
 		return nil
 	}
 
-	log.Printf("[NotificationJob] Found %d unnotified incidents", len(incidents))
+	if internal.Log != nil {
+		internal.Log.Info("Found unnotified incidents", zap.Int("count", len(incidents)))
+	}
 
 	notificationsSent := 0
 	notificationsFailed := 0
@@ -114,14 +132,24 @@ func (j *NotificationJob) Run(ctx context.Context) error {
 	for _, incident := range incidents {
 		sent, err := j.processIncidentNotifications(incident)
 		if err != nil {
-			log.Printf("[NotificationJob] Failed to process incident %s: %v", incident.IncidentID, err)
+			if internal.Log != nil {
+				internal.Log.Error("Failed to process incident",
+					zap.String("incident_id", incident.IncidentID),
+					zap.Error(err),
+				)
+			}
 			notificationsFailed++
 			continue
 		}
 		if sent > 0 {
 			// Mark incident as notified
 			if err := j.markIncidentAsNotified(incident.IncidentID); err != nil {
-				log.Printf("[NotificationJob] Failed to mark incident %s as notified: %v", incident.IncidentID, err)
+				if internal.Log != nil {
+					internal.Log.Error("Failed to mark incident as notified",
+						zap.String("incident_id", incident.IncidentID),
+						zap.Error(err),
+					)
+				}
 				continue
 			}
 			notificationsSent += sent
@@ -129,9 +157,15 @@ func (j *NotificationJob) Run(ctx context.Context) error {
 	}
 
 	duration := time.Since(startTime)
-	log.Printf("[NotificationJob] Notification processing completed in %v - Sent: %d, Failed: %d",
-		duration, notificationsSent, notificationsFailed)
+	if internal.Log != nil {
+		internal.Log.Info("Notification processing completed",
+			zap.Duration("duration", duration),
+			zap.Int("notifications_sent", notificationsSent),
+			zap.Int("notifications_failed", notificationsFailed),
+		)
+	}
 
+	internal.JobExecutionTotal.WithLabelValues("NotificationJob", "success").Inc()
 	return nil
 }
 
@@ -200,7 +234,11 @@ func (j *NotificationJob) processIncidentNotifications(incident *IncidentNotific
 	}
 
 	if len(channels) == 0 {
-		log.Printf("[NotificationJob] No alert channels configured for incident %s", incident.IncidentID)
+		if internal.Log != nil {
+			internal.Log.Debug("No alert channels configured for incident",
+				zap.String("incident_id", incident.IncidentID),
+			)
+		}
 		return 0, nil
 	}
 
@@ -217,18 +255,34 @@ func (j *NotificationJob) processIncidentNotifications(incident *IncidentNotific
 		case "discord":
 			err = j.sendDiscordNotification(incident, channel)
 		default:
-			log.Printf("[NotificationJob] Unsupported channel type: %s", channel.Type)
+			if internal.Log != nil {
+				internal.Log.Warn("Unsupported channel type",
+					zap.String("channel_type", channel.Type),
+				)
+			}
 			continue
 		}
 
 		if err != nil {
-			log.Printf("[NotificationJob] Failed to send notification to %s channel '%s': %v",
-				channel.Type, channel.Name, err)
+			internal.NotificationSent.WithLabelValues(channel.Type, "failure").Inc()
+			if internal.Log != nil {
+				internal.Log.Error("Failed to send notification",
+					zap.String("channel_type", channel.Type),
+					zap.String("channel_name", channel.Name),
+					zap.Error(err),
+				)
+			}
 			continue
 		}
 
-		log.Printf("[NotificationJob] ✓ Sent %s notification for incident %s via channel '%s'",
-			channel.Type, incident.IncidentID, channel.Name)
+		internal.NotificationSent.WithLabelValues(channel.Type, "success").Inc()
+		if internal.Log != nil {
+			internal.Log.Info("Notification sent",
+				zap.String("channel_type", channel.Type),
+				zap.String("incident_id", incident.IncidentID),
+				zap.String("channel_name", channel.Name),
+			)
+		}
 		sentCount++
 	}
 

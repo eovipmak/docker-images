@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
+	"github.com/eovipmak/v-insight/worker/internal"
 	"github.com/eovipmak/v-insight/worker/internal/database"
 	"github.com/eovipmak/v-insight/worker/internal/executor"
+	"go.uber.org/zap"
 )
 
 // Monitor represents a domain monitoring configuration
@@ -69,28 +70,48 @@ func (j *HealthCheckJob) Run(ctx context.Context) error {
 	}
 	
 	startTime := time.Now()
-	log.Println("[HealthCheckJob] Starting health check run")
+	
+	// Record job execution metrics
+	defer func() {
+		duration := time.Since(startTime)
+		internal.JobExecutionDuration.WithLabelValues("HealthCheckJob").Observe(duration.Seconds())
+	}()
+
+	if internal.Log != nil {
+		internal.Log.Info("Starting health check run")
+	}
 
 	// Get monitors that need checking
 	monitors, err := j.getMonitorsNeedingCheck(time.Now())
 	if err != nil {
-		log.Printf("[HealthCheckJob] Failed to get monitors: %v", err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to get monitors", zap.Error(err))
+		}
+		internal.JobExecutionTotal.WithLabelValues("HealthCheckJob", "failure").Inc()
 		return err
 	}
 
 	if len(monitors) == 0 {
-		log.Println("[HealthCheckJob] No monitors need checking at this time")
+		if internal.Log != nil {
+			internal.Log.Debug("No monitors need checking at this time")
+		}
+		internal.JobExecutionTotal.WithLabelValues("HealthCheckJob", "success").Inc()
 		return nil
 	}
 
-	log.Printf("[HealthCheckJob] Found %d monitors to check", len(monitors))
+	if internal.Log != nil {
+		internal.Log.Info("Found monitors to check", zap.Int("count", len(monitors)))
+	}
 
 	// Process monitors concurrently with worker pool
 	j.checkMonitorsConcurrently(ctx, monitors)
 
 	duration := time.Since(startTime)
-	log.Printf("[HealthCheckJob] Health check completed in %v", duration)
+	if internal.Log != nil {
+		internal.Log.Info("Health check completed", zap.Duration("duration", duration))
+	}
 
+	internal.JobExecutionTotal.WithLabelValues("HealthCheckJob", "success").Inc()
 	return nil
 }
 
@@ -151,7 +172,12 @@ func (j *HealthCheckJob) checkMonitorsConcurrently(ctx context.Context, monitors
 
 // checkMonitor performs a health check on a single monitor
 func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
-	log.Printf("[HealthCheckJob] Checking monitor: %s (%s)", monitor.Name, monitor.URL)
+	if internal.Log != nil {
+		internal.Log.Debug("Checking monitor",
+			zap.String("monitor_name", monitor.Name),
+			zap.String("url", monitor.URL),
+		)
+	}
 	
 	checkedAt := time.Now()
 
@@ -206,33 +232,69 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 
 		// Log SSL check result
 		if sslResult.Error != nil {
-			log.Printf("[HealthCheckJob] SSL check warning for %s: %v", monitor.Name, sslResult.Error)
+			if internal.Log != nil {
+				internal.Log.Warn("SSL check warning",
+					zap.String("monitor_name", monitor.Name),
+					zap.Error(sslResult.Error),
+				)
+			}
 		} else if sslResult.DaysUntil < monitor.SSLAlertDays {
-			log.Printf("[HealthCheckJob] ⚠ SSL certificate for %s expires in %d days", monitor.Name, sslResult.DaysUntil)
+			if internal.Log != nil {
+				internal.Log.Warn("SSL certificate expiring soon",
+					zap.String("monitor_name", monitor.Name),
+					zap.Int("days_until_expiry", sslResult.DaysUntil),
+				)
+			}
 		} else {
-			log.Printf("[HealthCheckJob] ✓ SSL certificate for %s is valid (expires in %d days)", monitor.Name, sslResult.DaysUntil)
+			if internal.Log != nil {
+				internal.Log.Debug("SSL certificate valid",
+					zap.String("monitor_name", monitor.Name),
+					zap.Int("days_until_expiry", sslResult.DaysUntil),
+				)
+			}
 		}
 	}
 
 	// Save check result to database
 	if err := j.saveCheck(check); err != nil {
-		log.Printf("[HealthCheckJob] Failed to save check for monitor %s: %v", monitor.Name, err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to save check",
+				zap.String("monitor_name", monitor.Name),
+				zap.Error(err),
+			)
+		}
 		return
 	}
 
 	// Update last_checked_at timestamp
 	if err := j.updateLastCheckedAt(monitor.ID, checkedAt); err != nil {
-		log.Printf("[HealthCheckJob] Failed to update last_checked_at for monitor %s: %v", monitor.Name, err)
+		if internal.Log != nil {
+			internal.Log.Error("Failed to update last_checked_at",
+				zap.String("monitor_name", monitor.Name),
+				zap.Error(err),
+			)
+		}
 		return
 	}
 
-	// Log result
+	// Record metrics
 	if result.Success {
-		log.Printf("[HealthCheckJob] ✓ Monitor %s is UP - Status: %d, Response: %dms",
-			monitor.Name, result.StatusCode, result.ResponseTime.Milliseconds())
+		internal.MonitorCheckTotal.WithLabelValues("success").Inc()
+		if internal.Log != nil {
+			internal.Log.Info("Monitor check successful",
+				zap.String("monitor_name", monitor.Name),
+				zap.Int("status_code", result.StatusCode),
+				zap.Int64("response_time_ms", result.ResponseTime.Milliseconds()),
+			)
+		}
 	} else {
-		log.Printf("[HealthCheckJob] ✗ Monitor %s is DOWN - Error: %v",
-			monitor.Name, result.Error)
+		internal.MonitorCheckTotal.WithLabelValues("failure").Inc()
+		if internal.Log != nil {
+			internal.Log.Warn("Monitor check failed",
+				zap.String("monitor_name", monitor.Name),
+				zap.Error(result.Error),
+			)
+		}
 	}
 
 	// Broadcast monitor_check event
