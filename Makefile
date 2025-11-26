@@ -1,4 +1,4 @@
-.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version
+.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version test-backend test-worker test-frontend test-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -110,3 +110,26 @@ migrate-force:
 ## migrate-version: Show current migration version
 migrate-version:
 	docker compose exec -e DATABASE_URL="$(DATABASE_URL)" backend migrate -path=/app/migrations -database "$$DATABASE_URL" version
+
+## test-backend: Run backend unit tests
+test-backend:
+	@echo "Running backend tests..."
+	cd backend && go test ./... -v -cover
+	@echo "Backend tests completed!"
+
+## test-worker: Run worker unit tests
+test-worker:
+	@echo "Running worker tests..."
+	cd worker && go test ./... -v -cover
+	@echo "Worker tests completed!"
+
+## test-frontend: Run frontend unit tests
+test-frontend:
+	@echo "Running frontend tests..."
+	cd frontend && npm run test
+	@echo "Frontend tests completed!"
+
+## test-all: Run all tests (backend, worker, frontend)
+test-all: test-backend test-worker test-frontend
+	@echo "All tests completed!"
+

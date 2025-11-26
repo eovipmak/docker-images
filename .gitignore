@@ -1,19 +1,6 @@
 # Environment files
 .env
 
-# Backend
-backend/tmp/
-backend/build-errors.log
-backend/bin/
-backend/api
-backend/cmd/api/api
-
-# Worker
-worker/tmp/
-worker/build-errors.log
-worker/bin/
-worker/cmd/worker/worker
-
 # Frontend
 frontend/node_modules/
 frontend/.svelte-kit/
@@ -27,6 +14,22 @@ frontend/playwright/.cache/
 frontend/*.png
 frontend/*.jpg
 frontend/*.jpeg
+frontend/coverage/
+
+# Backend
+backend/tmp/
+backend/build-errors.log
+backend/bin/
+backend/api
+backend/cmd/api/api
+backend/coverage.out
+
+# Worker
+worker/tmp/
+worker/build-errors.log
+worker/bin/
+worker/cmd/worker/worker
+worker/coverage.out
 
 # Docker
 *.log

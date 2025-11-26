@@ -95,6 +95,7 @@ docker-compose up -d
 
 ### Available Make Commands
 
+**Service Management:**
 - `make up` - Start all services
 - `make down` - Stop all services
 - `make logs` - View logs from all services
@@ -106,6 +107,20 @@ docker-compose up -d
 - `make clean` - Remove all containers, volumes, and images
 - `make ps` - Show status of all services
 - `make restart` - Restart all services
+
+**Testing:**
+- `make test-all` - Run all tests (backend, worker, frontend)
+- `make test-backend` - Run backend unit tests
+- `make test-worker` - Run worker unit tests
+- `make test-frontend` - Run frontend unit tests
+
+**Database Migrations:**
+- `make migrate-up` - Run database migrations
+- `make migrate-down` - Rollback migrations
+- `make migrate-create name=<name>` - Create new migration
+- `make migrate-version` - Show current migration version
+
+**Help:**
 - `make help` - Show all available commands
 
 ## Services
@@ -193,10 +208,45 @@ All services support hot-reload in development mode:
 
 ### Testing
 
-**Backend Tests:**
+V-Insight has comprehensive test coverage across all layers. See [TESTING.md](TESTING.md) for detailed testing documentation.
+
+**Quick Test Commands:**
+```bash
+make test-all          # Run all tests (backend, worker, frontend)
+make test-backend      # Run backend tests only
+make test-worker       # Run worker tests only  
+make test-frontend     # Run frontend tests only
+```
+
+**Test Coverage:**
+- Backend: Auth services, repositories, alert evaluation, utilities
+- Worker: HTTP/SSL checkers, task executor, concurrent processing
+- Frontend: Stores, API client, components
+
+**Backend Tests (Go + Testify):**
 ```bash
 cd backend
-go test ./...
+go test ./... -v -cover
+```
+
+**Worker Tests (Go + Testify):**
+```bash
+cd worker
+go test ./... -v -cover
+```
+
+**Frontend Tests (Vitest + Testing Library):**
+```bash
+cd frontend
+npm test                # Run once
+npm run test:watch      # Watch mode
+npm run test:coverage   # With coverage
+```
+
+**E2E Tests (Playwright):**
+```bash
+cd frontend
+npm run test:e2e
 ```
 
 **Frontend Type Checking:**
