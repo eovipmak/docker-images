@@ -1,4 +1,4 @@
-.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version test-backend test-worker test-frontend test-all
+.PHONY: up down logs rebuild clean help migrate-up migrate-down migrate-create migrate-force migrate-version test-backend test-worker test-frontend test-all prod-deploy prod-up prod-down prod-logs prod-status
 
 # Default target
 .DEFAULT_GOAL := help
@@ -69,6 +69,42 @@ restart:
 	@echo "Restarting all services..."
 	docker compose restart
 	@echo "Services restarted successfully!"
+
+## prod-deploy: Deploy to production with backup and health checks
+prod-deploy:
+	@echo "Running production deployment..."
+	@chmod +x deploy.sh
+	./deploy.sh
+
+## prod-up: Start production services
+prod-up:
+	@echo "Starting production services..."
+	docker compose -f docker-compose.prod.yml up -d
+	@echo "Production services started!"
+	@echo "Backend API: http://localhost:8080"
+	@echo "Worker: http://localhost:8081"
+	@echo "Frontend: http://localhost:3000"
+
+## prod-down: Stop production services
+prod-down:
+	@echo "Stopping production services..."
+	docker compose -f docker-compose.prod.yml down
+	@echo "Production services stopped!"
+
+## prod-logs: View production logs
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f
+
+## prod-status: Show production service status
+prod-status:
+	@echo "Production Service Status:"
+	@docker compose -f docker-compose.prod.yml ps
+	@echo ""
+	@echo "Health Checks:"
+	@echo -n "Backend Health: "
+	@curl -sf http://localhost:8080/health/ready && echo "✓ Ready" || echo "✗ Not Ready"
+	@echo -n "Worker Health: "
+	@curl -sf http://localhost:8081/health/ready && echo "✓ Ready" || echo "✗ Not Ready"
 
 ## help: Show this help message
 help:

@@ -118,7 +118,7 @@ func main() {
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	tenantMiddleware := middleware.NewTenantMiddleware(tenantUserRepo)
 
-	// Health check endpoint
+	// Health check endpoint (legacy)
 	healthHandler := func(c *gin.Context) {
 		// Create context with timeout for health check
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
@@ -140,6 +140,43 @@ func main() {
 	}
 	router.GET("/health", healthHandler)
 	router.HEAD("/health", healthHandler)
+
+	// Liveness probe - checks if the application is running
+	livenessHandler := func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"service": "backend",
+		})
+	}
+	router.GET("/health/live", livenessHandler)
+	router.HEAD("/health/live", livenessHandler)
+
+	// Readiness probe - checks if the application is ready to accept traffic
+	readinessHandler := func(c *gin.Context) {
+		// Create context with timeout for health check
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+		defer cancel()
+
+		// Check database health
+		if err := db.HealthContext(ctx); err != nil {
+			c.JSON(503, gin.H{
+				"status":   "error",
+				"service":  "backend",
+				"database": "unhealthy",
+				"ready":    false,
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status":   "ok",
+			"service":  "backend",
+			"database": "connected",
+			"ready":    true,
+		})
+	}
+	router.GET("/health/ready", readinessHandler)
+	router.HEAD("/health/ready", readinessHandler)
 
 	// Swagger documentation (only in development)
 	if cfg.Server.Env != "production" {

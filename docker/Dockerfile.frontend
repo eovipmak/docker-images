@@ -1,4 +1,23 @@
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./
+COPY frontend/setup.js ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
+COPY frontend/ ./
+
+# Build the application
+RUN npm run build
+
+# Development stage
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
@@ -27,3 +46,29 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # Start development server with hot-reload
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+
+# Production stage
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Install only production dependencies
+COPY frontend/package*.json ./
+RUN npm ci --only=production
+
+# Copy built application from builder
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/.svelte-kit ./.svelte-kit
+
+# Copy entrypoint script
+COPY docker/entrypoint-frontend.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose port
+EXPOSE 3000
+
+# Use entrypoint to inject environment variables at runtime
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Start production server
+CMD ["node", "build"]
