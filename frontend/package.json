@@ -15,7 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "postinstall": "node setup.js",
+    "postinstall": "[ -f setup.js ] && node setup.js || true",
     "setup": "node setup.js",
     "analyze": "ANALYZE=true vite build"
   },
