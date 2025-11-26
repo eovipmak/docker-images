@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
+	import { latestMonitorChecks, connectEventStream, disconnectEventStream } from '$lib/api/events';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
 
@@ -24,9 +25,8 @@
 	let DonutChart: any = null;
 	let chartsLoaded = false;
 
-	// Auto-refresh settings
-	let autoRefreshInterval = 300; // seconds (5 minutes)
-	let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+	// SSE subscription
+	let unsubscribeChecks: (() => void) | null = null;
 
 	$: monitorId = $page.params.id || '';
 
@@ -35,13 +35,30 @@
 
 	onMount(async () => {
 		loadMonitorData();
-		startAutoRefresh();
 		// Lazy load chart components
 		loadCharts();
+		
+		// Start SSE connection for real-time updates
+		await connectEventStream();
+		
+		// Subscribe to monitor check events for this specific monitor
+		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
+			// Check if any of the recent checks belong to this monitor
+			const hasUpdates = Array.from(checks.values()).some(check => check.monitor_id === monitorId);
+			if (hasUpdates && !isLoading) {
+				console.log('[Monitor Details] Received check updates for this monitor, refreshing data');
+				loadMonitorData();
+			}
+		});
 	});
 
 	onDestroy(() => {
-		stopAutoRefresh();
+		// Disconnect SSE when leaving monitor details
+		disconnectEventStream();
+		
+		if (unsubscribeChecks) {
+			unsubscribeChecks();
+		}
 	});
 
 	async function loadCharts() {
@@ -140,32 +157,6 @@
 
 	function handleBack() {
 		goto('/domains');
-	}
-
-	// Start auto-refresh timer
-	function startAutoRefresh() {
-		if (autoRefreshTimer) {
-			clearInterval(autoRefreshTimer);
-		}
-		autoRefreshTimer = setInterval(() => {
-			console.log(`[Monitor Details] Auto-refreshing data (${autoRefreshInterval}s interval)`);
-			loadMonitorData();
-		}, autoRefreshInterval * 1000);
-	}
-
-	// Stop auto-refresh timer
-	function stopAutoRefresh() {
-		if (autoRefreshTimer) {
-			clearInterval(autoRefreshTimer);
-			autoRefreshTimer = null;
-		}
-	}
-
-	// Handle interval change
-	function handleIntervalChange(event: Event) {
-		const target = event.target as HTMLSelectElement;
-		autoRefreshInterval = parseInt(target.value);
-		startAutoRefresh(); // Restart with new interval
 	}
 
 	// Get response time data based on selected period
@@ -287,23 +278,10 @@
 			</div>
 			
 			<div class="flex items-center gap-3">
-				<div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-					</svg>
-					<label for="refresh-interval" class="text-sm text-slate-600 font-medium">Refresh:</label>
-					<select 
-						id="refresh-interval" 
-						bind:value={autoRefreshInterval} 
-						on:change={handleIntervalChange}
-						class="text-sm border-none p-0 focus:ring-0 text-slate-900 font-semibold bg-transparent cursor-pointer"
-					>
-						<option value={15}>15s</option>
-						<option value={30}>30s</option>
-						<option value={60}>1m</option>
-						<option value={300}>5m</option>
-						<option value={900}>15m</option>
-					</select>
+				<!-- Real-time updates via SSE -->
+				<div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+					<div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+					<span class="text-sm text-emerald-700 font-medium">Live Updates</span>
 				</div>
 			</div>
 		</div>

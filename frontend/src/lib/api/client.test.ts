@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fetchAPI } from './client';
 
+declare const global: any;
+
 // Mock localStorage
 const localStorageMock = (() => {
 	let store: Record<string, string> = {};

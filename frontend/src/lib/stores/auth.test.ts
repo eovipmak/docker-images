@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { get } from 'svelte/store';
 import { authStore } from './auth';
 
+declare const global: any;
+
 // Mock localStorage
 const localStorageMock = (() => {
 	let store: Record<string, string> = {};

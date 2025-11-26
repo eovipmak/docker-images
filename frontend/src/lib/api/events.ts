@@ -39,10 +39,52 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
 
+// Cache for public API URL
+let cachedPublicApiUrl: string | null = null;
+
+/**
+ * Fetch public API URL from server config
+ */
+async function getPublicApiUrl(): Promise<string> {
+	if (cachedPublicApiUrl !== null) {
+		return cachedPublicApiUrl;
+	}
+	
+	try {
+		const response = await fetch('/api/config');
+		if (response.ok) {
+			const config = await response.json();
+			cachedPublicApiUrl = config.publicApiUrl || '';
+			console.log('[SSE] Fetched PUBLIC_API_URL from config:', cachedPublicApiUrl);
+			return cachedPublicApiUrl as string;
+		}
+	} catch (error) {
+		console.warn('[SSE] Failed to fetch config:', error);
+	}
+	
+	// Fallback: use window variable or auto-detect
+	const windowUrl = (window as unknown as { __PUBLIC_API_URL__?: string }).__PUBLIC_API_URL__;
+	if (windowUrl) {
+		cachedPublicApiUrl = windowUrl;
+		return cachedPublicApiUrl as string;
+	}
+	
+	// Auto-detect based on current origin
+	const currentOrigin = window.location.origin;
+	if (currentOrigin.includes(':3000')) {
+		cachedPublicApiUrl = currentOrigin.replace(':3000', ':8080');
+	} else {
+		cachedPublicApiUrl = currentOrigin.replace(/:\d+$/, '') + ':8080';
+	}
+	
+	console.log('[SSE] Using auto-detected backend URL:', cachedPublicApiUrl);
+	return cachedPublicApiUrl as string;
+}
+
 /**
  * Connect to SSE stream
  */
-export function connectEventStream(): void {
+export async function connectEventStream(): Promise<void> {
 	if (!browser) {
 		console.log('[SSE] Not in browser, skipping connection');
 		return;
@@ -63,14 +105,10 @@ export function connectEventStream(): void {
 
 	console.log('[SSE] Connecting to event stream...');
 
-	// Determine the backend URL for SSE connection
-	// Use the proxy to avoid CORS issues
-	let backendUrl = '';
+	// Get the backend URL for SSE connection
+	const backendUrl = await getPublicApiUrl();
 	
-	// Use current origin to go through the SvelteKit proxy
-	backendUrl = window.location.origin;
-	
-	console.log('[SSE] Using proxy URL:', backendUrl);
+	console.log('[SSE] Using backend URL for SSE:', backendUrl);
 	
 	// Create EventSource with auth token as query parameter
 	// EventSource doesn't support custom headers, so we pass token in URL
@@ -79,9 +117,9 @@ export function connectEventStream(): void {
 	console.log('[SSE] Connecting to:', url.replace(token, '***'));
 
 	try {
-		eventSource = new EventSource(url, {
-			withCredentials: true
-		});
+		// Note: We don't use withCredentials since token is passed via URL query param
+		// This avoids CORS issues with credentials and wildcard origins
+		eventSource = new EventSource(url);
 
 		// Connection opened
 		eventSource.addEventListener('open', () => {
@@ -102,11 +140,13 @@ export function connectEventStream(): void {
 				const checkData = eventData.data as MonitorCheckEvent;
 
 				console.log('[SSE] Monitor check event parsed:', checkData);
+				console.log('[SSE] Updating latestMonitorChecks store');
 
 				// Update store
 				latestMonitorChecks.update((checks) => {
 					const newChecks = new Map(checks);
 					newChecks.set(checkData.monitor_id, checkData);
+					console.log('[SSE] Store updated, new size:', newChecks.size);
 					return newChecks;
 				});
 			} catch (error) {

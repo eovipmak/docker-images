@@ -3,8 +3,8 @@
 	import { connectEventStream, disconnectEventStream } from '$lib/api/events';
 
 	// Connect to SSE stream when dashboard is mounted
-	onMount(() => {
-		connectEventStream();
+	onMount(async () => {
+		await connectEventStream();
 	});
 
 	// Disconnect when dashboard is unmounted

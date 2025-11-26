@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
-	import { latestMonitorChecks, latestIncidents } from '$lib/api/events';
+	import { latestMonitorChecks, latestIncidents, connectEventStream, disconnectEventStream } from '$lib/api/events';
 	import StatCard from '$lib/components/StatCard.svelte';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
@@ -89,6 +89,7 @@
 
 	// Load dashboard data
 	async function loadDashboardData() {
+		console.log('[Dashboard] Starting to load dashboard data');
 		try {
 			isLoading = true;
 			error = '';
@@ -96,45 +97,59 @@
 
 			if (!response.ok) {
 				error = 'Failed to load dashboard data';
+				console.error('[Dashboard] Failed to load dashboard data:', response.status);
 				return;
 			}
 
 			const data: DashboardData = await response.json();
+			console.log('[Dashboard] Dashboard data loaded successfully:', data);
 			stats = data.stats;
 			recentChecks = data.recent_checks || [];
 			openIncidents = data.open_incidents || [];
 		} catch (err) {
-			console.error('Error loading dashboard:', err);
+			console.error('[Dashboard] Error loading dashboard:', err);
 			error = 'An error occurred while loading dashboard data';
 		} finally {
 			isLoading = false;
+			console.log('[Dashboard] Finished loading dashboard data, isLoading:', isLoading);
 		}
 	}
 
 	onMount(async () => {
 		await loadDashboardData();
 
+		// Start SSE connection for real-time updates
+		await connectEventStream();
+
 		// Subscribe to monitor check events
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
 			// When SSE events arrive, refresh dashboard data to get updated stats
 			// This ensures we have accurate data while still benefiting from real-time notifications
-			if (checks.size > 0 && !isLoading) {
+			console.log('[Dashboard] Monitor checks store updated, size:', checks.size);
+			if (!isLoading) {
 				console.log('[Dashboard] Received monitor check updates, refreshing data');
 				loadDashboardData();
+			} else {
+				console.log('[Dashboard] Skipping refresh because isLoading is true');
 			}
 		});
 
 		// Subscribe to incident events
 		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
 			// When incident events arrive, refresh dashboard data
-			if (incidents.length > 0 && !isLoading) {
+			console.log('[Dashboard] Incidents store updated, length:', incidents.length);
+			if (!isLoading) {
 				console.log('[Dashboard] Received incident updates, refreshing data');
 				loadDashboardData();
+			} else {
+				console.log('[Dashboard] Skipping refresh because isLoading is true');
 			}
 		});
 	});
 
 	onDestroy(() => {
+		// Disconnect SSE when leaving dashboard
+		disconnectEventStream();
 
 		if (unsubscribeChecks) {
 			unsubscribeChecks();

@@ -1,7 +1,9 @@
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
-const BACKEND_URL = env.BACKEND_API_URL || 'http://backend:8080';
+// BACKEND_API_URL: for server-side proxy (Docker internal network)
+// Falls back to PUBLIC_API_URL or localhost for compatibility
+const BACKEND_URL = env.BACKEND_API_URL || env.PUBLIC_API_URL || 'http://localhost:8080';
 
 export const GET: RequestHandler = async ({ params, url, request }) => {
 	return proxyRequest('GET', params.path, url, request);

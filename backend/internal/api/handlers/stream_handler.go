@@ -59,6 +59,23 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 	}
 	tenantID := tenantIDValue.(int)
 
+	// Set CORS headers for SSE
+	// When credentials are included, we must specify the exact origin, not wildcard
+	origin := c.GetHeader("Origin")
+	if origin == "" {
+		origin = "http://localhost:3000" // Default for development
+	}
+	c.Header("Access-Control-Allow-Origin", origin)
+	c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+	c.Header("Access-Control-Allow-Headers", "*")
+	c.Header("Access-Control-Allow-Credentials", "true")
+
+	// Handle preflight OPTIONS request
+	if c.Request.Method == "OPTIONS" {
+		c.AbortWithStatus(http.StatusNoContent)
+		return
+	}
+
 	// Set headers for SSE
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")

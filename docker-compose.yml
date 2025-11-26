@@ -83,10 +83,16 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
+      target: development
     container_name: v-insight-frontend
     environment:
       - NODE_ENV=development
+      # BACKEND_API_URL: for server-side SvelteKit proxy (Docker internal network)
       - BACKEND_API_URL=http://backend:8080
+      # PUBLIC_API_URL: for browser SSE connection (accessible from host machine)
+      # In development: use localhost:8080 (backend port is exposed)
+      # In production: use your public domain
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8080}
       - VITE_ALLOWED_HOSTS=${VITE_ALLOWED_HOSTS:-localhost,127.0.0.1}
     ports:
       - "3000:3000"
