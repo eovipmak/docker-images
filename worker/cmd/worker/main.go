@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/eovipmak/v-insight/worker/internal"
 	"github.com/eovipmak/v-insight/worker/internal/config"
 	"github.com/eovipmak/v-insight/worker/internal/database"
 	"github.com/eovipmak/v-insight/worker/internal/executor"
@@ -16,6 +17,8 @@ import (
 	"github.com/eovipmak/v-insight/worker/internal/scheduler"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -28,6 +31,21 @@ func main() {
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("Invalid configuration: %v", err)
 	}
+
+	// Initialize structured logger
+	env := "development"
+	if cfg.Worker.Env != "" {
+		env = cfg.Worker.Env
+	}
+	if err := internal.InitLogger(env); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer internal.SyncLogger()
+
+	internal.Log.Info("Starting V-Insight Worker Service",
+		zap.String("env", env),
+		zap.String("port", cfg.Worker.Port),
+	)
 
 	// Initialize database connection
 	dbCfg := database.Config{
@@ -44,9 +62,11 @@ func main() {
 
 	db, err := database.New(dbCfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		internal.Log.Fatal("Failed to connect to database", zap.Error(err))
 	}
 	defer db.Close()
+
+	internal.Log.Info("Database connection established")
 
 	// Initialize executor for concurrent job processing
 	exec := executor.New(executor.DefaultConfig())
@@ -86,7 +106,7 @@ func main() {
 	sched.Start()
 	defer sched.Stop()
 
-	log.Printf("Registered jobs: %v", sched.GetJobs())
+	internal.Log.Info("Scheduler started", zap.Strings("jobs", sched.GetJobs()))
 
 	// Create HTTP server for health checks and metrics
 	app := fiber.New(fiber.Config{
@@ -163,12 +183,19 @@ func main() {
 		})
 	})
 
+	// Prometheus metrics endpoint
+	app.Get("/metrics", func(c *fiber.Ctx) error {
+		handler := promhttp.Handler()
+		handler.ServeHTTP(c.Response(), c.Request())
+		return nil
+	})
+
 	// Start HTTP server in a goroutine
 	go func() {
 		port := cfg.Worker.Port
-		log.Printf("Starting worker HTTP server on port %s", port)
+		internal.Log.Info("Starting worker HTTP server", zap.String("port", port))
 		if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
-			log.Fatalf("Failed to start HTTP server: %v", err)
+			internal.Log.Fatal("Failed to start HTTP server", zap.Error(err))
 		}
 	}()
 
@@ -177,22 +204,22 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down worker service...")
+	internal.Log.Info("Shutting down worker service...")
 
 	// Graceful shutdown
-	log.Println("Stopping scheduler...")
+	internal.Log.Info("Stopping scheduler...")
 	sched.Stop()
 
-	log.Println("Stopping executor...")
+	internal.Log.Info("Stopping executor...")
 	exec.Stop()
 
-	log.Println("Stopping HTTP server...")
+	internal.Log.Info("Stopping HTTP server...")
 	if err := app.Shutdown(); err != nil {
-		log.Printf("Error shutting down HTTP server: %v", err)
+		internal.Log.Error("Error shutting down HTTP server", zap.Error(err))
 	}
 
-	log.Println("Closing database connection...")
+	internal.Log.Info("Closing database connection...")
 	db.Close()
 
-	log.Println("Worker service stopped successfully")
+	internal.Log.Info("Worker service stopped successfully")
 }

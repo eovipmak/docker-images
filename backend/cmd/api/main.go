@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/eovipmak/v-insight/backend/internal"
 	"github.com/eovipmak/v-insight/backend/internal/api/handlers"
 	"github.com/eovipmak/v-insight/backend/internal/api/middleware"
 	"github.com/eovipmak/v-insight/backend/internal/config"
@@ -13,8 +14,10 @@ import (
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/eovipmak/v-insight/backend/internal/repository/postgres"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 
 	_ "github.com/eovipmak/v-insight/backend/docs"
 )
@@ -46,6 +49,17 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	// Initialize structured logger
+	if err := internal.InitLogger(cfg.Server.Env); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer internal.SyncLogger()
+
+	internal.Log.Info("Starting V-Insight Backend API",
+		zap.String("env", cfg.Server.Env),
+		zap.String("port", cfg.Server.Port),
+	)
+
 	// Initialize database connection
 	dbCfg := database.Config{
 		Host:            cfg.Database.Host,
@@ -61,9 +75,11 @@ func main() {
 
 	db, err := database.New(dbCfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		internal.Log.Fatal("Failed to connect to database", zap.Error(err))
 	}
 	defer db.Close()
+
+	internal.Log.Info("Database connection established")
 
 	// Set Gin mode based on environment
 	if cfg.Server.Env == "production" {
@@ -71,9 +87,15 @@ func main() {
 	}
 
 	// Initialize Gin router
-	router := gin.Default()
+	router := gin.New() // Use gin.New() instead of Default() to have full control
 
 	// Apply global middleware
+	// Request logging (structured JSON logs)
+	router.Use(middleware.RequestLogger())
+	
+	// Recovery middleware
+	router.Use(gin.Recovery())
+	
 	// Security headers (all routes)
 	router.Use(middleware.SecurityHeaders(middleware.SecurityConfig{
 		HSTSMaxAge:            cfg.Security.HSTSMaxAge,
@@ -177,6 +199,9 @@ func main() {
 	}
 	router.GET("/health/ready", readinessHandler)
 	router.HEAD("/health/ready", readinessHandler)
+
+	// Prometheus metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Swagger documentation (only in development)
 	if cfg.Server.Env != "production" {

@@ -3,9 +3,11 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/eovipmak/v-insight/backend/internal"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // AuthHandler handles authentication-related HTTP requests
@@ -57,10 +59,29 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	if internal.Log != nil {
+		internal.Log.Info("User registration attempt",
+			zap.String("email", req.Email),
+			zap.String("tenant_name", req.TenantName),
+		)
+	}
+
 	token, err := h.authService.Register(req.Email, req.Password, req.TenantName)
 	if err != nil {
+		if internal.Log != nil {
+			internal.Log.Warn("User registration failed",
+				zap.String("email", req.Email),
+				zap.Error(err),
+			)
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if internal.Log != nil {
+		internal.Log.Info("User registration successful",
+			zap.String("email", req.Email),
+		)
 	}
 
 	c.JSON(http.StatusCreated, AuthResponse{Token: token})
@@ -84,10 +105,28 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	if internal.Log != nil {
+		internal.Log.Info("User login attempt",
+			zap.String("email", req.Email),
+		)
+	}
+
 	token, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
+		if internal.Log != nil {
+			internal.Log.Warn("User login failed",
+				zap.String("email", req.Email),
+				zap.Error(err),
+			)
+		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
+	}
+
+	if internal.Log != nil {
+		internal.Log.Info("User login successful",
+			zap.String("email", req.Email),
+		)
 	}
 
 	c.JSON(http.StatusOK, AuthResponse{Token: token})
