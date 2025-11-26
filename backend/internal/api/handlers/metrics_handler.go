@@ -24,8 +24,22 @@ func NewMetricsHandler(metricsService *service.MetricsService, monitorRepo repos
 	}
 }
 
-// GetMonitorMetrics retrieves metrics for a specific monitor
-// GET /api/v1/monitors/:id/metrics?period=24h|7d|30d
+// GetMonitorMetrics godoc
+// @Summary Get monitor metrics
+// @Description Retrieve detailed metrics for a specific monitor including uptime, response times, and status codes
+// @Tags Metrics
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Param period query string false "Time period for metrics (24h, 7d, or 30d)" default(24h)
+// @Success 200 {object} map[string]interface{} "Monitor metrics including uptime, response time history, and status code distribution"
+// @Failure 400 {object} map[string]string "Invalid request or period parameter"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id}/metrics [get]
 func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

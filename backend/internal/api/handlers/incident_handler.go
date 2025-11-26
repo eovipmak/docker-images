@@ -47,8 +47,24 @@ type ChannelInfo struct {
 	Type string `json:"type"`
 }
 
-// List handles listing incidents with filters
-// GET /api/v1/incidents?status=&monitor_id=&from=&to=&limit=&offset=
+// List godoc
+// @Summary List incidents with filters
+// @Description Get a list of incidents filtered by status, monitor, and date range
+// @Tags Incidents
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param status query string false "Filter by status (open or resolved)"
+// @Param monitor_id query string false "Filter by monitor ID"
+// @Param from query string false "Filter by start date (RFC3339 format)"
+// @Param to query string false "Filter by end date (RFC3339 format)"
+// @Param limit query int false "Maximum number of results (default 50, max 100)"
+// @Param offset query int false "Offset for pagination (default 0)"
+// @Success 200 {array} IncidentResponse "List of incidents with details"
+// @Failure 400 {object} map[string]string "Invalid request parameters"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /incidents [get]
 func (h *IncidentHandler) List(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")
@@ -156,8 +172,20 @@ func (h *IncidentHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetByID handles retrieving a single incident
-// GET /api/v1/incidents/:id
+// GetByID godoc
+// @Summary Get an incident by ID
+// @Description Get detailed information about a specific incident including monitor and alert rule details
+// @Tags Incidents
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Incident ID"
+// @Success 200 {object} IncidentResponse "Incident details"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Incident not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /incidents/{id} [get]
 func (h *IncidentHandler) GetByID(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")
@@ -230,8 +258,20 @@ func (h *IncidentHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// Resolve handles manually resolving an incident
-// POST /api/v1/incidents/:id/resolve
+// Resolve godoc
+// @Summary Manually resolve an incident
+// @Description Mark an incident as resolved manually
+// @Tags Incidents
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Incident ID"
+// @Success 200 {object} map[string]string "Incident resolved successfully"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Incident not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /incidents/{id}/resolve [post]
 func (h *IncidentHandler) Resolve(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")

@@ -54,8 +54,17 @@ type DashboardData struct {
 	OpenIncidents []IncidentWithDetails     `json:"open_incidents"`
 }
 
-// GetStats returns dashboard statistics
-// GET /api/v1/dashboard/stats
+// GetStats godoc
+// @Summary Get dashboard statistics
+// @Description Get summary statistics for the dashboard including monitor counts, incidents, and uptime
+// @Tags Dashboard
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} DashboardStats "Dashboard statistics"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /dashboard/stats [get]
 func (h *DashboardHandler) GetStats(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")
@@ -132,8 +141,17 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
-// GetDashboard returns complete dashboard data including stats, recent checks, and open incidents
-// GET /api/v1/dashboard
+// GetDashboard godoc
+// @Summary Get complete dashboard data
+// @Description Get comprehensive dashboard data including stats, recent checks, and open incidents
+// @Tags Dashboard
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} DashboardData "Complete dashboard data"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /dashboard [get]
 func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")

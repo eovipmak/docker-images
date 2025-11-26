@@ -13,7 +13,31 @@ import (
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/eovipmak/v-insight/backend/internal/repository/postgres"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/eovipmak/v-insight/backend/docs"
 )
+
+// @title V-Insight API
+// @version 1.0
+// @description Multi-tenant monitoring SaaS platform API for website health checks, SSL monitoring, and intelligent alerting.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url https://github.com/eovipmak/v-insight
+// @contact.email support@v-insight.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	// Load configuration
@@ -116,6 +140,11 @@ func main() {
 	}
 	router.GET("/health", healthHandler)
 	router.HEAD("/health", healthHandler)
+
+	// Swagger documentation (only in development)
+	if cfg.Server.Env != "production" {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// API routes
 	api := router.Group("/api/v1")

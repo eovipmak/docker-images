@@ -54,8 +54,19 @@ type UpdateMonitorRequest struct {
 	SSLAlertDays  int    `json:"ssl_alert_days" binding:"omitempty,min=1"`
 }
 
-// Create handles monitor creation
-// POST /api/v1/monitors
+// Create godoc
+// @Summary Create a new monitor
+// @Description Create a new monitoring endpoint for a website or service
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body CreateMonitorRequest true "Monitor configuration"
+// @Success 201 {object} entities.Monitor "Monitor created successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors [post]
 func (h *MonitorHandler) Create(c *gin.Context) {
 	var req CreateMonitorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -131,8 +142,17 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, monitor)
 }
 
-// List handles retrieving all monitors for the current tenant
-// GET /api/v1/monitors
+// List godoc
+// @Summary List all monitors
+// @Description Get all monitors for the current tenant
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} entities.Monitor "List of monitors"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors [get]
 func (h *MonitorHandler) List(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")
@@ -156,8 +176,21 @@ func (h *MonitorHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, monitors)
 }
 
-// GetByID handles retrieving a specific monitor
-// GET /api/v1/monitors/:id
+// GetByID godoc
+// @Summary Get a monitor by ID
+// @Description Get detailed information about a specific monitor
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Success 200 {object} entities.Monitor "Monitor details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id} [get]
 func (h *MonitorHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -192,8 +225,22 @@ func (h *MonitorHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, monitor)
 }
 
-// Update handles updating a monitor
-// PUT /api/v1/monitors/:id
+// Update godoc
+// @Summary Update a monitor
+// @Description Update an existing monitor's configuration
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Param request body UpdateMonitorRequest true "Updated monitor configuration"
+// @Success 200 {object} entities.Monitor "Monitor updated successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id} [put]
 func (h *MonitorHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -283,8 +330,21 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, monitor)
 }
 
-// Delete handles deleting a monitor
-// DELETE /api/v1/monitors/:id
+// Delete godoc
+// @Summary Delete a monitor
+// @Description Delete a monitor and its associated alert rules
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Success 200 {object} map[string]string "Monitor deleted successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id} [delete]
 func (h *MonitorHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -330,8 +390,21 @@ func (h *MonitorHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "monitor deleted successfully"})
 }
 
-// GetChecks handles retrieving check history for a monitor
-// GET /api/v1/monitors/:id/checks
+// GetChecks godoc
+// @Summary Get monitor check history
+// @Description Get the health check history for a specific monitor
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Success 200 {array} entities.MonitorCheck "List of monitor checks"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id}/checks [get]
 func (h *MonitorHandler) GetChecks(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -389,6 +462,21 @@ func (h *MonitorHandler) GetChecks(c *gin.Context) {
 
 // GetSSLStatus handles retrieving SSL certificate status for a monitor
 // GET /api/v1/monitors/:id/ssl-status
+// GetSSLStatus godoc
+// @Summary Get SSL certificate status
+// @Description Get SSL certificate information and expiration status for a monitor
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Success 200 {object} map[string]interface{} "SSL status and alert threshold"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id}/ssl-status [get]
 func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

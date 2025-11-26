@@ -40,8 +40,16 @@ type AuthResponse struct {
 	Token string `json:"token"`
 }
 
-// Register handles user registration
-// POST /auth/register
+// Register godoc
+// @Summary Register a new user and tenant
+// @Description Register a new user account and create an associated tenant organization
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Registration details"
+// @Success 201 {object} AuthResponse "Successfully registered, returns JWT token"
+// @Failure 400 {object} map[string]string "Invalid request or user already exists"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,8 +66,17 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, AuthResponse{Token: token})
 }
 
-// Login handles user login
-// POST /auth/login
+// Login godoc
+// @Summary Login to get JWT token
+// @Description Authenticate with email and password to receive a JWT token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login credentials"
+// @Success 200 {object} AuthResponse "Successfully logged in, returns JWT token"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Invalid credentials"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -76,8 +93,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, AuthResponse{Token: token})
 }
 
-// Me returns the current authenticated user's information
-// GET /auth/me
+// Me godoc
+// @Summary Get current user info
+// @Description Get the authenticated user's information
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "User information including id, email, and tenant_id"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 404 {object} map[string]string "User not found"
+// @Router /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
 	userID, exists := c.Get("user_id")

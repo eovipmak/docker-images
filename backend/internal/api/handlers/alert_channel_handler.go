@@ -43,8 +43,19 @@ type UpdateAlertChannelRequest struct {
 	Enabled *bool                  `json:"enabled"`
 }
 
-// Create handles alert channel creation
-// POST /api/v1/alert-channels
+// Create godoc
+// @Summary Create a new alert channel
+// @Description Create a new notification channel for alerts (webhook, Discord, or email)
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body CreateAlertChannelRequest true "Alert channel configuration"
+// @Success 201 {object} entities.AlertChannel "Alert channel created successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels [post]
 func (h *AlertChannelHandler) Create(c *gin.Context) {
 	var req CreateAlertChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -89,8 +100,17 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, channel)
 }
 
-// List handles retrieving all alert channels for the current tenant
-// GET /api/v1/alert-channels
+// List godoc
+// @Summary List all alert channels
+// @Description Get all notification channels for the current tenant
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} entities.AlertChannel "List of alert channels"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels [get]
 func (h *AlertChannelHandler) List(c *gin.Context) {
 	// Get tenant ID from context (set by middleware)
 	tenantIDValue, exists := c.Get("tenant_id")
@@ -114,8 +134,21 @@ func (h *AlertChannelHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, channels)
 }
 
-// GetByID handles retrieving a specific alert channel
-// GET /api/v1/alert-channels/:id
+// GetByID godoc
+// @Summary Get an alert channel by ID
+// @Description Get detailed information about a specific alert channel
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Alert Channel ID"
+// @Success 200 {object} entities.AlertChannel "Alert channel details"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Alert channel not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels/{id} [get]
 func (h *AlertChannelHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -150,8 +183,22 @@ func (h *AlertChannelHandler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, channel)
 }
 
-// Update handles updating an alert channel
-// PUT /api/v1/alert-channels/:id
+// Update godoc
+// @Summary Update an alert channel
+// @Description Update an existing alert channel's configuration
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Alert Channel ID"
+// @Param request body UpdateAlertChannelRequest true "Updated alert channel configuration"
+// @Success 200 {object} entities.AlertChannel "Alert channel updated successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Alert channel not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels/{id} [put]
 func (h *AlertChannelHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -212,8 +259,21 @@ func (h *AlertChannelHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, channel)
 }
 
-// Delete handles deleting an alert channel
-// DELETE /api/v1/alert-channels/:id
+// Delete godoc
+// @Summary Delete an alert channel
+// @Description Delete an alert channel and remove it from associated alert rules
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Alert Channel ID"
+// @Success 200 {object} map[string]string "Alert channel deleted successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Alert channel not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels/{id} [delete]
 func (h *AlertChannelHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -254,8 +314,21 @@ func (h *AlertChannelHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "alert channel deleted successfully"})
 }
 
-// Test handles testing an alert channel by sending a test notification
-// POST /api/v1/alert-channels/:id/test
+// Test godoc
+// @Summary Test an alert channel
+// @Description Send a test notification through the specified alert channel
+// @Tags Alert Channels
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Alert Channel ID"
+// @Success 200 {object} map[string]string "Test notification sent successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Alert channel not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /alert-channels/{id}/test [post]
 func (h *AlertChannelHandler) Test(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {

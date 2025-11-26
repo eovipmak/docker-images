@@ -60,6 +60,44 @@ This application uses a proxy architecture that completely eliminates CORS:
 - **Request Size Limits**: 10MB default limit on request body size
 - **Input Sanitization**: HTML escaping and validation for user inputs
 
+## API Documentation
+
+V-Insight provides comprehensive API documentation using Swagger/OpenAPI:
+
+### Access Documentation
+
+- **Swagger UI** (Development): `http://localhost:8080/swagger/` - Interactive API documentation with "Try it out" functionality
+- **Frontend Docs Page**: `http://localhost:3000/docs` - Embedded Swagger UI with quick start guide
+- **OpenAPI Spec**: 
+  - JSON: `backend/docs/swagger.json`
+  - YAML: `backend/docs/swagger.yaml`
+
+### Quick Start with API
+
+1. **Register/Login**: Use `/api/v1/auth/register` or `/api/v1/auth/login` to get a JWT token
+2. **Authorize**: Click "Authorize" button in Swagger UI and enter `Bearer <your-token>`
+3. **Try Endpoints**: Use the "Try it out" button to test endpoints directly
+
+### Available API Groups
+
+- **Authentication**: Register, login, user info
+- **Monitors**: Create and manage monitoring endpoints
+- **Alert Rules**: Configure alerting conditions
+- **Alert Channels**: Setup notification channels (Webhook, Discord, Email)
+- **Incidents**: View and manage triggered alerts
+- **Dashboard**: Get overview statistics and data
+- **Metrics**: Monitor performance metrics
+
+See [Backend API Documentation](backend/README.md#api-endpoints) for complete endpoint reference.
+
+## Documentation
+
+Comprehensive documentation is available for each component:
+
+- **[Backend README](backend/README.md)**: API architecture, endpoints, development guide, testing, and deployment
+- **[Frontend README](frontend/README.md)**: SvelteKit setup, component development, routing, styling, and testing
+- **[Worker README](worker/README.md)**: Job scheduler, background tasks, monitoring, and performance tuning
+
 ## Quick Start
 
 ### Prerequisites
