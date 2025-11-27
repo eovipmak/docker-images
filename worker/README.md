@@ -39,6 +39,13 @@ worker/
 └── .air.toml               # Hot-reload configuration
 ```
 
+## Notes for AI Agents & Automation
+
+- The worker runs scheduled jobs that process all tenant monitors — any code changes must preserve multi-tenant behavior.
+- Avoid hardcoding tenant IDs or modifying the way tenant context is loaded.
+- Tests: `cd worker && go test ./...` ; add tests for concurrency and job behavior changes.
+- See `docs/ai_agents.md` for automation and safe PR patterns.
+
 ## Features
 
 ### Job Types

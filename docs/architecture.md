@@ -10,6 +10,13 @@ v-insight is composed of three main components:
 
 The frontend proxies `/api/*` requests to the backend so the browser never performs cross-origin requests. This eliminates the need for CORS middleware.
 
+## Notes for AI Agents & Automation
+
+- The frontend API proxy is implemented at `frontend/src/routes/api/[...path]/+server.ts`. Do not add CORS middleware — the proxy pattern is intentional.
+- Multi-tenant enforcement is critical: always filter queries and commands by `tenant_id` and validate user access in handlers and services.
+- The backend and worker both rely on shared domain models in `backend/internal/domain` and `backend/internal/service`.
+- For schema changes, add migrations under `backend/migrations/`; ensure both `.up.sql` and `.down.sql` are present and tested.
+
 ## Worker jobs (schedules)
 
 - Health checks: every 30s

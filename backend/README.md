@@ -2,6 +2,13 @@
 
 Go-based REST API server for V-Insight monitoring platform, providing endpoints for monitor management, alert configuration, and incident tracking.
 
+## Notes for AI Agents & Automation
+
+- The backend enforces multi-tenant behavior: every persisted object includes a `tenant_id` and requests must be validated via `TenantRequired` middleware.
+- Avoid adding CORS handling in the backend; the frontend proxy handles cross-origin behavior.
+- Migrations are in `backend/migrations/` and run automatically at startup — add `.up.sql` and corresponding `.down.sql` files for schema changes.
+- Refer to `docs/ai_agents.md` for safe automation patterns and validation scripts.
+
 ## Architecture
 
 ### Tech Stack

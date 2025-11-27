@@ -1,51 +1,34 @@
-# V-Insight - Multi-tenant Monitoring SaaS
+# V-Insight — Multi-tenant Monitoring SaaS
 
-A Docker-based multi-tenant monitoring SaaS platform built with Go and SvelteKit. Monitor your websites, APIs, and services with automated health checks, SSL monitoring, and intelligent alerting.
+V-Insight is a Docker-based multi-tenant monitoring platform with a focus on reliability and observability. It includes an API backend, background worker jobs, and a SvelteKit frontend with a CORS-free API proxy.
 
-## Architecture
+- Backend: Go, Gin (port 8080)
+- Worker: Go (port 8081)
+- Frontend: SvelteKit (port 3000)
+- Database: PostgreSQL 15
 
-- **Backend API** (Go, Gin): REST API service on port 8080
-- **Worker** (Go): Background job processing service on port 8081
-- **Frontend** (SvelteKit): Web interface on port 3000 with built-in API proxy
-- **PostgreSQL 15**: Database on port 5432
+---
 
-# v-insight
+## Quick overview
 
-v-insight is a Docker-based, multi-tenant monitoring SaaS for automated health checks, SSL monitoring, and alerting. It helps teams monitor websites, APIs, and services with scalable background workers and a developer-friendly API + web UI.
+V-Insight performs automated health checks (HTTP/HTTPS) and SSL expiry monitoring, evaluates alert rules, creates incidents, and notifies configured channels (webhook, Discord, email-ready).
 
-## ✨ Key features
+It supports multi-tenant isolation via `tenant_id` on all main tables and enforces tenant-scoped queries consistently in handlers and repositories.
 
-- HTTP/HTTPS health checks (uptime & response time)
-- SSL certificate expiry monitoring
-- Flexible alert rules (down, slow_response, ssl_expiry) and incident management
-- Multiple notification channels (webhook, Discord, email-ready)
-- Multi-tenant data isolation with background worker jobs
+---
 
-## 🚀 Quick Start
+## Key features
 
-```bash
-git clone https://github.com/eovipmak/v-insight.git
-cd v-insight
-cp .env.example .env
-make up
-```
+- HTTP/HTTPS health checks, uptime and response time tracking
+- SSL certificate expiry checks
+- Flexible alert rules (down, slow_response, ssl_expiry)
+- Incident lifecycle with automatic resolution
+- Notification channels: webhook, Discord, (email-ready)
+- Docker-first developer workflow and automatic DB migrations
 
-Or without Make:
+---
 
-```bash
-# v-insight
-
-v-insight is a Docker-based, multi-tenant monitoring SaaS for automated health checks, SSL monitoring, and alerting. It helps teams monitor websites, APIs, and services with scalable background workers and a developer-friendly API + web UI.
-
-## ✨ Key features
-
-- HTTP/HTTPS health checks (uptime & response time)
-- SSL certificate expiry monitoring
-- Flexible alert rules (down, slow_response, ssl_expiry) and incident management
-- Multiple notification channels (webhook, Discord, email-ready)
-- Multi-tenant data isolation with background worker jobs
-
-## 🚀 Quick Start
+## Quick start (development)
 
 ```bash
 git clone https://github.com/eovipmak/v-insight.git
@@ -54,25 +37,50 @@ cp .env.example .env
 make up
 ```
 
-Or without Make:
+Or without `make`:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-Database migrations run automatically on startup.
+- Backend: http://localhost:8080
+- Frontend: http://localhost:3000
+- Swagger API: http://localhost:8080/swagger/
 
-## 📚 Full documentation
+Migrations run automatically on startup.
 
-Detailed guides (installation, usage, configuration, architecture, contributing, troubleshooting) are in the `docs/` folder:
+---
 
-- Installation: `./docs/installation.md`
-- Usage & examples: `./docs/usage.md`
-- Configuration: `./docs/configuration.md`
-- Architecture: `./docs/architecture.md`
-- Contributing: `./docs/contributing.md`
-- Troubleshooting: `./docs/troubleshooting.md`
+## For developers and contributors
 
-## 📄 License
+- Backend tests: `cd backend && go test ./...`
+- Worker tests: `cd worker && go test ./...`
+- Frontend TypeScript checks: `cd frontend && npm run check`
+- E2E: `cd frontend && npx playwright test`
 
-This project is licensed under the MIT License — see the `LICENSE` file for details.
+Tips:
+- Do not commit `.env` files to the repository – use environment configurations for production.
+- Use `make` convenience commands (`make up`, `make logs`, `make rebuild`, `make migrate-up`, etc.)
+
+---
+
+## For AI agents and automations
+
+To make it easier for LLMs, bots, or automation agents to work in this repo, see `docs/ai_agents.md`. Key notes:
+
+- API proxy: `frontend/src/routes/api/[...path]/+server.ts` — **do NOT** add CORS middleware.
+- Multi-tenant: Always include and verify `tenant_id` context when querying or modifying tenant-scoped resources.
+- Migrations: Located in `backend/migrations/` — use `make migrate-create` then edit up/down SQL files; run `make migrate-up`.
+- Tests: Backend/Worker use Go tests. Ensure tests pass before opening PRs.
+
+---
+
+## Docs
+
+Detailed documentation: `docs/` includes guides for architecture, configuration, installation, usage, troubleshooting, contributing, and AI agent guidelines.
+
+---
+
+## License
+
+This project is licensed under the MIT License — see `LICENSE` for details.

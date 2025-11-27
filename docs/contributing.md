@@ -11,6 +11,17 @@ Thank you for your interest in contributing to v-insight! This document explains
    - Frontend checks: `cd frontend && npm run check`
 4. Open a pull request against `main` and provide a clear description and testing notes.
 
+### When submitting PRs via automation / AI agents
+
+- Keep changes small and well-scoped — larger changes should be broken up into multiple PRs.
+- Include tests that validate the change and the multi-tenant behavior if relevant.
+- Verify the change locally:
+   - Backend: `cd backend && go test ./...`
+   - Frontend: `cd frontend && npm run check`
+   - E2E: `cd frontend && npx playwright test` as needed
+- Avoid modifying older migrations or removing historic migration files. Add new migrations instead.
+- Never commit secrets or production-environment credentials — use environment variables in CI secrets.
+
 ## Testing expectations
 
 - Unit tests and integration tests should pass locally.
@@ -22,6 +33,8 @@ The repository includes workflows to build, test, and deploy:
 
 - Push to `main` runs tests and builds images.
 - PRs can deploy to a staging environment (if configured) for UI testing.
+
+If you are using an automated agent to create PRs, attach a note describing the CI and tests you ran to validate the change.
 
 ### Secrets
 

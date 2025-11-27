@@ -56,3 +56,5 @@ sudo chown -R $USER:$USER frontend/node_modules frontend/.svelte-kit
 
 - Check component READMEs: `backend/README.md`, `frontend/README.md`, `worker/README.md`.
 - Open an issue on the project repository with logs and reproduction steps.
+
+Note for automation/AI agents: If you file an issue, include the exact commands you ran, the service logs (anonymized), and any environment variables to reproduce the problem. Do not include secrets in issue reports.

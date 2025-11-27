@@ -68,6 +68,10 @@ chmod +x deploy.sh
 
 The script performs checks, backups, builds images, runs migrations, and restarts services.
 
+Note for automation/AI agents:
+- The `deploy.sh` script includes some checks and backup steps; do not rely solely on running it in a CI environment until your script or agent is approved by maintainers.
+- Validate image builds and DB migrations locally before creating automated deploy PRs.
+
 ### Manual production (alternative)
 
 ```bash

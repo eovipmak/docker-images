@@ -24,6 +24,8 @@ Configuration in v-insight is primarily via environment variables. Copy `.env.ex
 - Never commit `.env` to source control. Use `.env.production` as a template.
 - Generate secure secrets: `openssl rand -base64 32` for `JWT_SECRET` and DB passwords.
 
+Note for automation / AI agents: Don't commit or embed secrets into code or config files. Use CI secrets or environment injection managed by your deployment platform (GitHub Actions secrets, Docker secrets, etc.).
+
 ## Resource limits (production)
 
 Adjust `docker-compose.prod.yml` resource constraints as needed:

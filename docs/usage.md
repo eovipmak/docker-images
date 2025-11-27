@@ -24,6 +24,8 @@ POST /api/v1/auth/login
 
 See `backend/README.md` for full API reference and the interactive Swagger UI at `http://localhost:8080/swagger/`.
 
+Note: The frontend implements a CORS-free API proxy: `frontend/src/routes/api/[...path]/+server.ts`. Browser requests should go through the frontend proxy; non-browser tools (curl, Postman, CI) can call the backend API directly on `http://localhost:8080`.
+
 ## Example: Create an Alert Rule (curl)
 
 ```bash
