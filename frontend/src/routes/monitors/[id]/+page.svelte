@@ -20,6 +20,67 @@
 	let responseTimePeriod: '1h' | '6h' | '12h' | '24h' | '1w' = '24h';
 	let chartType: 'uptime' | 'response' = 'uptime';
 
+	// Get a cutoff Date for the provided period
+	function getCutoffForPeriod(period = responseTimePeriod) {
+		const now = new Date();
+		const cutoff = new Date(now);
+		switch (period) {
+			case '1h':
+				cutoff.setTime(now.getTime() - 1 * 60 * 60 * 1000);
+				break;
+			case '6h':
+				cutoff.setTime(now.getTime() - 6 * 60 * 60 * 1000);
+				break;
+			case '12h':
+				cutoff.setTime(now.getTime() - 12 * 60 * 60 * 1000);
+				break;
+			case '24h':
+				cutoff.setTime(now.getTime() - 24 * 60 * 60 * 1000);
+				break;
+			case '1w':
+				cutoff.setTime(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+				break;
+		}
+		return cutoff;
+	}
+
+	// Get filtered response times based on period
+	function getFilteredResponseTimes(period = responseTimePeriod) {
+		if (!checks || checks.length === 0) return [];
+
+		const cutoff = getCutoffForPeriod(period);
+
+		// debug removed
+
+		const filtered = checks
+			.filter((c) => {
+				const checkTime = new Date(c.checked_at);
+				const valid = checkTime > cutoff && isValidSqlNull(c.response_time_ms);
+				// removed debug logging
+				return valid;
+			})
+			.reverse() // Since checks are newest first, reverse to oldest first
+			.map((c) => extractInt64(c.response_time_ms, 0));
+
+		// filtered response times length: ${filtered.length}
+
+		return filtered;
+	}
+
+	// Force reactivity on checks by passing checks.length as a dependency signal
+	$: responseTimes = (checks?.length ?? -1) >= 0 ? getFilteredResponseTimes(responseTimePeriod) : [];
+	$: maxTime = responseTimes.length > 0 ? Math.max(...responseTimes) : 1;
+	// Compute a conservative suggested max (95th percentile) and add padding to avoid outlier distortion
+	$: p95Time = (() => {
+		if (!responseTimes || responseTimes.length === 0) return maxTime;
+		const sorted = [...responseTimes].sort((a,b) => a - b);
+		const idx = Math.floor(sorted.length * 0.95);
+		return sorted[Math.min(idx, sorted.length-1)];
+	})();
+
+	// Reactive current timeRange for the selected period
+	$: currentTimeRange = getTimeRangeForPeriod(responseTimePeriod);
+
 	// Lazy loaded chart components
 	let LineChart: any = null;
 	let DonutChart: any = null;
@@ -31,11 +92,15 @@
 	$: monitorId = $page.params.id || '';
 
 	// Computed uptime data based on selected period
-	$: currentUptimeData = uptimePeriod === '7d' ? localUptime7d : localUptime30d;
+	$: currentUptimeData = uptimePeriod === '7d'
+		? (metrics7d?.uptime ?? { percentage: 0, total_checks: 0, success_checks: 0, failed_checks: 0 })
+		: (metrics30d?.uptime ?? { percentage: 0, total_checks: 0, success_checks: 0, failed_checks: 0 });
 
-	// Calculate uptime from checks array for live updates
-	$: localUptime7d = calculateUptimeFromChecks('7d');
-	$: localUptime30d = calculateUptimeFromChecks('30d');
+	// Force reactivity on checks and responseTimePeriod by using them in the expression
+	$: responseTimeSeries = ((checks?.length ?? -1) >= 0 && responseTimePeriod) ? getResponseTimeData() : [];
+	$: hasResponseTimeSeries = responseTimeSeries && responseTimeSeries.filter(d => d.value !== null).length > 0;
+	$: bucketTotal = responseTimeSeries ? responseTimeSeries.length : 0;
+	$: bucketNonEmpty = responseTimeSeries ? responseTimeSeries.filter(d => d.value !== null).length : 0;
 
 	onMount(async () => {
 		loadMonitorData();
@@ -49,7 +114,6 @@
 		unsubscribeChecks = latestMonitorChecks.subscribe((latestChecks) => {
 			const check = latestChecks.get(monitorId);
 			if (check && !isLoading) {
-				console.log('Received check update for this monitor:', check);
 				addCheckFromSSE(check);
 			}
 		});
@@ -78,22 +142,88 @@
 		}
 	}
 
+	// Build a timeRange object to pass to LineChart so x axis covers data with appropriate padding
+	function getTimeRangeForPeriod(period = responseTimePeriod) {
+		const now = new Date();
+		// Decide time unit for x axis ticks
+		let unit: 'minute' | 'hour' | 'day' = 'hour';
+		switch (period) {
+			case '1h':
+				unit = 'minute';
+				break;
+			case '6h':
+			case '12h':
+			case '24h':
+				unit = 'hour';
+				break;
+			case '1w':
+				unit = 'day';
+				break;
+		}
+		
+		// For time range, we want to fit the data with some padding
+		// Don't force min to period cutoff - let it auto-fit based on actual data
+		// This prevents large empty spaces when data only covers a portion of the period
+		return { 
+			max: now.toISOString(), 
+			unit 
+		};
+	}
+
+	// Bucket checks into fixed intervals between start and end
+	function bucketChecks(checksArr: any[], startTime: Date, endTime: Date, intervalSeconds: number) {
+		const buckets: { timestamp: string; values: number[] }[] = [];
+		// Align to interval boundaries
+		let current = new Date(Math.floor(startTime.getTime() / (intervalSeconds * 1000)) * intervalSeconds * 1000);
+		while (current < endTime) {
+			buckets.push({ timestamp: new Date(current).toISOString(), values: [] });
+			current = new Date(current.getTime() + intervalSeconds * 1000);
+		}
+
+		// Assign checks to buckets
+		for (const c of checksArr) {
+			if (!isValidSqlNull(c.response_time_ms)) continue;
+			const t = new Date(c.checked_at).getTime();
+			if (t < startTime.getTime() || t > endTime.getTime()) continue;
+			const bucketIndex = Math.floor((t - startTime.getTime()) / (intervalSeconds * 1000));
+			if (bucketIndex >= 0 && bucketIndex < buckets.length) {
+				buckets[bucketIndex].values.push(extractInt64(c.response_time_ms, 0));
+			}
+		}
+
+		// Compute average per bucket (return null for empty buckets to keep timeline continuity)
+		const result: { timestamp: string; value: number | null }[] = buckets.map((b) => ({
+			timestamp: b.timestamp,
+			value: b.values.length > 0 ? b.values.reduce((s, v) => s + v, 0) / b.values.length : null
+		}));
+
+		// Trim leading empty buckets so chart focuses on actual data
+		// This prevents large empty spaces at the start of the chart
+		const firstNonEmptyIndex = result.findIndex(b => b.value !== null);
+		if (firstNonEmptyIndex > 0) {
+			return result.slice(firstNonEmptyIndex);
+		}
+
+		return result;
+	}
+
 	async function loadMonitorData() {
 		isLoading = true;
 		error = '';
 
 		try {
-			console.log('Loading monitor with ID:', monitorId);
 			const monitorResponse = await fetchAPI(`/api/v1/monitors/${monitorId}`);
 			if (!monitorResponse.ok) {
 				throw new Error('Failed to load monitor');
 			}
 			monitor = await monitorResponse.json();
-			console.log('Monitor loaded:', monitor);
 
-			const checksResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/checks?limit=100`);
+			const checksResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/checks?limit=1000`);
 			if (checksResponse.ok) {
-				checks = await checksResponse.json();
+				const checksData = await checksResponse.json();
+				checks = checksData || [];
+			} else {
+				checks = [];
 			}
 
 			// Load metrics for different periods
@@ -103,15 +233,57 @@
 				fetchAPI(`/api/v1/monitors/${monitorId}/metrics?period=30d`)
 			]);
 
+			// Helper to return a minimal uptime payload when none is available
+			const defaultUptime = () => ({
+				uptime: { percentage: 0, total_checks: 0, success_checks: 0, failed_checks: 0 },
+				response_time_history: [],
+				status_code_distribution: []
+			});
+
 			if (metrics24hRes.ok) {
-				metrics24h = await metrics24hRes.json();
+				try {
+					const parsed = await metrics24hRes.json();
+					metrics24h = { ...(parsed || {}), uptime: parsed?.uptime || defaultUptime().uptime };
+				} catch (err) {
+					console.error('Failed to parse metrics24h JSON', err);
+					metrics24h = defaultUptime();
+				}
+			} else {
+				metrics24h = defaultUptime();
 			}
+
 			if (metrics7dRes.ok) {
-				metrics7d = await metrics7dRes.json();
+				try {
+					const parsed = await metrics7dRes.json();
+					metrics7d = { ...(parsed || {}), uptime: parsed?.uptime || defaultUptime().uptime };
+				} catch (err) {
+					console.error('Failed to parse metrics7d JSON', err);
+					metrics7d = defaultUptime();
+				}
+			} else {
+				metrics7d = defaultUptime();
 			}
+
 			if (metrics30dRes.ok) {
-				metrics30d = await metrics30dRes.json();
+				try {
+					const parsed = await metrics30dRes.json();
+					metrics30d = { ...(parsed || {}), uptime: parsed?.uptime || defaultUptime().uptime };
+				} catch (err) {
+					console.error('Failed to parse metrics30d JSON', err);
+					metrics30d = defaultUptime();
+				}
+			} else {
+				metrics30d = defaultUptime();
 			}
+
+			// Debug logging for metrics payloads
+			console.debug('Loaded metrics:', {
+				metrics24h: metrics24h?.uptime ?? metrics24h,
+				metrics7d: metrics7d?.uptime ?? metrics7d,
+				metrics30d: metrics30d?.uptime ?? metrics30d
+			});
+
+			// Loaded metrics sizes: metrics24h: ${metrics24h?.response_time_history?.length || 0} metrics7d: ${metrics7d?.response_time_history?.length || 0} metrics30d: ${metrics30d?.response_time_history?.length || 0}
 
 			if (monitor.check_ssl && monitor.url.startsWith('https')) {
 				const sslResponse = await fetchAPI(`/api/v1/monitors/${monitorId}/ssl-status`);
@@ -164,54 +336,56 @@
 		goto('/monitors');
 	}
 
-	// Get response time data based on selected period
-	function getResponseTimeData() {
-		switch (responseTimePeriod) {
-			case '1h':
-				// For 1h, we might need to filter recent data or fetch from API
-				// For now, return empty array to use fallback logic
-				return [];
-			case '6h':
-				return [];
-			case '12h':
-				return [];
-			case '24h':
-				return metrics24h?.response_time_history || [];
-			case '1w':
-				return metrics7d?.response_time_history || [];
-			default:
-				return metrics24h?.response_time_history || [];
-		}
+	function getResponseTimeSeriesFromTimes(times: number[], period: string) {
+		if (times.length === 0) return [];
+		const now = new Date();
+		const cutoff = getCutoffForPeriod(period);
+		const interval = (now.getTime() - cutoff.getTime()) / times.length;
+		return times.map((time, i) => ({
+			timestamp: new Date(cutoff.getTime() + i * interval).toISOString(),
+			value: time
+		}));
 	}
 
-	// Get filtered response times based on period
-	function getFilteredResponseTimes() {
-		if (!checks || checks.length === 0) return [];
-
-		let limit = 48; // Default for 24h (assuming 30min intervals)
-		switch (responseTimePeriod) {
-			case '1h':
-				limit = 2; // Assuming 30min intervals
-				break;
-			case '6h':
-				limit = 12;
-				break;
-			case '12h':
-				limit = 24;
-				break;
-			case '24h':
-				limit = 48;
-				break;
-			case '1w':
-				limit = 336; // 7 days * 48 checks per day
-				break;
+	// Get response time data based on selected period
+	// Build Chart.js-compatible data for the selected period
+	function getResponseTimeData() {
+		if (!checks || !Array.isArray(checks) || checks.length === 0) {
+			return [];
 		}
-
-		return checks
-			.filter((c) => isValidSqlNull(c.response_time_ms))
-			.slice(0, limit)
-			.reverse()
-			.map((c) => extractInt64(c.response_time_ms, 0));
+		const maxPointsRenderable = 500;
+		switch (responseTimePeriod) {
+			case '1h': {
+				// Return full raw points for 1h (no downsampling), including checks without response time as null
+				const start = getCutoffForPeriod('1h');
+				const end = new Date();
+				const rawData = checks
+					.filter(c => {
+						const t = new Date(c.checked_at);
+						return t >= start && t <= end;
+					})
+					.sort((a, b) => new Date(a.checked_at).getTime() - new Date(b.checked_at).getTime())
+					.map(c => ({
+						timestamp: c.checked_at,
+						value: isValidSqlNull(c.response_time_ms) ? extractInt64(c.response_time_ms, 0) : null
+					}));
+				return rawData;
+			}
+			case '6h':
+			case '12h':
+			case '24h':
+			case '1w': {
+				// Apply aggregation for larger time frames
+				const start = getCutoffForPeriod(responseTimePeriod);
+				const end = new Date();
+				const totalSeconds = (end.getTime() - start.getTime()) / 1000;
+				const windowSizeSeconds = Math.max(60, Math.ceil(totalSeconds / maxPointsRenderable));
+				const buckets = bucketChecks(checks, start, end, windowSizeSeconds);
+				return buckets;
+			}
+			default:
+				return [];
+		}
 	}
 
 	// Get period label for display
@@ -242,31 +416,6 @@
 
 		// Trigger reactivity
 		checks = [...checks];
-	}
-
-	function calculateUptimeFromChecks(period: '7d' | '30d') {
-		if (!checks || checks.length === 0) {
-			return { percentage: 0, success_checks: 0, total_checks: 0 };
-		}
-
-		const now = new Date();
-		const days = period === '7d' ? 7 : 30;
-		const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
-		const recentChecks = checks.filter(c => {
-			const checkDate = new Date(c.checked_at);
-			return checkDate >= startDate;
-		});
-
-		const successCount = recentChecks.filter(c => c.success).length;
-		const totalCount = recentChecks.length;
-		const percentage = totalCount > 0 ? (successCount / totalCount) * 100 : 0;
-
-		return {
-			percentage,
-			success_checks: successCount,
-			total_checks: totalCount
-		};
 	}
 
 	function getPeriodLabel() {
@@ -456,6 +605,7 @@
 						<span>Now</span>
 					</div>
 				{:else}
+                    
 					<div class="flex flex-col items-center justify-center h-32 text-slate-400">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -469,69 +619,59 @@
 					<div class="flex bg-slate-100 rounded-lg p-1 w-fit">
 						<button
 							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '1h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => responseTimePeriod = '1h'}
+							on:click={() => { responseTimePeriod = '1h'; }}
 						>
 							1h
 						</button>
 						<button
 							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '6h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => responseTimePeriod = '6h'}
+							on:click={() => { responseTimePeriod = '6h'; }}
 						>
 							6h
 						</button>
 						<button
 							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '12h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => responseTimePeriod = '12h'}
+							on:click={() => { responseTimePeriod = '12h'; }}
 						>
 							12h
 						</button>
 						<button
 							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '24h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => responseTimePeriod = '24h'}
+							on:click={() => { responseTimePeriod = '24h'; }}
 						>
 							24h
 						</button>
 						<button
 							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '1w' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => responseTimePeriod = '1w'}
+							on:click={() => { responseTimePeriod = '1w'; }}
 						>
 							1w
 						</button>
 					</div>
 				</div>
-				{#if chartsLoaded && LineChart && getResponseTimeData() && getResponseTimeData().length > 0}
+				{#if chartsLoaded && LineChart && responseTimeSeries && hasResponseTimeSeries}
+                    
+					{#key responseTimePeriod}
 					<div class="h-64">
 						<svelte:component 
 							this={LineChart}
-							data={getResponseTimeData()} 
+							data={responseTimeSeries} 
 							label="Response Time" 
 							color="#3B82F6"
 							yAxisLabel="Response Time (ms)"
+							timeRange={currentTimeRange}
+							timeUnit={currentTimeRange?.unit}
+							suggestedMax={Math.ceil(Math.max(p95Time * 1.25, maxTime * 1.05))}
+							spanGapsProp={false}
 						/>
 					</div>
-				{:else if checks && checks.length > 0}
-					{@const responseTimes = getFilteredResponseTimes()}
-					{@const maxTime = Math.max(...responseTimes, 1)}
-					<div class="flex items-end gap-1 h-24">
-						{#each responseTimes as time}
-							<div
-								class="flex-1 bg-blue-500 rounded-sm transition-all hover:opacity-80"
-								style="height: {(time / maxTime) * 100}%"
-								title="{time}ms"
-							></div>
-						{/each}
-					</div>
-					<div class="flex justify-between text-xs text-slate-400 mt-3 font-medium">
-						<span>{getPeriodLabel()} ago</span>
-						<span>Max: {maxTime}ms</span>
-						<span>Now</span>
-					</div>
+					{/key}
 				{:else}
 					<div class="flex flex-col items-center justify-center h-32 text-slate-400">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
 						</svg>
-						<p>No response time data available</p>
+						<p>No response time data available for the selected period. Try selecting a longer time range like 24h or 1w.</p>
 					</div>
 				{/if}
 			{/if}
@@ -556,12 +696,13 @@
 					</button>
 				</div>
 			</div>
-			{#if chartsLoaded && DonutChart && currentUptimeData}
+			{#if chartsLoaded && DonutChart && currentUptimeData && currentUptimeData.total_checks > 0}
 				<div class="h-64">
 					<svelte:component 
 						this={DonutChart}
 						percentage={currentUptimeData.percentage} 
 						label="Uptime"
+						key={uptimePeriod}
 					/>
 				</div>
 				<div class="mt-6 text-center">
@@ -569,7 +710,7 @@
 						{currentUptimeData.success_checks} successful / {currentUptimeData.total_checks} total checks
 					</p>
 				</div>
-			{:else if !chartsLoaded && currentUptimeData}
+			{:else if !chartsLoaded && currentUptimeData && currentUptimeData.total_checks > 0}
 				<div class="h-64 flex items-center justify-center">
 					<div class="text-center">
 						<div class="text-5xl font-bold text-slate-900 mb-2">
@@ -594,57 +735,83 @@
 		</div>
 
 		{#if checks && checks.length > 0}
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-				<div class="px-6 py-4 border-b border-slate-200">
-					<h2 class="text-lg font-bold text-slate-900">Recent Checks</h2>
+			<div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+				<div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+					<h2 class="text-base font-semibold text-slate-900">Recent Checks</h2>
+					<div class="text-xs text-slate-500">
+						Last {Math.min(5, checks.length)} checks
+					</div>
 				</div>
 				<div class="overflow-x-auto">
 					<table class="min-w-full divide-y divide-slate-200">
 						<thead class="bg-slate-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
 									Time
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
 									Status
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-									Status Code
+								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+									Code
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-									Response Time
+								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+									Response
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
 									Error
 								</th>
 							</tr>
 						</thead>
-						<tbody class="bg-white divide-y divide-slate-200">
-							{#each checks.slice(0, 10) as check}
-								<tr class="hover:bg-slate-50 transition-colors">
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-										{formatDate(check.checked_at)}
+						<tbody class="bg-white">
+							{#each checks.slice(0, 5) as check, index}
+								<tr class="transition-colors {index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100">
+									<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+										<div class="flex items-center gap-2">
+											<div class="w-2 h-2 rounded-full {check.success ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
+											<span>{formatDate(check.checked_at)}</span>
+										</div>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap">
-										<MonitorStatus status={check.success ? 'up' : 'down'} showText={true} />
+									<td class="px-4 py-3 whitespace-nowrap">
+										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {check.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+											{check.success ? 'Up' : 'Down'}
+										</span>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">
-										{extractInt64(check.status_code, 'N/A')}
+									<td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
+										<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800">
+											{extractInt64(check.status_code, 'N/A')}
+										</span>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-mono">
+									<td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
 										{#if isValidSqlNull(check.response_time_ms)}
-											{extractInt64(check.response_time_ms, 0)}ms
+											<span class="text-slate-700">{extractInt64(check.response_time_ms, 0)}ms</span>
 										{:else}
-											N/A
+											<span class="text-slate-400">N/A</span>
 										{/if}
 									</td>
-									<td class="px-6 py-4 text-sm text-rose-600 max-w-xs truncate">
-										{extractString(check.error_message, '-')}
+									<td class="px-4 py-3 text-sm max-w-xs truncate">
+										{#if extractString(check.error_message, '')}
+											<span class="text-rose-600" title={extractString(check.error_message, '')}>
+												{extractString(check.error_message, '').length > 30 ? extractString(check.error_message, '').substring(0, 30) + '...' : extractString(check.error_message, '')}
+											</span>
+										{:else}
+											<span class="text-slate-400">-</span>
+										{/if}
 									</td>
 								</tr>
 							{/each}
 						</tbody>
 					</table>
+				</div>
+				<div class="px-4 py-3 bg-slate-50 border-t border-slate-200">
+					<div class="flex items-center justify-between text-xs text-slate-600">
+						<span>
+							{checks.slice(0, 5).filter(c => c.success).length} successful, {checks.slice(0, 5).filter(c => !c.success).length} failed
+						</span>
+						<span>
+							Avg: {Math.round(checks.slice(0, 5).filter(c => isValidSqlNull(c.response_time_ms)).reduce((sum, c) => sum + extractInt64(c.response_time_ms, 0), 0) / checks.slice(0, 5).filter(c => isValidSqlNull(c.response_time_ms)).length) || 0}ms
+						</span>
+					</div>
 				</div>
 			</div>
 		{/if}

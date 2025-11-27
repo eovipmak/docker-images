@@ -5,9 +5,11 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/eovipmak/v-insight/backend/internal"
 	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // MetricsHandler handles metrics-related HTTP requests
@@ -75,14 +77,16 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 	period := c.DefaultQuery("period", "24h")
 
 	// Validate period
-	if period != "24h" && period != "7d" && period != "30d" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid period (must be 24h, 7d, or 30d)"})
+	validPeriods := map[string]bool{"1h": true, "6h": true, "12h": true, "24h": true, "1w": true, "7d": true, "30d": true}
+	if !validPeriods[period] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid period (must be one of 1h, 6h, 12h, 24h, 1w/7d, or 30d)"})
 		return
 	}
 
 	// Calculate uptime
 	uptime, err := h.metricsService.CalculateUptime(id, period)
 	if err != nil {
+		internal.Log.Error("failed to calculate uptime", zap.Error(err), zap.String("monitor_id", id), zap.String("period", period))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to calculate uptime"})
 		return
 	}
@@ -90,6 +94,7 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 	// Get response time history
 	responseTimeHistory, err := h.metricsService.GetResponseTimeHistory(id, period)
 	if err != nil {
+		internal.Log.Error("failed to get response time history", zap.Error(err), zap.String("monitor_id", id), zap.String("period", period))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get response time history"})
 		return
 	}
@@ -97,6 +102,7 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 	// Get status code distribution
 	statusCodeDistribution, err := h.metricsService.GetStatusCodeDistribution(id, period)
 	if err != nil {
+		internal.Log.Error("failed to get status code distribution", zap.Error(err), zap.String("monitor_id", id), zap.String("period", period))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get status code distribution"})
 		return
 	}
@@ -104,8 +110,14 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 	// Get average response time
 	avgResponseTime, err := h.metricsService.GetAverageResponseTime(id, period)
 	if err != nil {
+		internal.Log.Error("failed to get average response time", zap.Error(err), zap.String("monitor_id", id), zap.String("period", period))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get average response time"})
 		return
+	}
+
+	// Ensure uptime is never null (return 0-values if no checks)
+	if uptime == nil {
+		uptime = &service.UptimeMetrics{Percentage: 0, TotalChecks: 0, SuccessChecks: 0, FailedChecks: 0}
 	}
 
 	// Return empty arrays instead of null

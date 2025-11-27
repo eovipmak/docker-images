@@ -27,11 +27,35 @@ func TestParsePeriodToDuration(t *testing.T) {
 			hasError: false,
 		},
 		{
+			name:     "1h period",
+			period:   "1h",
+			expected: 1 * time.Hour,
+			hasError: false,
+		},
+		{
+			name:     "6h period",
+			period:   "6h",
+			expected: 6 * time.Hour,
+			hasError: false,
+		},
+		{
+			name:     "12h period",
+			period:   "12h",
+			expected: 12 * time.Hour,
+			hasError: false,
+		},
+		{
 			name:     "7d period",
 			period:   "7d",
 			expected: 7 * 24 * time.Hour,
 			hasError: false,
 		},
+        {
+            name:     "1w period",
+            period:   "1w",
+            expected: 7 * 24 * time.Hour,
+            hasError: false,
+        },
 		{
 			name:     "30d period",
 			period:   "30d",

@@ -179,7 +179,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 		)
 	}
 	
-	checkedAt := time.Now()
+	checkedAt := time.Now().UTC()
 
 	// Perform HTTP check
 	result := j.httpChecker.CheckURL(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second)

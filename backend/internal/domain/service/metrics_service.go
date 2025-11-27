@@ -1,10 +1,13 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/eovipmak/v-insight/backend/internal"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 // MetricsService provides business logic for metrics and analytics
@@ -46,7 +49,24 @@ func (s *MetricsService) CalculateUptime(monitorID string, period string) (*Upti
 		return nil, err
 	}
 
-	startTime := time.Now().Add(-duration)
+	startTime := time.Now().UTC().Add(-duration)
+
+	// Debugging: log start time and last check timestamp for this monitor
+	if internal.Log != nil {
+		var latestChecked sql.NullTime
+		_ = s.db.Get(&latestChecked, `SELECT MAX(checked_at) FROM monitor_checks WHERE monitor_id = $1`, monitorID)
+		var totalAll int
+		_ = s.db.Get(&totalAll, `SELECT COUNT(*) FROM monitor_checks WHERE monitor_id = $1`, monitorID)
+		var countInRange int
+		_ = s.db.Get(&countInRange, `SELECT COUNT(*) FROM monitor_checks WHERE monitor_id = $1 AND checked_at >= $2`, monitorID, startTime)
+		// Only log if available
+		serverTZ := time.Now().Location().String()
+		if latestChecked.Valid {
+			internal.Log.Debug("CalculateUptime: time range", zap.String("monitor_id", monitorID), zap.Time("start_time", startTime), zap.Time("latest_check", latestChecked.Time), zap.String("server_tz", serverTZ), zap.String("latest_check_tz", latestChecked.Time.Location().String()), zap.Int("total_checks_all_time", totalAll), zap.Int("count_in_range", countInRange))
+		} else {
+			internal.Log.Debug("CalculateUptime: time range", zap.String("monitor_id", monitorID), zap.Time("start_time", startTime), zap.String("latest_check", "<none>"), zap.String("server_tz", serverTZ), zap.Int("total_checks_all_time", totalAll), zap.Int("count_in_range", countInRange))
+		}
+	}
 
 	query := `
 		SELECT 
@@ -84,15 +104,21 @@ func (s *MetricsService) GetResponseTimeHistory(monitorID string, period string)
 		return nil, err
 	}
 
-	startTime := time.Now().Add(-duration)
+	startTime := time.Now().UTC().Add(-duration)
 
 	// Use time buckets for aggregation to reduce data points
 	// For 24h, use 5-minute buckets; for 7d, use 1-hour buckets; for 30d, use 6-hour buckets
 	var intervalSeconds int
 	switch period {
+	case "1h":
+		intervalSeconds = 60 // 1 minute
+	case "6h":
+		intervalSeconds = 300 // 5 minutes
+	case "12h":
+		intervalSeconds = 300 // 5 minutes
 	case "24h":
 		intervalSeconds = 300 // 5 minutes
-	case "7d":
+	case "7d", "1w":
 		intervalSeconds = 3600 // 1 hour
 	case "30d":
 		intervalSeconds = 21600 // 6 hours
@@ -130,7 +156,7 @@ func (s *MetricsService) GetStatusCodeDistribution(monitorID string, period stri
 		return nil, err
 	}
 
-	startTime := time.Now().Add(-duration)
+	startTime := time.Now().UTC().Add(-duration)
 
 	query := `
 		SELECT 
@@ -160,7 +186,7 @@ func (s *MetricsService) GetAverageResponseTime(monitorID string, period string)
 		return 0, err
 	}
 
-	startTime := time.Now().Add(-duration)
+	startTime := time.Now().UTC().Add(-duration)
 
 	query := `
 		SELECT COALESCE(AVG(response_time_ms), 0) as avg_response_time
@@ -187,7 +213,7 @@ func (s *MetricsService) GetGlobalAverageResponseTime(tenantID int, period strin
 		return 0, err
 	}
 
-	startTime := time.Now().Add(-duration)
+	startTime := time.Now().UTC().Add(-duration)
 
 	query := `
 		SELECT COALESCE(AVG(mc.response_time_ms), 0) as avg_response_time
@@ -250,13 +276,19 @@ func (s *MetricsService) GetGlobalUptime(tenantID int, period string) (*UptimeMe
 // parsePeriodToDuration converts period string to time.Duration
 func parsePeriodToDuration(period string) (time.Duration, error) {
 	switch period {
+	case "1h":
+		return time.Hour, nil
+	case "6h":
+		return 6 * time.Hour, nil
+	case "12h":
+		return 12 * time.Hour, nil
 	case "24h":
 		return 24 * time.Hour, nil
-	case "7d":
+	case "7d", "1w":
 		return 7 * 24 * time.Hour, nil
 	case "30d":
 		return 30 * 24 * time.Hour, nil
 	default:
-		return 0, fmt.Errorf("invalid period: %s (must be 24h, 7d, or 30d)", period)
+		return 0, fmt.Errorf("invalid period: %s (must be 1h, 6h, 12h, 24h, 1w/7d, or 30d)", period)
 	}
 }

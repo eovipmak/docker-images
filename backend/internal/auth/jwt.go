@@ -16,15 +16,16 @@ type Claims struct {
 
 // GenerateToken generates a new JWT token for a user
 func GenerateToken(userID, tenantID int, secret string) (string, error) {
-	// Set token expiration to 24 hours
-	expirationTime := time.Now().Add(24 * time.Hour)
+	// Set token expiration to 24 hours, use a single 'now' timestamp to avoid timing differences
+	now := time.Now()
+	expirationTime := now.Add(24 * time.Hour)
 
 	claims := &Claims{
 		UserID:   userID,
 		TenantID: tenantID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 

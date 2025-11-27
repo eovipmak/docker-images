@@ -153,7 +153,7 @@ func TestClaims_ExpirationTime(t *testing.T) {
 	userID := 123
 	tenantID := 456
 
-	beforeGeneration := time.Now()
+	beforeGeneration := time.Now().UTC().Truncate(time.Second).Add(-1 * time.Second)
 	token, err := GenerateToken(userID, tenantID, testSecret)
 	assert.NoError(t, err)
 
@@ -173,15 +173,16 @@ func TestClaims_IssuedAt(t *testing.T) {
 	userID := 123
 	tenantID := 456
 
-	beforeGeneration := time.Now()
+	beforeGeneration := time.Now().UTC().Truncate(time.Second).Add(-1 * time.Second)
 	token, err := GenerateToken(userID, tenantID, testSecret)
-	afterGeneration := time.Now()
+	afterGeneration := time.Now().UTC().Truncate(time.Second).Add(1 * time.Second)
 	assert.NoError(t, err)
 
 	claims, err := ValidateToken(token, testSecret)
 	assert.NoError(t, err)
 
 	issuedAt := claims.IssuedAt.Time
+	t.Logf("beforeGeneration=%s, issuedAt=%s, afterGeneration=%s", beforeGeneration.Format(time.RFC3339Nano), issuedAt.Format(time.RFC3339Nano), afterGeneration.Format(time.RFC3339Nano))
 	assert.True(t, issuedAt.After(beforeGeneration) || issuedAt.Equal(beforeGeneration))
 	assert.True(t, issuedAt.Before(afterGeneration) || issuedAt.Equal(afterGeneration))
 }

@@ -18,9 +18,18 @@
 	}
 
 	// Reactive statement to handle route protection
-	$: if (browser && authInitialized && !$authStore.isAuthenticated && !isPublicRoute($page.url.pathname)) {
-		window.location.href = '/login';
+$: if (browser && authInitialized && !$authStore.isAuthenticated && !isPublicRoute($page.url.pathname)) {
+	window.location.href = '/login';
+}
+
+// Redirect authenticated users away from public routes (landing, login, register)
+$: if (browser && authInitialized && $authStore.isAuthenticated && isPublicRoute($page.url.pathname)) {
+	// If user is authenticated and on a public route, send them to the dashboard
+	// Avoid causing a redirect loop if they're already on /dashboard
+	if ($page.url.pathname !== '/dashboard') {
+		window.location.href = '/dashboard';
 	}
+}
 
 	// Check authentication on mount
 	onMount(async () => {
