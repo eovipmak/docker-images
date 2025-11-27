@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-V-Insight is a Docker-based multi-tenant monitoring SaaS platform with automated alerting. **Stack:** Go 1.23 (Gin backend :8080, worker :8081), SvelteKit/TypeScript frontend (:3000), PostgreSQL 15 (:5432).
+V-Insight is a Docker-based multi-tenant monitoring SaaS platform with automated alerting. **Stack:** Go 1.23 (Gin backend :8080, Fiber worker :8081), SvelteKit/TypeScript frontend (:3000), PostgreSQL 15 (:5432).
 
 **CRITICAL:** Uses CORS-free proxy architecture. Frontend (`src/routes/api/[...path]/+server.ts`) proxies all `/api/*` requests to backend. NEVER add CORS middleware.
 
@@ -180,7 +180,7 @@ git status                             # No tmp/, node_modules/ committed
 ## Key Technologies
 
 **Backend:** Go 1.23, Gin (HTTP), GORM (ORM), golang-migrate, Air (hot-reload), testify (testing)
-**Worker:** Go 1.23, robfig/cron (scheduler), same database/ORM as backend
+**Worker:** Go 1.23, Fiber (HTTP server), robfig/cron (scheduler), same database/ORM as backend
 **Frontend:** SvelteKit v2, TypeScript, Vite v5, Tailwind CSS, Playwright (E2E)
 **Database:** PostgreSQL 15 with JSONB, UUIDs, auto-migrations
 **Infrastructure:** Docker Compose, health checks, volume mounts for hot-reload
