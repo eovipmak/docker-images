@@ -5,6 +5,10 @@
 	import StatCard from '$lib/components/StatCard.svelte';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
+	import MonitorCard from '$lib/components/MonitorCard.svelte';
+	import AlertCard from '$lib/components/AlertCard.svelte';
+	import Card from '$lib/components/Card.svelte';
+	import { goto } from '$app/navigation';
 
 	interface MonitorCheck {
 		id: string;
@@ -80,6 +84,8 @@
 	};
 	let recentChecks: MonitorCheckWithMonitor[] = [];
 	let openIncidents: IncidentWithDetails[] = [];
+    let monitors: Monitor[] = [];
+    let alertRules: any[] = [];
 	let isLoading = true;
 	let error = '';
 
@@ -104,12 +110,38 @@
 			stats = data.stats;
 			recentChecks = data.recent_checks || [];
 			openIncidents = data.open_incidents || [];
+			// Additionally fetch a small set of monitors and alert rules for dashboard preview
+			try {
+				const [monResp, rulesResp] = await Promise.all([
+					fetchAPI('/api/v1/monitors'),
+					fetchAPI('/api/v1/alert-rules')
+				]);
+				if (monResp.ok) {
+					const monList = await monResp.json();
+					monitors = monList.slice(0, 6);
+				}
+				if (rulesResp.ok) {
+					const rulesList = await rulesResp.json();
+					alertRules = rulesList.slice(0, 6);
+				}
+			} catch (err) {
+				// Not critical; dashboard still works without previews
+				console.debug('Failed to fetch monitors/alert rules for previews', err);
+			}
 		} catch (err) {
 			console.error('Error loading dashboard:', err);
 			error = 'An error occurred while loading dashboard data';
 		} finally {
 			isLoading = false;
 		}
+	}
+
+	function handleViewMonitor(monitor: Monitor) {
+		goto(`/monitors/${monitor.id}`);
+	}
+
+	function handleViewAlert(rule: any) {
+		goto('/alerts');
 	}
 
 	onMount(async () => {
@@ -180,7 +212,7 @@
 	<title>Dashboard - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto space-y-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
@@ -245,18 +277,18 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 			<!-- Open Incidents -->
 			<div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                        <h2 class="text-lg font-semibold text-slate-900">Open Incidents</h2>
-                        {#if openIncidents.length > 0}
-                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200">
-                                {openIncidents.length} Active
-                            </span>
-                        {/if}
-                    </div>
+				<Card>
+					<div slot="header" class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+						<h2 class="text-lg font-semibold text-slate-900">Open Incidents</h2>
+						{#if openIncidents.length > 0}
+							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200">
+								{openIncidents.length} Active
+							</span>
+						{/if}
+					</div>
                     
-                    {#if openIncidents.length === 0}
-                        <div class="p-12 text-center">
+					{#if openIncidents.length === 0}
+						<div class="p-12 text-center">
                             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-4">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-600">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -297,12 +329,64 @@
                                 </div>
                             {/each}
                         </div>
-                    {/if}
-                </div>
+					{/if}
+				</Card>
 			</div>
             
             <!-- Recent Checks (Optional, if we want to show it) -->
             <!-- For now, leaving empty or adding a placeholder for future widgets -->
+		</div>
+
+		<!-- Monitors & Alert Rules Overview -->
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+			<!-- Monitors List (Preview) -->
+			<div class="lg:col-span-2">
+				<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+					<div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+						<h2 class="text-lg font-semibold text-slate-900">Monitors</h2>
+						{#if monitors.length > 0}
+							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">{monitors.length} visible</span>
+						{/if}
+					</div>
+					<div class="p-4" data-testid="dashboard-monitors-preview">
+						{#if monitors.length === 0}
+							<div class="p-6 text-center text-sm text-slate-500">No monitors to display</div>
+						{:else}
+							<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+								{#each monitors as mon (mon.id)}
+									<MonitorCard monitor={mon} on:view={(e) => handleViewMonitor(e.detail)} />
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<!-- Alerts List (Preview) -->
+			<div>
+				<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+					<div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+						<h2 class="text-lg font-semibold text-slate-900">Alert Rules</h2>
+						{#if alertRules.length > 0}
+							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">{alertRules.length} visible</span>
+						{/if}
+					</div>
+					<div class="p-4">
+						<div data-testid="dashboard-alerts-preview">
+						{#if alertRules.length === 0}
+							<div class="p-6 text-center text-sm text-slate-500">No alert rules to display</div>
+						{:else}
+							<div class="grid grid-cols-1 gap-4">
+								{#each alertRules as rule (rule.id)}
+									<div on:click={() => handleViewAlert(rule)}>
+										<AlertCard rule={rule} />
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>

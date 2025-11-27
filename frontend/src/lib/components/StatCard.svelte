@@ -6,7 +6,16 @@
     export let icon: string = ''; // Optional SVG path
 </script>
 
-<div class="{bgColor} rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md">
+<script lang="ts">
+    import Card from './Card.svelte';
+    export let title: string;
+    export let value: string | number;
+    export let valueColor: string = 'text-slate-900';
+    export let bgColor: string = 'bg-white';
+    export let icon: string = ''; // Optional SVG path
+</script>
+
+<Card className={`${bgColor} p-6 transition-all duration-200 hover:shadow-md`}>
     <div class="flex items-center justify-between">
         <div>
             <p class="text-sm font-medium text-slate-500 mb-1">{title}</p>
@@ -20,4 +29,4 @@
             </div>
         {/if}
     </div>
-</div>
+</Card>

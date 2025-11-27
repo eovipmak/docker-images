@@ -3,13 +3,19 @@
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
 	import { latestMonitorChecks } from '$lib/api/events';
-	import MonitorTable from '$lib/components/MonitorTable.svelte';
+	import MonitorCard from '$lib/components/MonitorCard.svelte';
+	import MonitorList from '$lib/components/MonitorList.svelte';
+	import Card from '$lib/components/Card.svelte';
 
 	let monitors: any[] = [];
 	let isLoading = true;
 	let error = '';
 	let isModalOpen = false;
 	let selectedMonitor: any = null;
+	let searchQuery = '';
+	let sortField: 'name' | 'status' = 'name';
+	let sortDirection: 'asc' | 'desc' = 'asc';
+	let useTable: boolean = false;
 
 	// Lazy loaded modal component
 	let MonitorModal: any = null;
@@ -126,13 +132,70 @@
 			monitors = [savedMonitor, ...monitors];
 		}
 	}
+
+	// Format relative time (simple copy from MonitorTable)
+	function formatRelativeTime(dateString?: string): string {
+		if (!dateString) return 'Never';
+		const date = new Date(dateString);
+		if (isNaN(date.getTime())) return 'Invalid Date';
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffMins = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMins / 60);
+		const diffDays = Math.floor(diffHours / 24);
+
+		if (diffMins < 1) return 'Just now';
+		if (diffMins < 60) return `${diffMins}m ago`;
+		if (diffHours < 24) return `${diffHours}h ago`;
+		return `${diffDays}d ago`;
+	}
+
+	// Sort monitors
+	function sortMonitors(field: 'name' | 'status') {
+		if (sortField === field) {
+			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortField = field;
+			sortDirection = 'asc';
+		}
+	}
+
+	// Filter and sort monitors (reactive)
+	$: filteredAndSortedMonitors = monitors
+		.filter((monitor) => {
+			if (!searchQuery) return true;
+			const query = searchQuery.toLowerCase();
+			return (
+				monitor.name.toLowerCase().includes(query) ||
+				monitor.url.toLowerCase().includes(query)
+			);
+		})
+		.sort((a, b) => {
+			let aVal: any, bVal: any;
+			switch (sortField) {
+				case 'name':
+					aVal = a.name.toLowerCase();
+					bVal = b.name.toLowerCase();
+					break;
+				case 'status':
+					aVal = a.status || (a.enabled ? 'up' : 'unknown');
+					bVal = b.status || (b.enabled ? 'up' : 'unknown');
+					break;
+				default:
+					return 0;
+			}
+
+			if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+			if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+			return 0;
+		});
 </script>
 
 <svelte:head>
 	<title>Monitors - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto space-y-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Monitors</h1>
@@ -165,12 +228,85 @@
             {/each}
         </div>
 	{:else}
-		<MonitorTable
-			{monitors}
-			on:view={handleViewMonitor}
-			on:edit={handleEditMonitor}
-			on:delete={handleDeleteMonitor}
-		/>
+		<!-- Toolbar (search & sort) -->
+		<Card className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+			<div class="relative max-w-md w-full">
+				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+					</svg>
+				</Card>
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Search monitors..."
+					class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+				/>
+			</div>
+			<div class="flex items-center gap-3">
+				<select bind:value={sortField} class="block w-full rounded-lg border-slate-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm">
+					<option value="name">Name</option>
+					<option value="status">Status</option>
+				</select>
+				<button
+					class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+					on:click={() => (sortDirection = sortDirection === 'asc' ? 'desc' : 'asc')}
+					title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+				>
+					{#if sortDirection === 'asc'}
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
+						</svg>
+					{:else}
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+						</svg>
+					{/if}
+				</button>
+			</div>
+		</div>
+
+		<!-- Content: table or grid -->
+		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+			<div class="flex items-center justify-between">
+				<div class="text-sm text-slate-600">{filteredAndSortedMonitors.length} monitor{filteredAndSortedMonitors.length !== 1 ? 's' : ''}</div>
+				<div class="flex items-center gap-2">
+					<button
+						class="inline-flex items-center px-2 py-1 rounded-md bg-slate-50 text-slate-700 hover:bg-slate-100"
+						on:click={() => (useTable = !useTable)}
+						title={useTable ? 'Switch to Grid' : 'Switch to Table'}
+					>
+						{#if useTable}
+							Table
+						{:else}
+							Grid
+						{/if}
+					</button>
+				</div>
+			</div>
+		</div>
+
+		{#if useTable}
+			<div class="mt-4">
+				<MonitorList {monitors} useTable={true} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
+			</div>
+		{:else}
+		<!-- Grid (using MonitorList) -->
+		{#if filteredAndSortedMonitors.length === 0}
+			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+				<div class="flex flex-col items-center justify-center">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 mb-4">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+					</svg>
+					<h3 class="text-lg font-medium text-slate-900">No monitors found</h3>
+					<p class="mt-1 text-slate-500">Try adjusting your search or add a new monitor.</p>
+				</div>
+			</div>
+		{:else}
+			<div class="mt-4">
+				<MonitorList monitors={filteredAndSortedMonitors} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
+			</div>
+		{/if}
 	{/if}
 </div>
 
