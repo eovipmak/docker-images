@@ -48,6 +48,12 @@ func GzipCompression() gin.HandlerFunc {
 			return
 		}
 
+		// Skip compression for metrics endpoint
+		if c.Request.URL.Path == "/metrics" {
+			c.Next()
+			return
+		}
+
 		// Get a gzip writer from the pool
 		gz := gzipWriterPool.Get().(*gzip.Writer)
 		gz.Reset(c.Writer)
