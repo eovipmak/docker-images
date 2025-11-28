@@ -6,7 +6,7 @@ import (
 
 func TestDemoUserPasswordHash(t *testing.T) {
 	// This is the hash used in migration 000008_seed_demo_user
-	demoPasswordHash := "$2a$10$fCeLy86IPRPiYypijBxAvO6cYAbaS79f80yH8/mDD18a0gIMQnTwO"
+	demoPasswordHash := "$2a$10$HnStfiQq0siSL9fn7/DIDeV/6WxLzsK1r9/AxRgCzamqSnWi6CPza"
 	demoPassword := "Password!"
 
 	// Verify the hash matches the password
