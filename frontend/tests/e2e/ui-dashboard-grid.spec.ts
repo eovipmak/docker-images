@@ -79,4 +79,10 @@ test('Dashboard monitors & alerts preview grid renders', async ({ request, page 
   // Take visual snapshot of monitors preview
   await expect(monitorsPreview).toHaveScreenshot('dashboard-monitors-preview.png');
 
+  // Clicking a monitor preview should navigate to monitor details
+  const firstMonitor = monitorCards.first();
+  await firstMonitor.click();
+  await page.waitForURL(/.*\/monitors\/.+/);
+  await expect(page).toHaveURL(/.*\/monitors\/.+/);
+
 });

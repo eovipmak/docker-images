@@ -27,7 +27,7 @@
 		Legend
 	);
 
-	export let data: { timestamp: string; value: number | null; min?: number; max?: number }[] = [];
+	export let data: { timestamp: string; value: number | null; min?: number | null; max?: number | null }[] = [];
 	export let label: string = 'Response Time';
 	export let color: string = '#3B82F6';
 	export let yAxisLabel: string = 'Response Time (ms)';
@@ -38,7 +38,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 	export let fillOpacity: number = 0.2; // Opacity for area fill (0-1)
 
 	let canvas: HTMLCanvasElement;
-	let chart: Chart | null = null;
+	let chart: any = null;
 
 	// Helper function to convert hex color to rgba
 	function hexToRgba(hex: string, alpha: number): string {
@@ -56,7 +56,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 			// Max line
 			datasets.push({
 				label: 'Max',
-				data: data.map((d) => ({ x: new Date(d.timestamp), y: d.max })),
+				data: data.map((d) => ({ x: new Date(d.timestamp).getTime(), y: d.max })),
 				borderColor: hexToRgba(color, 0.6),
 				backgroundColor: 'transparent',
 				borderWidth: 1,
@@ -69,7 +69,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 			// Avg line
 			datasets.push({
 				label: 'Avg',
-				data: data.map((d) => ({ x: new Date(d.timestamp), y: d.value })),
+				data: data.map((d) => ({ x: new Date(d.timestamp).getTime(), y: d.value })),
 				borderColor: color,
 				backgroundColor: hexToRgba(color, fillOpacity),
 				borderWidth: 2,
@@ -82,7 +82,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 			// Min line
 			datasets.push({
 				label: 'Min',
-				data: data.map((d) => ({ x: new Date(d.timestamp), y: d.min })),
+				data: data.map((d) => ({ x: new Date(d.timestamp).getTime(), y: d.min })),
 				borderColor: hexToRgba(color, 0.4),
 				backgroundColor: 'transparent',
 				borderWidth: 1,
@@ -96,7 +96,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 			// Single line
 			datasets.push({
 				label,
-				data: data.map((d) => ({ x: new Date(d.timestamp), y: d.value })),
+				data: data.map((d) => ({ x: new Date(d.timestamp).getTime(), y: d.value })),
 				borderColor: color,
 				backgroundColor: hexToRgba(color, fillOpacity),
 				borderWidth: 2,
@@ -137,7 +137,8 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 		if (!ctx) return;
 
 		const datasets = getDatasets();
-		chart = new Chart(ctx, {
+		// Chart.js typings are strict about dataset generics; cast to any here to avoid complex generic plumbing
+		chart = new Chart(ctx as any, {
 			type: 'line',
 			data: {
 				datasets
@@ -153,7 +154,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 						mode: 'index',
 						intersect: false,
 						callbacks: {
-							label: function (context) {
+							label: function (context: any) {
 								let label = context.dataset.label || '';
 								if (label) {
 									label += ': ';
@@ -180,7 +181,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 							display: false
 						},
 						// Optionally set min/max if provided (to control time window)
-						...(timeRange ? { min: timeRange.min ? new Date(timeRange.min) : undefined, max: timeRange.max ? new Date(timeRange.max) : undefined } : {})
+						...(timeRange ? { min: timeRange.min ? (new Date(timeRange.min).getTime()) : undefined, max: timeRange.max ? (new Date(timeRange.max).getTime()) : undefined } : {})
 					},
 					y: {
 						beginAtZero: true,
@@ -200,7 +201,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 					intersect: false
 				}
 			}
-		});
+		} as any);
 	}
 
 	function updateChart() {
@@ -208,13 +209,15 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 
 		const newDatasets = getDatasets();
 		chart.data.datasets = newDatasets;
-		chart.options.plugins.legend.display = newDatasets.length > 1;
+		if (chart.options && chart.options.plugins && chart.options.plugins.legend) {
+			chart.options.plugins.legend.display = newDatasets.length > 1;
+		}
 		
 		// Update timeRange before calling chart.update()
 		if (timeRange && chart.options && chart.options.scales && chart.options.scales.x) {
 			const xScale: any = chart.options.scales.x;
-			xScale.min = timeRange.min ? new Date(timeRange.min) : undefined;
-			xScale.max = timeRange.max ? new Date(timeRange.max) : undefined;
+			xScale.min = timeRange.min ? new Date(timeRange.min).getTime() : undefined;
+			xScale.max = timeRange.max ? new Date(timeRange.max).getTime() : undefined;
 		}
 		
 		chart.update();

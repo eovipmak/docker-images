@@ -90,7 +90,17 @@
 
 	function handleViewMonitor(event: CustomEvent) {
 		const monitor = event.detail;
-		goto(`/monitors/${monitor.id}`);
+		console.debug('[Monitors page] view monitor', monitor?.id);
+		if (!monitor || !monitor.id) {
+			// visible feedback for debugging
+			alert('Monitor or monitor.id missing (check console)');
+			return;
+		}
+
+		// Try SPA navigation first; fall back to full navigation if it fails
+		goto(`/monitors/${monitor.id}`).catch(() => {
+			window.location.href = `/monitors/${monitor.id}`;
+		});
 	}
 
 	async function handleEditMonitor(event: CustomEvent) {
@@ -199,8 +209,8 @@
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Monitors</h1>
-			<p class="mt-1 text-sm text-slate-500">Manage your website and service monitors.</p>
-		</div>
+			  <p class="mt-1 text-sm text-slate-500">Manage your website and service monitors.</p>
+		  </div>
 		<button
 			on:click={handleAddMonitor}
 			class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
@@ -235,7 +245,7 @@
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
 					</svg>
-				</Card>
+								  </div>
 				<input
 					type="text"
 					bind:value={searchQuery}
@@ -264,9 +274,9 @@
 					{/if}
 				</button>
 			</div>
-		</div>
+				</Card>
 
-		<!-- Content: table or grid -->
+				<!-- Content: table or grid -->
 		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
 			<div class="flex items-center justify-between">
 				<div class="text-sm text-slate-600">{filteredAndSortedMonitors.length} monitor{filteredAndSortedMonitors.length !== 1 ? 's' : ''}</div>
@@ -307,8 +317,9 @@
 				<MonitorList monitors={filteredAndSortedMonitors} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
 			</div>
 		{/if}
+		{/if}
 	{/if}
-</div>
+    </div>
 
 {#if modalLoaded}
 	<svelte:component

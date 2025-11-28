@@ -33,5 +33,4 @@
 			<button on:click={handleDelete} class="text-red-600 hover:text-red-900 text-sm">Delete</button>
 		</div>
 	</div>
-	</div>
 </Card>

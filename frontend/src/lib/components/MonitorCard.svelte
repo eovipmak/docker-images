@@ -9,6 +9,7 @@
 	const dispatch = createEventDispatcher();
 
 	function handleClick() {
+		console.debug('[MonitorCard] clicked', monitor?.id);
 		dispatch('view', monitor);
 	}
 
@@ -23,7 +24,10 @@
 	}
 </script>
 
-	<Card className="cursor-pointer flex flex-col h-full" on:click={handleClick} data-testid="monitor-card">
+	<!-- Make the entire card a link so clicking navigates to the monitor detail page.
+		 Keep the existing dispatched 'view' event for any parent component handlers. -->
+	<a data-testid="monitor-card" href={`/monitors/${monitor?.id || ''}`} class="block">
+	<Card className="cursor-pointer flex flex-col h-full" on:click={handleClick}>
 	<div class="flex items-start justify-between">
 		<div class="flex items-center gap-3">
 			<div class="p-2.5 bg-slate-100 rounded-lg text-slate-500">
@@ -72,4 +76,5 @@
 			</svg>
 		</button>
 	</div>
-</Card>
+	</Card>
+	</a>

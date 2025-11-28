@@ -7,6 +7,7 @@
   const dispatch = createEventDispatcher();
 
   function handleView(monitor: any) {
+    console.debug('[MonitorList] dispatch view', monitor?.id);
     dispatch('view', monitor);
   }
   function handleEdit(monitor: any) {

@@ -56,4 +56,11 @@ test('Monitors grid view renders with cards', async ({ request, page }) => {
 
   await expect(page.locator('div.grid')).toHaveScreenshot('monitors-grid.png');
 
+  // Clicking the first monitor should navigate to its details page
+  const firstMonitorCard = page.locator('[data-testid="monitor-card"]').first();
+  await firstMonitorCard.click();
+  // Wait for SPA navigation to route to /monitors/:id
+  await page.waitForURL(/.*\/monitors\/.+/);
+  await expect(page).toHaveURL(/.*\/monitors\/.+/);
+
 });

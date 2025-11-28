@@ -175,6 +175,7 @@
 </script>
 
 {#if isOpen}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div
 		class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
 		on:click={handleBackdropClick}

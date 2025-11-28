@@ -1,12 +1,4 @@
 <script lang="ts">
-	export let title: string;
-	export let value: string | number;
-	export let valueColor: string = 'text-slate-900';
-	export let bgColor: string = 'bg-white';
-    export let icon: string = ''; // Optional SVG path
-</script>
-
-<script lang="ts">
     import Card from './Card.svelte';
     export let title: string;
     export let value: string | number;

@@ -336,7 +336,7 @@
 		goto('/monitors');
 	}
 
-	function getResponseTimeSeriesFromTimes(times: number[], period: string) {
+	function getResponseTimeSeriesFromTimes(times: number[], period: '1h' | '6h' | '12h' | '24h' | '1w') {
 		if (times.length === 0) return [];
 		const now = new Date();
 		const cutoff = getCutoffForPeriod(period);
@@ -371,8 +371,24 @@
 					}));
 				return rawData;
 			}
-			case '6h':
-			case '12h':
+			case '6h': {
+				// For 6h, use a larger window size for smoother chart
+				const start = getCutoffForPeriod('6h');
+				const end = new Date();
+				const totalSeconds = (end.getTime() - start.getTime()) / 1000;
+				const windowSizeSeconds = Math.max(120, Math.ceil(totalSeconds / 200)); // Aim for ~200 points for smoother display
+				const buckets = bucketChecks(checks, start, end, windowSizeSeconds);
+				return buckets;
+			}
+			case '12h': {
+				// For 12h, use a larger window size for smoother chart
+				const start = getCutoffForPeriod('12h');
+				const end = new Date();
+				const totalSeconds = (end.getTime() - start.getTime()) / 1000;
+				const windowSizeSeconds = Math.max(180, Math.ceil(totalSeconds / 200)); // Aim for ~200 points for smoother display
+				const buckets = bucketChecks(checks, start, end, windowSizeSeconds);
+				return buckets;
+			}
 			case '24h':
 			case '1w': {
 				// Apply aggregation for larger time frames
