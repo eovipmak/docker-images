@@ -101,10 +101,10 @@
 	<canvas bind:this={canvas}></canvas>
 	<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
 		<div class="text-center">
-			<div class="text-2xl font-bold text-gray-900">
+			<div class="text-2xl font-extrabold text-gray-900 dark:text-blue-400 drop-shadow">
 				{isNaN(percentage) || percentage === undefined ? '0.0' : percentage.toFixed(1)}%
 			</div>
-			<div class="text-sm text-gray-500">{label}</div>
+			<div class="text-sm font-semibold text-gray-500 dark:text-blue-300 drop-shadow">{label}</div>
 		</div>
 	</div>
 </div>

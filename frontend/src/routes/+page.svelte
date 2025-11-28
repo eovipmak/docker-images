@@ -24,7 +24,7 @@
 	<title>V-Insight - Modern Monitoring for Modern Teams</title>
 </svelte:head>
 
-<div class="bg-white">
+<div class="bg-white dark:bg-slate-950">
     <!-- Header -->
     <header class="absolute inset-x-0 top-0 z-50">
         <nav class="flex items-center justify-between p-6 lg:px-8" aria-label="Global">
@@ -35,11 +35,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                         </svg>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">V-Insight</span>
+                    <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">V-Insight</span>
                 </a>
             </div>
             <div class="flex flex-1 justify-end gap-x-6">
-                <a href="/login" class="text-sm font-semibold leading-6 text-slate-900 hover:text-blue-600 transition-colors">Log in</a>
+                <a href="/login" class="text-sm font-semibold leading-6 text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Log in</a>
                 <a href="/register" class="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors">Sign up</a>
             </div>
         </nav>
@@ -55,15 +55,15 @@
             <div class="py-24 sm:py-32 lg:pb-40">
                 <div class="mx-auto max-w-7xl px-6 lg:px-8">
                     <div class="mx-auto max-w-2xl text-center">
-                        <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-6xl">
+                        <h1 class="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-6xl">
                             Monitor your infrastructure with confidence
                         </h1>
-                        <p class="mt-6 text-lg leading-8 text-slate-600">
+                        <p class="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">
                             V-Insight provides real-time monitoring, instant alerts, and detailed analytics for your websites and services. Simple, reliable, and built for developers.
                         </p>
                         <div class="mt-10 flex items-center justify-center gap-x-6">
                             <a href="/register" class="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-all hover:scale-105">Get started</a>
-                            <a href="/login" class="text-sm font-semibold leading-6 text-slate-900 flex items-center gap-1 hover:gap-2 transition-all">
+                            <a href="/login" class="text-sm font-semibold leading-6 text-slate-900 dark:text-white flex items-center gap-1 hover:gap-2 transition-all">
                                 Live demo <span aria-hidden="true">→</span>
                             </a>
                         </div>
@@ -71,14 +71,14 @@
                     
                     <!-- Status Badge -->
                     <div class="mt-16 flex justify-center">
-                        <div class="rounded-full px-4 py-1 text-sm leading-6 text-slate-500 ring-1 ring-slate-900/10 hover:ring-slate-900/20 bg-white/50 backdrop-blur-sm">
+                        <div class="rounded-full px-4 py-1 text-sm leading-6 text-slate-500 dark:text-slate-400 ring-1 ring-slate-900/10 dark:ring-white/10 hover:ring-slate-900/20 dark:hover:ring-white/20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
                             System Status: 
-                            <span class={apiStatus === 'Connected' ? 'font-semibold text-emerald-600' : 'font-semibold text-rose-600'}>
+                            <span class={apiStatus === 'Connected' ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'font-semibold text-rose-600 dark:text-rose-400'}>
                                 {apiStatus}
                             </span>
                             {#if apiVersion}
-                                <span class="mx-2 text-slate-300">|</span>
-                                <span class="text-slate-400">v{apiVersion}</span>
+                                <span class="mx-2 text-slate-300 dark:text-slate-600">|</span>
+                                <span class="text-slate-400 dark:text-slate-500">v{apiVersion}</span>
                             {/if}
                         </div>
                     </div>

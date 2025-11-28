@@ -141,34 +141,34 @@
 			<!-- This element is to trick the browser into centering the modal contents. -->
 			<span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-			<div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-200">
-				<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+			<div class="inline-block align-bottom bg-white dark:bg-slate-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full border border-slate-200 dark:border-slate-700">
+				<div class="bg-white dark:bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
 					<div class="sm:flex sm:items-start">
-						<div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+						<div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 sm:mx-0 sm:h-10 sm:w-10">
                             {#if isEditMode}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600 dark:text-blue-400">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                                 </svg>
                             {:else}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600 dark:text-blue-400">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                 </svg>
                             {/if}
 						</div>
 						<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-							<h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">
+							<h3 class="text-lg leading-6 font-medium text-slate-900 dark:text-gray-100" id="modal-title">
 								{isEditMode ? 'Edit Monitor' : 'Add New Monitor'}
 							</h3>
 							<div class="mt-4 space-y-4">
 								<!-- Name -->
 								<div>
-									<label for="name" class="block text-sm font-medium text-slate-700">Name</label>
+									<label for="name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
 									<input
 										type="text"
 										name="name"
 										id="name"
 										bind:value={formData.name}
-										class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 										placeholder="My Website"
 									/>
 									{#if errors.name}
@@ -178,13 +178,13 @@
 
 								<!-- URL -->
 								<div>
-									<label for="url" class="block text-sm font-medium text-slate-700">URL</label>
+									<label for="url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">URL</label>
 									<input
 										type="text"
 										name="url"
 										id="url"
 										bind:value={formData.url}
-										class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 										placeholder="https://example.com"
 									/>
 									{#if errors.url}
@@ -195,7 +195,7 @@
 								<div class="grid grid-cols-2 gap-4">
 									<!-- Check Interval -->
 									<div>
-										<label for="check_interval" class="block text-sm font-medium text-slate-700">Interval (sec)</label>
+										<label for="check_interval" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Interval (sec)</label>
 										<input
 											type="number"
 											name="check_interval"
@@ -211,7 +211,7 @@
 
 									<!-- Timeout -->
 									<div>
-										<label for="timeout" class="block text-sm font-medium text-slate-700">Timeout (sec)</label>
+										<label for="timeout" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Timeout (sec)</label>
 										<input
 											type="number"
 											name="timeout"
@@ -219,7 +219,7 @@
 											bind:value={formData.timeout}
 											min="5"
 											max="120"
-											class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+											class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 										/>
 										{#if errors.timeout}
 											<p class="mt-1 text-sm text-red-600">{errors.timeout}</p>
@@ -240,21 +240,21 @@
 											/>
 										</div>
 										<div class="ml-3 text-sm">
-											<label for="check_ssl" class="font-medium text-slate-700">Check SSL Certificate</label>
-											<p class="text-slate-500">Monitor SSL certificate validity and expiration.</p>
+											<label for="check_ssl" class="font-medium text-slate-700 dark:text-slate-300">Check SSL Certificate</label>
+											<p class="text-slate-500 dark:text-slate-400">Monitor SSL certificate validity and expiration.</p>
 										</div>
 									</div>
 
 									{#if formData.check_ssl}
 										<div>
-											<label for="ssl_alert_days" class="block text-sm font-medium text-slate-700">Alert before expiry (days)</label>
+											<label for="ssl_alert_days" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Alert before expiry (days)</label>
 											<input
 												type="number"
 												name="ssl_alert_days"
 												id="ssl_alert_days"
 												bind:value={formData.ssl_alert_days}
 												min="1"
-												class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+												class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 											/>
 											{#if errors.ssl_alert_days}
 												<p class="mt-1 text-sm text-red-600">{errors.ssl_alert_days}</p>
@@ -275,15 +275,15 @@
                                         />
                                     </div>
                                     <div class="ml-3 text-sm">
-                                        <label for="enabled" class="font-medium text-slate-700">Enabled</label>
-                                        <p class="text-slate-500">Pause monitoring without deleting the configuration.</p>
+                                        <label for="enabled" class="font-medium text-slate-700 dark:text-slate-300">Enabled</label>
+                                        <p class="text-slate-500 dark:text-slate-400">Pause monitoring without deleting the configuration.</p>
                                     </div>
                                 </div>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-200">
+				<div class="bg-slate-50 dark:bg-slate-950/40 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-slate-200 dark:border-slate-700">
 					<button
 						type="button"
 						class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -294,7 +294,7 @@
 					</button>
 					<button
 						type="button"
-						class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+						class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-slate-900/50 text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
 						on:click={handleClose}
 						disabled={isSubmitting}
 					>

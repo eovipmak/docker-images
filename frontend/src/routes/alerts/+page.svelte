@@ -236,8 +236,8 @@
 <div class="px-4 sm:px-6 lg:px-8 py-8">
     <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto">
-            <h1 class="text-2xl font-semibold leading-6 text-slate-900">Alerts</h1>
-            <p class="mt-2 text-sm text-slate-600">Manage alert rules and notification channels to stay informed about your infrastructure.</p>
+            <h1 class="text-2xl font-semibold leading-6 text-slate-900 dark:text-slate-100">Alerts</h1>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Manage alert rules and notification channels to stay informed about your infrastructure.</p>
         </div>
     </div>
 
@@ -301,14 +301,14 @@
                 </button>
             </div>
 
-            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg overflow-hidden">
+            <div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden">
                 {#if alertRules.length === 0}
                     <div class="text-center py-12 px-4">
                         <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
-                        <h3 class="mt-2 text-sm font-semibold text-slate-900">No alert rules</h3>
-                        <p class="mt-1 text-sm text-slate-500">Get started by creating a new alert rule.</p>
+                        <h3 class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">No alert rules</h3>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Get started by creating a new alert rule.</p>
                         <div class="mt-6">
                             <button
                                 on:click={handleCreateRule}
@@ -338,7 +338,7 @@
         <!-- Alert Channels Tab -->
         <div class="mt-6">
             <div class="flex justify-between items-center mb-4">
-                <p class="text-sm text-slate-600">
+                <p class="text-sm text-slate-600 dark:text-slate-400">
                     {alertChannels.length} channel{alertChannels.length !== 1 ? 's' : ''} configured
                 </p>
                 <button
@@ -352,14 +352,14 @@
                 </button>
             </div>
 
-            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg overflow-hidden">
+            <div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden">
                 {#if alertChannels.length === 0}
                     <div class="text-center py-12 px-4">
                         <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
-                        <h3 class="mt-2 text-sm font-semibold text-slate-900">No alert channels</h3>
-                        <p class="mt-1 text-sm text-slate-500">Get started by creating a new notification channel.</p>
+                        <h3 class="mt-2 text-sm font-semibold text-slate-900 dark:text-white">No alert channels</h3>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Get started by creating a new notification channel.</p>
                         <div class="mt-6">
                             <button
                                 on:click={handleCreateChannel}
@@ -374,28 +374,28 @@
                     </div>
                 {:else}
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
+                        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                            <thead class="bg-slate-50 dark:bg-slate-900/50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Configuration</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Configuration</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                                     <th scope="col" class="relative px-6 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-slate-200">
+                            <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                                 {#each alertChannels as channel (channel.id)}
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{channel.name}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                            <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-600/20">
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{channel.name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                                            <span class="inline-flex items-center rounded-md bg-slate-50 dark:bg-slate-700/50 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 ring-1 ring-inset ring-slate-600/20 dark:ring-slate-500/30">
                                                 {getChannelTypeLabel(channel.type)}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-slate-500">
+                                        <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                                             <div class="truncate max-w-xs">
                                                 {#if channel.type === 'webhook'}
                                                     {channel.config.url || 'N/A'}
@@ -411,7 +411,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <button
                                                 on:click={() => handleToggleChannelEnabled(channel)}
-                                                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {channel.enabled ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20 hover:bg-green-100' : 'bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-500/10 hover:bg-slate-100'}"
+                                                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {channel.enabled ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20 dark:ring-green-500/30 hover:bg-green-100 dark:hover:bg-green-900/50' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 ring-1 ring-inset ring-slate-500/10 dark:ring-slate-500/30 hover:bg-slate-100 dark:hover:bg-slate-700/70'}"
                                             >
                                                 {channel.enabled ? 'Enabled' : 'Disabled'}
                                             </button>
@@ -420,19 +420,19 @@
                                             <div class="flex justify-end gap-3">
                                                 <button
                                                     on:click={() => handleTestChannel(channel)}
-                                                    class="text-purple-600 hover:text-purple-900 transition-colors"
+                                                    class="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                                                 >
                                                     Test
                                                 </button>
                                                 <button
                                                     on:click={() => handleEditChannel(channel)}
-                                                    class="text-blue-600 hover:text-blue-900 transition-colors"
+                                                    class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
                                                 >
                                                     Edit
                                                 </button>
                                                 <button
                                                     on:click={() => handleDeleteChannel(channel)}
-                                                    class="text-red-600 hover:text-red-900 transition-colors"
+                                                    class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition-colors"
                                                 >
                                                     Delete
                                                 </button>

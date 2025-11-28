@@ -138,6 +138,8 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 
 		const datasets = getDatasets();
 		// Chart.js typings are strict about dataset generics; cast to any here to avoid complex generic plumbing
+		// Detect dark mode
+		const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 		chart = new Chart(ctx as any, {
 			type: 'line',
 			data: {
@@ -179,6 +181,13 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 						},
 						grid: {
 							display: false
+						},
+						ticks: {
+							color: isDark ? color : '#334155', // Use main chart color for darkmode ticks
+							font: {
+								weight: '600',
+								size: 13
+							}
 						},
 						// Optionally set min/max if provided (to control time window)
 						...(timeRange ? { min: timeRange.min ? (new Date(timeRange.min).getTime()) : undefined, max: timeRange.max ? (new Date(timeRange.max).getTime()) : undefined } : {})

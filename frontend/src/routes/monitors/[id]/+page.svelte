@@ -489,10 +489,10 @@
 				</button>
 				<div>
 					<div class="flex items-center gap-3">
-						<h1 class="text-2xl font-bold text-slate-900">{monitor.name}</h1>
+						<h1 class="text-2xl font-bold text-slate-900 dark:text-white drop-shadow-sm">{monitor.name}</h1>
 						<MonitorStatus status={getMonitorStatus()} />
 					</div>
-					<a href={monitor.url} target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-blue-600 hover:underline text-sm mt-1 flex items-center gap-1">
+					<a href={monitor.url} target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline text-sm mt-1 flex items-center gap-1">
 						{monitor.url}
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -509,9 +509,9 @@
 		<!-- Stats Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 			<!-- Status Overview -->
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
 				<div class="flex items-center justify-between mb-2">
-					<h3 class="text-sm font-medium text-slate-500">Current Status</h3>
+					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Current Status</h3>
 					<div class="p-2 bg-slate-50 rounded-lg">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -519,14 +519,14 @@
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					<span class="text-2xl font-bold text-slate-900 capitalize">{getMonitorStatus()}</span>
+					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100 capitalize">{getMonitorStatus()}</span>
 				</div>
 			</div>
 
 			<!-- Uptime -->
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
 				<div class="flex items-center justify-between mb-2">
-					<h3 class="text-sm font-medium text-slate-500">Uptime (24h)</h3>
+					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Uptime (24h)</h3>
 					<div class="p-2 bg-slate-50 rounded-lg">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -534,14 +534,14 @@
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					<span class="text-2xl font-bold text-slate-900">{calculateUptime()}</span>
+					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100">{calculateUptime()}</span>
 				</div>
 			</div>
 
 			<!-- Response Time -->
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
 				<div class="flex items-center justify-between mb-2">
-					<h3 class="text-sm font-medium text-slate-500">Avg Response</h3>
+					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Avg Response</h3>
 					<div class="p-2 bg-slate-50 rounded-lg">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -549,14 +549,14 @@
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					<span class="text-2xl font-bold text-slate-900">{getAverageResponseTime()}</span>
+					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100">{getAverageResponseTime()}</span>
 				</div>
 			</div>
 			
 			<!-- SSL Information -->
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
 				<div class="flex items-center justify-between mb-2">
-					<h3 class="text-sm font-medium text-slate-500">SSL Status</h3>
+					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">SSL Status</h3>
 					<div class="p-2 bg-slate-50 rounded-lg">
 						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -565,36 +565,36 @@
 				</div>
 				{#if monitor.check_ssl && sslStatus}
 					<div class="flex flex-col">
-						<span class="text-2xl font-bold {sslStatus.valid ? 'text-emerald-600' : 'text-rose-600'}">
+						   <span class="text-2xl font-bold {sslStatus.valid ? 'text-emerald-600' : 'text-rose-600'} dark:text-slate-100">
 							{sslStatus.valid ? 'Valid' : 'Invalid'}
 						</span>
 						{#if sslStatus.expires_at}
-							<span class="text-xs text-slate-500 mt-1">
+							   <span class="text-xs text-slate-500 dark:text-slate-400 mt-1">
 								Expires: {new Date(sslStatus.expires_at).toLocaleDateString()}
 							</span>
 						{/if}
 					</div>
 				{:else if monitor.check_ssl}
-					<span class="text-lg font-medium text-slate-500">Checking...</span>
+					   <span class="text-lg font-medium text-slate-500 dark:text-slate-400">Checking...</span>
 				{:else}
-					<span class="text-lg font-medium text-slate-400">Disabled</span>
+					   <span class="text-lg font-medium text-slate-400 dark:text-slate-500">Disabled</span>
 				{/if}
 			</div>
 		</div>
 
 		<!-- History Charts -->
-		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
 			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-lg font-bold text-slate-900">History</h2>
-				<div class="flex bg-slate-100 rounded-lg p-1">
+				   <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">History</h2>
+				   <div class="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
 					<button
-						class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'uptime' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
+						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'uptime' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => chartType = 'uptime'}
 					>
 						Uptime
 					</button>
 					<button
-						class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'response' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
+						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'response' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => chartType = 'response'}
 					>
 						Response Time
@@ -616,7 +616,7 @@
 							></div>
 						{/each}
 					</div>
-					<div class="flex justify-between text-xs text-slate-400 mt-3 font-medium">
+					<div class="flex justify-between text-xs text-slate-400 dark:text-blue-300 mt-3 font-medium">
 						<span>24h ago</span>
 						<span>Now</span>
 					</div>
@@ -694,18 +694,18 @@
 		</div>
 
 		<!-- Uptime Chart -->
-		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
 			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-lg font-bold text-slate-900">Uptime Statistics</h2>
-				<div class="flex bg-slate-100 rounded-lg p-1">
+				   <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Uptime Statistics</h2>
+				   <div class="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
 					<button
-						class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {uptimePeriod === '7d' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
+						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {uptimePeriod === '7d' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => uptimePeriod = '7d'}
 					>
 						Last 7 Days
 					</button>
 					<button
-						class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {uptimePeriod === '30d' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
+						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {uptimePeriod === '30d' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => uptimePeriod = '30d'}
 					>
 						Last 30 Days
@@ -729,14 +729,14 @@
 			{:else if !chartsLoaded && currentUptimeData && currentUptimeData.total_checks > 0}
 				<div class="h-64 flex items-center justify-center">
 					<div class="text-center">
-						<div class="text-5xl font-bold text-slate-900 mb-2">
+						<div class="text-5xl font-extrabold text-slate-900 dark:text-blue-400 mb-2 drop-shadow">
 							{currentUptimeData.percentage.toFixed(1)}%
 						</div>
-						<div class="text-sm font-medium text-slate-500 uppercase tracking-wide">Uptime</div>
+						<div class="text-sm font-semibold text-slate-500 dark:text-blue-300 uppercase tracking-wide">Uptime</div>
 					</div>
 				</div>
 				<div class="mt-6 text-center">
-					<p class="text-sm font-medium text-slate-600">
+					<p class="text-sm font-semibold text-slate-600 dark:text-blue-300 drop-shadow">
 						{currentUptimeData.success_checks} successful / {currentUptimeData.total_checks} total checks
 					</p>
 				</div>
@@ -751,18 +751,18 @@
 		</div>
 
 		{#if checks && checks.length > 0}
-			<div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-				<div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-					<h2 class="text-base font-semibold text-slate-900">Recent Checks</h2>
-					<div class="text-xs text-slate-500">
+			<div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+				   <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+					   <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Recent Checks</h2>
+					   <div class="text-xs text-slate-500 dark:text-slate-400">
 						Last {Math.min(5, checks.length)} checks
 					</div>
 				</div>
-				<div class="overflow-x-auto">
-					<table class="min-w-full divide-y divide-slate-200">
-						<thead class="bg-slate-50">
+				   <div class="overflow-x-auto">
+					   <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+						   <thead class="bg-slate-50 dark:bg-slate-900">
 							<tr>
-								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+								   <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
 									Time
 								</th>
 								<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -779,39 +779,39 @@
 								</th>
 							</tr>
 						</thead>
-						<tbody class="bg-white">
+						   <tbody class="bg-white dark:bg-slate-800">
 							{#each checks.slice(0, 5) as check, index}
-								<tr class="transition-colors {index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-100">
-									<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+								   <tr class="transition-colors {index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-900/50'} hover:bg-slate-100 dark:hover:bg-slate-700">
+									   <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
 										<div class="flex items-center gap-2">
 											<div class="w-2 h-2 rounded-full {check.success ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
 											<span>{formatDate(check.checked_at)}</span>
 										</div>
 									</td>
-									<td class="px-4 py-3 whitespace-nowrap">
-										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {check.success ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+									   <td class="px-4 py-3 whitespace-nowrap">
+										   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {check.success ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-300'}">
 											{check.success ? 'Up' : 'Down'}
 										</span>
 									</td>
-									<td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
-										<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800">
+									   <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
+										   <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
 											{extractInt64(check.status_code, 'N/A')}
 										</span>
 									</td>
-									<td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
+									   <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
 										{#if isValidSqlNull(check.response_time_ms)}
-											<span class="text-slate-700">{extractInt64(check.response_time_ms, 0)}ms</span>
+											   <span class="text-slate-700 dark:text-slate-300">{extractInt64(check.response_time_ms, 0)}ms</span>
 										{:else}
-											<span class="text-slate-400">N/A</span>
+											   <span class="text-slate-400 dark:text-slate-500">N/A</span>
 										{/if}
 									</td>
-									<td class="px-4 py-3 text-sm max-w-xs truncate">
+									   <td class="px-4 py-3 text-sm max-w-xs truncate">
 										{#if extractString(check.error_message, '')}
-											<span class="text-rose-600" title={extractString(check.error_message, '')}>
+											   <span class="text-rose-600 dark:text-rose-400" title={extractString(check.error_message, '')}>
 												{extractString(check.error_message, '').length > 30 ? extractString(check.error_message, '').substring(0, 30) + '...' : extractString(check.error_message, '')}
 											</span>
 										{:else}
-											<span class="text-slate-400">-</span>
+											   <span class="text-slate-400 dark:text-slate-500">-</span>
 										{/if}
 									</td>
 								</tr>
@@ -819,8 +819,8 @@
 						</tbody>
 					</table>
 				</div>
-				<div class="px-4 py-3 bg-slate-50 border-t border-slate-200">
-					<div class="flex items-center justify-between text-xs text-slate-600">
+				   <div class="px-4 py-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+					   <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
 						<span>
 							{checks.slice(0, 5).filter(c => c.success).length} successful, {checks.slice(0, 5).filter(c => !c.success).length} failed
 						</span>

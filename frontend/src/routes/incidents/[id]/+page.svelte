@@ -160,12 +160,12 @@
 		</div>
 	{:else if incident}
 		<!-- Header -->
-		<div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg overflow-hidden mb-6">
+		<div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden mb-6">
 			<div class="px-4 py-5 sm:p-6">
 				<div class="flex items-start justify-between mb-6">
 					<div>
-						<h1 class="text-2xl font-bold text-slate-900">Incident Details</h1>
-						<p class="mt-1 text-sm text-slate-500">ID: {incident.id}</p>
+						<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Incident Details</h1>
+						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">ID: {incident.id}</p>
 					</div>
 					<IncidentBadge status={incident.status} severity={incident.severity || 'warning'} />
 				</div>
@@ -173,44 +173,44 @@
 				<!-- Incident Info Grid -->
 				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					<div>
-						<h3 class="text-sm font-medium text-slate-500 mb-1">Monitor</h3>
-						<p class="text-base font-medium text-slate-900">{incident.monitor_name}</p>
-						<p class="text-sm text-slate-500 truncate">{incident.monitor_url}</p>
+						<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Monitor</h3>
+						<p class="text-base font-medium text-slate-900 dark:text-white">{incident.monitor_name}</p>
+						<p class="text-sm text-slate-500 dark:text-slate-400 truncate">{incident.monitor_url}</p>
 					</div>
 
 					<div>
-						<h3 class="text-sm font-medium text-slate-500 mb-1">Alert Rule</h3>
-						<p class="text-base text-slate-900">{incident.alert_rule_name || 'N/A'}</p>
+						<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Alert Rule</h3>
+						<p class="text-base text-slate-900 dark:text-white">{incident.alert_rule_name || 'N/A'}</p>
 					</div>
 
 					<div>
-						<h3 class="text-sm font-medium text-slate-500 mb-1">Started At</h3>
-						<p class="text-base text-slate-900">{formatDate(incident.started_at)}</p>
+						<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Started At</h3>
+						<p class="text-base text-slate-900 dark:text-white">{formatDate(incident.started_at)}</p>
 					</div>
 
 					<div>
-						<h3 class="text-sm font-medium text-slate-500 mb-1">Resolved At</h3>
-						<p class="text-base text-slate-900">
+						<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Resolved At</h3>
+						<p class="text-base text-slate-900 dark:text-white">
 							{incident.resolved_at && incident.resolved_at.Valid ? formatDate(incident.resolved_at.Time) : 'Ongoing'}
 						</p>
 					</div>
 
 					<div>
-						<h3 class="text-sm font-medium text-slate-500 mb-1">Duration</h3>
-						<p class="text-base text-slate-900">{formatDuration(incident.duration)}</p>
+						<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Duration</h3>
+						<p class="text-base text-slate-900 dark:text-white">{formatDuration(incident.duration)}</p>
 					</div>
 
 					{#if incident.trigger_value}
 						<div>
-							<h3 class="text-sm font-medium text-slate-500 mb-1">Trigger Value</h3>
-							<p class="text-base text-slate-900">{incident.trigger_value}</p>
+							<h3 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Trigger Value</h3>
+							<p class="text-base text-slate-900 dark:text-white">{incident.trigger_value}</p>
 						</div>
 					{/if}
 				</div>
 
 				<!-- Manual resolve button -->
 				{#if incident.status === 'open'}
-					<div class="mt-8 pt-6 border-t border-slate-100">
+					<div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
 						<button
 							on:click={handleResolve}
 							disabled={isResolving}
@@ -240,28 +240,28 @@
 		</div>
 
 		<!-- Recent Monitor Checks -->
-		<div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg overflow-hidden">
+		<div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden">
 			<div class="px-4 py-5 sm:p-6">
-				<h3 class="text-base font-semibold leading-6 text-slate-900 mb-4">Recent Monitor Checks</h3>
+				<h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-white mb-4">Recent Monitor Checks</h3>
 				
 				{#if monitorChecks.length === 0}
-					<p class="text-sm text-slate-500">No recent checks available</p>
+					<p class="text-sm text-slate-500 dark:text-slate-400">No recent checks available</p>
 				{:else}
 					<div class="overflow-x-auto">
-						<table class="min-w-full divide-y divide-slate-200">
-							<thead class="bg-slate-50">
+						<table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+							<thead class="bg-slate-50 dark:bg-slate-900">
 								<tr>
-									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
-									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Response Time</th>
-									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status Code</th>
-									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Error</th>
+									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Time</th>
+									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Response Time</th>
+									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status Code</th>
+									<th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Error</th>
 								</tr>
 							</thead>
-							<tbody class="bg-white divide-y divide-slate-200">
+							<tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
 								{#each monitorChecks as check}
-									<tr class="hover:bg-slate-50 transition-colors">
-										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900">
+									<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900 dark:text-white">
 											{formatDate(check.checked_at)}
 										</td>
 										<td class="px-4 py-3 whitespace-nowrap">
@@ -269,13 +269,13 @@
 												{check.success ? 'Success' : 'Failed'}
 											</span>
 										</td>
-										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
 											{check.response_time_ms && check.response_time_ms.Valid ? `${check.response_time_ms.Int64}ms` : 'N/A'}
 										</td>
-										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">
+										<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
 											{check.status_code && check.status_code.Valid ? check.status_code.Int64 : 'N/A'}
 										</td>
-										<td class="px-4 py-3 text-sm text-slate-600 max-w-xs truncate" title={check.error_message && check.error_message.Valid ? check.error_message.String : ''}>
+										<td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate" title={check.error_message && check.error_message.Valid ? check.error_message.String : ''}>
 											{check.error_message && check.error_message.Valid ? check.error_message.String : '-'}
 										</td>
 									</tr>

@@ -2,9 +2,15 @@
 	import '../app.css';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { authStore } from '$lib/stores/auth';
+	import { themeStore } from '$lib/stores/theme';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
+
+	// Subscribe to theme store to keep it active
+	$: if (browser && $themeStore !== undefined) {
+		// Theme store subscription is handled in the store itself
+	}
 
 	// Public routes that don't require authentication
 	const publicRoutes = ['/', '/login', '/register'];
@@ -38,13 +44,13 @@ $: if (browser && authInitialized && $authStore.isAuthenticated && isPublicRoute
 	});
 </script>
 
-<div class="flex h-screen bg-gray-50 overflow-hidden font-sans">
+<div class="flex h-screen bg-gray-50 dark:bg-slate-950 overflow-hidden font-sans">
 	{#if $authStore.isAuthenticated || !isPublicRoute($page.url.pathname)}
 		<Sidebar />
 	{/if}
 	
 	<div class="flex-1 flex flex-col overflow-hidden relative">
-		<main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-8">
+		<main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-slate-950 p-4 md:p-8">
 			<slot />
 		</main>
 	</div>

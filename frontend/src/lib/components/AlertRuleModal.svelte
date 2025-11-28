@@ -263,15 +263,15 @@
 		aria-labelledby="modal-title"
 		tabindex="-1"
 	>
-		<div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5">
-			<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-				<h2 id="modal-title" class="text-lg font-semibold text-slate-900">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5 dark:ring-slate-700">
+			<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/40">
+				<h2 id="modal-title" class="text-lg font-semibold text-slate-900 dark:text-gray-100">
 					{isEditMode ? 'Edit Alert Rule' : 'Create Alert Rule'}
 				</h2>
 				<button
 					type="button"
 					on:click={closeModal}
-					class="text-slate-400 hover:text-slate-500 transition-colors"
+					class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
 					aria-label="Close modal"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,16 +282,16 @@
 
 			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
 				{#if errors.submit}
-					<div class="rounded-md bg-red-50 p-4 border border-red-200">
+					<div class="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
 						<div class="flex">
 							<div class="flex-shrink-0">
-								<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+								<svg class="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
 									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
 								</svg>
 							</div>
 							<div class="ml-3">
-								<h3 class="text-sm font-medium text-red-800">Error</h3>
-								<div class="mt-2 text-sm text-red-700">
+								<h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+								<div class="mt-2 text-sm text-red-700 dark:text-red-300">
 									<p>{errors.submit}</p>
 								</div>
 							</div>
@@ -301,7 +301,7 @@
 
 				<!-- Name -->
 				<div>
-					<label for="name" class="block text-sm font-medium leading-6 text-slate-900">
+					<label for="name" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 						Name <span class="text-red-500">*</span>
 					</label>
 					<div class="mt-2">
@@ -309,25 +309,25 @@
 							type="text"
 							id="name"
 							bind:value={formData.name}
-							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 							placeholder="e.g., Website Down Alert"
 						/>
 					</div>
 					{#if errors.name}
-						<p class="mt-2 text-sm text-red-600">{errors.name}</p>
+						<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
 					{/if}
 				</div>
 
 				<!-- Monitor -->
 				<div>
-					<label for="monitor_id" class="block text-sm font-medium leading-6 text-slate-900">
+					<label for="monitor_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 						Monitor
 					</label>
 					<div class="mt-2">
 						<select
 							id="monitor_id"
 							bind:value={formData.monitor_id}
-							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 						>
 							<option value="">All monitors</option>
 							{#each monitors as monitor}
@@ -335,20 +335,20 @@
 							{/each}
 						</select>
 					</div>
-					<p class="mt-2 text-sm text-slate-500">Leave empty to apply to all monitors.</p>
+					<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Leave empty to apply to all monitors.</p>
 				</div>
 
 				<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
 					<!-- Trigger Type -->
 					<div>
-						<label for="trigger_type" class="block text-sm font-medium leading-6 text-slate-900">
+						<label for="trigger_type" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 							Trigger Type <span class="text-red-500">*</span>
 						</label>
 						<div class="mt-2">
 							<select
 								id="trigger_type"
 								bind:value={formData.trigger_type}
-								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 								on:change={() => {
 									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
 								}}
@@ -359,13 +359,13 @@
 							</select>
 						</div>
 						{#if errors.trigger_type}
-							<p class="mt-2 text-sm text-red-600">{errors.trigger_type}</p>
+							<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.trigger_type}</p>
 						{/if}
 					</div>
 
 					<!-- Threshold Value -->
 					<div>
-						<label for="threshold_value" class="block text-sm font-medium leading-6 text-slate-900">
+						<label for="threshold_value" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 							{thresholdLabel} <span class="text-red-500">*</span>
 						</label>
 						<div class="mt-2">
@@ -374,24 +374,24 @@
 								id="threshold_value"
 								bind:value={formData.threshold_value}
 								min="0"
-								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 							/>
 						</div>
 						{#if errors.threshold_value}
-							<p class="mt-2 text-sm text-red-600">{errors.threshold_value}</p>
+							<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.threshold_value}</p>
 						{:else if thresholdHelp}
-							<p class="mt-2 text-sm text-slate-500">{thresholdHelp}</p>
+							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{thresholdHelp}</p>
 						{/if}
 					</div>
 				</div>
 
 				<!-- Alert Channels -->
-				<div class="border-t border-slate-200 pt-6">
-					<h3 class="text-base font-semibold leading-6 text-slate-900 mb-4">Alert Channels</h3>
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+					<h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-slate-100 mb-4">Alert Channels</h3>
 					{#if channels.length === 0}
-						<p class="text-sm text-slate-500">No alert channels configured yet.</p>
+						<p class="text-sm text-slate-500 dark:text-slate-400">No alert channels configured yet.</p>
 					{:else}
-						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 p-4 bg-slate-50">
+						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50">
 							{#each channels as channel}
 								<div class="relative flex items-start">
 									<div class="flex h-6 items-center">
@@ -400,26 +400,26 @@
 											type="checkbox"
 											checked={formData.channel_ids.includes(channel.id)}
 											on:change={() => toggleChannel(channel.id)}
-											class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+											class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
 										/>
 									</div>
 									<div class="ml-3 text-sm leading-6">
-										<label for="channel-{channel.id}" class="font-medium text-slate-900">
+										<label for="channel-{channel.id}" class="font-medium text-slate-900 dark:text-slate-200">
 											{channel.name}
-											<span class="font-normal text-slate-500">({channel.type})</span>
+											<span class="font-normal text-slate-500 dark:text-slate-400">({channel.type})</span>
 										</label>
 									</div>
 								</div>
 							{/each}
 						</div>
-						<p class="mt-2 text-sm text-slate-500">
+						<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
 							Selected: {formData.channel_ids.length} channel{formData.channel_ids.length !== 1 ? 's' : ''}
 						</p>
 					{/if}
 				</div>
 
 				<!-- Enabled -->
-				<div class="border-t border-slate-200 pt-6">
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
 					<div class="relative flex gap-x-3">
 						<div class="flex h-6 items-center">
 							<input
@@ -427,22 +427,22 @@
 								name="enabled"
 								type="checkbox"
 								bind:checked={formData.enabled}
-								class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+								class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
 							/>
 						</div>
 						<div class="text-sm leading-6">
-							<label for="enabled" class="font-medium text-slate-900">Enable this alert rule</label>
-							<p class="text-slate-500">If disabled, this rule will not trigger any alerts.</p>
+							<label for="enabled" class="font-medium text-slate-900 dark:text-slate-200">Enable this alert rule</label>
+							<p class="text-slate-500 dark:text-slate-400">If disabled, this rule will not trigger any alerts.</p>
 						</div>
 					</div>
 				</div>
 
 				<!-- Actions -->
-				<div class="mt-6 flex items-center justify-end gap-x-6 border-t border-slate-200 pt-6">
+				<div class="mt-6 flex items-center justify-end gap-x-6 border-t border-slate-200 dark:border-slate-700 pt-6">
 					<button
 						type="button"
 						on:click={closeModal}
-						class="text-sm font-semibold leading-6 text-slate-900 hover:text-slate-700"
+						class="text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 hover:text-slate-700 dark:hover:text-slate-400"
 						disabled={isSubmitting}
 					>
 						Cancel

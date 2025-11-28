@@ -67,7 +67,7 @@
 	<title>Register - V-Insight</title>
 </svelte:head>
 
-<div class="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 	<div class="max-w-md w-full space-y-8">
 		<div class="text-center">
             <div class="mx-auto h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
@@ -75,15 +75,15 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                 </svg>
             </div>
-			<h2 class="mt-6 text-3xl font-bold tracking-tight text-slate-900">Create an account</h2>
-			<p class="mt-2 text-sm text-slate-600">
+			<h2 class="mt-6 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Create an account</h2>
+			<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
 				Start monitoring your domains in minutes
 			</p>
 		</div>
 
-		<div class="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-xl sm:px-10 border border-slate-100">
+		<div class="bg-white dark:bg-slate-800 py-8 px-4 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 sm:rounded-xl sm:px-10 border border-slate-100 dark:border-slate-700">
             {#if error}
-                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center">
+                <div class="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 flex-shrink-0">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                     </svg>
@@ -93,7 +93,7 @@
 
 			<form class="space-y-6" on:submit={handleSubmit}>
 				<div>
-					<label for="email" class="block text-sm font-medium text-slate-700">
+					<label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
 						Email address
 					</label>
 					<div class="mt-1">
@@ -105,14 +105,14 @@
 							required
                             bind:value={email}
                             disabled={isLoading}
-							class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+							class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
                             placeholder="you@example.com"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<label for="tenantName" class="block text-sm font-medium text-slate-700">
+					<label for="tenantName" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
 						Organization Name
 					</label>
 					<div class="mt-1">
@@ -123,14 +123,14 @@
 							required
                             bind:value={tenantName}
                             disabled={isLoading}
-							class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+							class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
                             placeholder="Acme Corp"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<label for="password" class="block text-sm font-medium text-slate-700">
+					<label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
 						Password
 					</label>
 					<div class="mt-1">
@@ -142,14 +142,14 @@
 							required
                             bind:value={password}
                             disabled={isLoading}
-							class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+							class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
                             placeholder="••••••••"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<label for="confirmPassword" class="block text-sm font-medium text-slate-700">
+					<label for="confirmPassword" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
 						Confirm Password
 					</label>
 					<div class="mt-1">
@@ -161,7 +161,7 @@
 							required
                             bind:value={confirmPassword}
                             disabled={isLoading}
-							class="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+							class="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
                             placeholder="••••••••"
 						/>
 					</div>
@@ -189,10 +189,10 @@
             <div class="mt-6">
                 <div class="relative">
                     <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-200"></div>
+                        <div class="w-full border-t border-slate-200 dark:border-slate-600"></div>
                     </div>
                     <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white text-slate-500">
+                        <span class="px-2 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                             Already have an account?
                         </span>
                     </div>

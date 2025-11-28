@@ -30,19 +30,19 @@
 	<Card className="cursor-pointer flex flex-col h-full" on:click={handleClick}>
 	<div class="flex items-start justify-between">
 		<div class="flex items-center gap-3">
-			<div class="p-2.5 bg-slate-100 rounded-lg text-slate-500">
+			<div class="p-2.5 bg-slate-100 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400">
 				<Favicon url={monitor.url} />
 			</div>
 			<div class="min-w-0">
-				<h3 class="text-sm font-semibold text-slate-900 truncate">{monitor.name}</h3>
-				<p class="text-xs text-slate-500 truncate">{monitor.url}</p>
+				<h3 class="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">{monitor.name}</h3>
+				<p class="text-xs text-slate-500 dark:text-slate-400 truncate">{monitor.url}</p>
 			</div>
 		</div>
 
 		<MonitorStatus status={(monitor.status || (monitor.enabled ? 'up' : 'unknown'))} showText={false} />
 	</div>
 
-	<div class="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+	<div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
 		<div>
 			{#if monitor.last_checked_at}
 				<span>Checked {new Date(monitor.last_checked_at).toLocaleString()}</span>
@@ -52,7 +52,7 @@
 		</div>
 		<div class="flex gap-2 items-center">
 			{#if monitor.response_time_ms}
-				<span class="text-slate-400">{Math.round(monitor.response_time_ms)}ms</span>
+				<span class="text-slate-400 dark:text-slate-500">{Math.round(monitor.response_time_ms)}ms</span>
 			{/if}
 		</div>
 	</div>

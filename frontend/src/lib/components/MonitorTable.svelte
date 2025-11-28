@@ -95,10 +95,10 @@
 
 <div class="flex flex-col gap-6">
 	<!-- Toolbar -->
-	<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+	<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 		<div class="relative max-w-md w-full">
 			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400 dark:text-slate-500">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
 				</svg>
 			</div>
@@ -106,20 +106,20 @@
 				type="text"
 				bind:value={searchQuery}
 				placeholder="Search monitors..."
-				class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+				class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-900/50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-gray-100"
 			/>
 		</div>
 		
 		<div class="flex items-center gap-3">
 			<select
 				bind:value={sortField}
-				class="block w-full rounded-lg border-slate-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+				class="block w-full rounded-lg border border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-900/50 text-slate-900 dark:text-gray-100"
 			>
 				<option value="name">Name</option>
 				<option value="status">Status</option>
 			</select>
 			<button
-				class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+				class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
 				on:click={() => sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'}
 				title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
 			>
@@ -138,13 +138,13 @@
 
 	<!-- Grid -->
 	{#if filteredAndSortedMonitors.length === 0}
-		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
 			<div class="flex flex-col items-center justify-center">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 mb-4">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
 				</svg>
-				<h3 class="text-lg font-medium text-slate-900">No monitors found</h3>
-				<p class="mt-1 text-slate-500">Try adjusting your search or add a new monitor.</p>
+				<h3 class="text-lg font-medium text-slate-900 dark:text-gray-100">No monitors found</h3>
+				<p class="mt-1 text-slate-500 dark:text-slate-400">Try adjusting your search or add a new monitor.</p>
 			</div>
 		</div>
 	{:else}
@@ -153,18 +153,18 @@
 				<div 
 					role="button"
 					tabindex="0"
-					class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group flex flex-col"
+					class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all cursor-pointer group flex flex-col"
 					on:click={() => handleRowClick(monitor)}
 					on:keydown={(e) => e.key === 'Enter' && handleRowClick(monitor)}
 				>
 					<div class="flex justify-between items-start mb-4">
 						<div class="flex items-center gap-3">
-							<div class="p-2.5 bg-slate-100 rounded-lg text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shrink-0">
+							<div class="p-2.5 bg-slate-100 dark:bg-slate-700/70 rounded-lg text-slate-500 dark:text-slate-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 transition-colors shrink-0">
 								<Favicon url={monitor.url} />
 							</div>
 							<div>
-								<h3 class="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{monitor.name}</h3>
-								<div class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+								<h3 class="font-semibold text-slate-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{monitor.name}</h3>
+								<div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
 									<span class="truncate max-w-[150px]">{monitor.url}</span>
 								</div>
 							</div>
@@ -172,8 +172,8 @@
 						<MonitorStatus status={getMonitorStatus(monitor)} showText={false} />
 					</div>
 
-					<div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
-						<div class="text-xs text-slate-400">
+					<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+						<div class="text-xs text-slate-400 dark:text-slate-500">
 							{#if monitor.last_checked_at}
 								Checked {formatRelativeTime(monitor.last_checked_at)}
 							{:else}
@@ -182,7 +182,7 @@
 						</div>
 						<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 							<button
-								class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+								class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 rounded-md transition-colors"
 								on:click|stopPropagation={() => handleEdit(monitor)}
 								title="Edit"
 							>
@@ -191,7 +191,7 @@
 								</svg>
 							</button>
 							<button
-								class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+								class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-colors"
 								on:click|stopPropagation={() => handleDelete(monitor)}
 								title="Delete"
 							>

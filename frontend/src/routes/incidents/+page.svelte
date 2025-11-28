@@ -87,21 +87,21 @@
 <div class="px-4 sm:px-6 lg:px-8 py-8">
 	<div class="sm:flex sm:items-center">
 		<div class="sm:flex-auto">
-			<h1 class="text-2xl font-semibold leading-6 text-slate-900">Incidents</h1>
-			<p class="mt-2 text-sm text-slate-600">View and manage incidents detected by your monitors.</p>
+			<h1 class="text-2xl font-semibold leading-6 text-slate-900 dark:text-white">Incidents</h1>
+			<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">View and manage incidents detected by your monitors.</p>
 		</div>
 	</div>
 
 	<!-- Filters -->
-	<div class="mt-8 bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-lg p-6">
+	<div class="mt-8 bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg p-6">
 		<form on:submit|preventDefault={handleFilterSubmit} class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
 			<div class="sm:col-span-2">
-				<label for="status" class="block text-sm font-medium leading-6 text-slate-900">Status</label>
+				<label for="status" class="block text-sm font-medium leading-6 text-slate-900 dark:text-white">Status</label>
 				<div class="mt-2">
 					<select
 						id="status"
 						bind:value={statusFilter}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					>
 						<option value="">All Statuses</option>
 						<option value="open">Open</option>
@@ -111,12 +111,12 @@
 			</div>
 
 			<div class="sm:col-span-2">
-				<label for="monitor" class="block text-sm font-medium leading-6 text-slate-900">Monitor</label>
+				<label for="monitor" class="block text-sm font-medium leading-6 text-slate-900 dark:text-white">Monitor</label>
 				<div class="mt-2">
 					<select
 						id="monitor"
 						bind:value={monitorFilter}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					>
 						<option value="">All Monitors</option>
 						{#each monitors as monitor}
@@ -127,25 +127,25 @@
 			</div>
 
 			<div class="sm:col-span-1">
-				<label for="from-date" class="block text-sm font-medium leading-6 text-slate-900">From</label>
+				<label for="from-date" class="block text-sm font-medium leading-6 text-slate-900 dark:text-white">From</label>
 				<div class="mt-2">
 					<input
 						type="date"
 						id="from-date"
 						bind:value={fromDate}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					/>
 				</div>
 			</div>
 
 			<div class="sm:col-span-1">
-				<label for="to-date" class="block text-sm font-medium leading-6 text-slate-900">To</label>
+				<label for="to-date" class="block text-sm font-medium leading-6 text-slate-900 dark:text-white">To</label>
 				<div class="mt-2">
 					<input
 						type="date"
 						id="to-date"
 						bind:value={toDate}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
 					/>
 				</div>
 			</div>
@@ -154,7 +154,7 @@
 				<button
 					type="button"
 					on:click={handleResetFilters}
-					class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50"
+					class="rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
 				>
 					Reset
 				</button>
@@ -175,7 +175,7 @@
 				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
 			</div>
 		{:else if error}
-			<div class="rounded-md bg-red-50 p-4 border border-red-200">
+			<div class="rounded-md bg-red-50 dark:bg-red-900/30 p-4 border border-red-200 dark:border-red-800">
 				<div class="flex">
 					<div class="flex-shrink-0">
 						<svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -183,8 +183,8 @@
 						</svg>
 					</div>
 					<div class="ml-3">
-						<h3 class="text-sm font-medium text-red-800">Error loading incidents</h3>
-						<div class="mt-2 text-sm text-red-700">
+						<h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error loading incidents</h3>
+						<div class="mt-2 text-sm text-red-700 dark:text-red-300">
 							<p>{error}</p>
 						</div>
 					</div>

@@ -4,20 +4,20 @@
 
 	const statusConfig = {
 		up: {
-			color: 'text-emerald-700',
-			bg: 'bg-emerald-50 border-emerald-200',
+			color: 'text-emerald-700 dark:text-emerald-400',
+			bg: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800',
             dot: 'bg-emerald-500',
 			text: 'Operational'
 		},
 		down: {
-			color: 'text-rose-700',
-			bg: 'bg-rose-50 border-rose-200',
+			color: 'text-rose-700 dark:text-rose-400',
+			bg: 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800',
             dot: 'bg-rose-500',
 			text: 'Downtime'
 		},
 		unknown: {
-			color: 'text-slate-700',
-			bg: 'bg-slate-50 border-slate-200',
+			color: 'text-slate-700 dark:text-slate-400',
+			bg: 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
             dot: 'bg-slate-400',
 			text: 'Unknown'
 		}

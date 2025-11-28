@@ -208,8 +208,8 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
-			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Monitors</h1>
-			  <p class="mt-1 text-sm text-slate-500">Manage your website and service monitors.</p>
+			<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Monitors</h1>
+			  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage your website and service monitors.</p>
 		  </div>
 		<button
 			on:click={handleAddMonitor}
@@ -223,7 +223,7 @@
 	</div>
 
 	{#if error}
-		<div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 flex items-center">
+		<div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 flex items-center">
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
 			</svg>
@@ -232,9 +232,9 @@
 	{/if}
 
 	{#if isLoading}
-		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-4">
             {#each Array(5) as _}
-                <div class="h-12 bg-slate-100 rounded-lg animate-pulse"></div>
+                <div class="h-12 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse"></div>
             {/each}
         </div>
 	{:else}
@@ -250,16 +250,16 @@
 					type="text"
 					bind:value={searchQuery}
 					placeholder="Search monitors..."
-					class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow"
+					class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-white"
 				/>
 			</div>
 			<div class="flex items-center gap-3">
-				<select bind:value={sortField} class="block w-full rounded-lg border-slate-300 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm">
+				<select bind:value={sortField} class="block w-full rounded-lg border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
 					<option value="name">Name</option>
 					<option value="status">Status</option>
 				</select>
 				<button
-					class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+					class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
 					on:click={() => (sortDirection = sortDirection === 'asc' ? 'desc' : 'asc')}
 					title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
 				>
@@ -277,12 +277,12 @@
 				</Card>
 
 				<!-- Content: table or grid -->
-		<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
 			<div class="flex items-center justify-between">
-				<div class="text-sm text-slate-600">{filteredAndSortedMonitors.length} monitor{filteredAndSortedMonitors.length !== 1 ? 's' : ''}</div>
+				<div class="text-sm text-slate-600 dark:text-slate-400">{filteredAndSortedMonitors.length} monitor{filteredAndSortedMonitors.length !== 1 ? 's' : ''}</div>
 				<div class="flex items-center gap-2">
 					<button
-						class="inline-flex items-center px-2 py-1 rounded-md bg-slate-50 text-slate-700 hover:bg-slate-100"
+						class="inline-flex items-center px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
 						on:click={() => (useTable = !useTable)}
 						title={useTable ? 'Switch to Grid' : 'Switch to Table'}
 					>
@@ -303,13 +303,13 @@
 		{:else}
 		<!-- Grid (using MonitorList) -->
 		{#if filteredAndSortedMonitors.length === 0}
-			<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+			<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
 				<div class="flex flex-col items-center justify-center">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 mb-4">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
 					</svg>
-					<h3 class="text-lg font-medium text-slate-900">No monitors found</h3>
-					<p class="mt-1 text-slate-500">Try adjusting your search or add a new monitor.</p>
+					<h3 class="text-lg font-medium text-slate-900 dark:text-white">No monitors found</h3>
+					<p class="mt-1 text-slate-500 dark:text-slate-400">Try adjusting your search or add a new monitor.</p>
 				</div>
 			</div>
 		{:else}

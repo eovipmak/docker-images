@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { authStore } from '$lib/stores/auth';
+	import { themeStore, toggleTheme } from '$lib/stores/theme';
 
 	const authenticatedNavItems = [
 		{ 
@@ -36,10 +37,10 @@
 	}
 </script>
 
-<aside class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl">
+<aside class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-gray-100 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl border-r border-slate-200 dark:border-slate-800">
     <!-- Logo -->
-    <div class="flex items-center justify-center h-16 bg-slate-950 border-b border-slate-800">
-        <span class="text-xl font-bold tracking-wider text-blue-400">V-INSIGHT</span>
+    <div class="flex items-center justify-center h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+        <span class="text-xl font-bold tracking-wider text-blue-400 dark:text-blue-400">V-INSIGHT</span>
     </div>
 
     <!-- Navigation -->
@@ -51,10 +52,10 @@
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
                     {$page.url.pathname === item.href
                         ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'}"
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 transition-colors
-                    {$page.url.pathname === item.href ? 'text-white' : 'text-slate-400 group-hover:text-white'}">
+                    {$page.url.pathname === item.href ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white'}">
                         {@html item.icon}
                     </svg>
                     {item.label}
@@ -63,7 +64,7 @@
         {:else}
              <a
                 href="/login"
-                class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-slate-300 hover:bg-slate-800 hover:text-white"
+                class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-slate-400">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -75,10 +76,27 @@
 
     <!-- User / Logout -->
     {#if $authStore.isAuthenticated}
-        <div class="p-4 border-t border-slate-800 bg-slate-950">
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+            <!-- Theme Toggle -->
+            <button
+                on:click={toggleTheme}
+                class="flex items-center w-full px-4 py-2 mb-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
+                aria-label="Toggle theme"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3">
+                    {#if $themeStore}
+                        <!-- Moon icon for dark mode -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                    {:else}
+                        <!-- Sun icon for light mode -->
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 016 0z" />
+                    {/if}
+                </svg>
+                {$themeStore ? 'Dark Mode' : 'Light Mode'}
+            </button>
             <button
                 on:click={handleLogout}
-                class="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white transition-colors"
+                class="flex items-center w-full px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />

@@ -185,15 +185,15 @@
 		aria-labelledby="modal-title"
 		tabindex="-1"
 	>
-		<div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5">
-			<div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-				<h2 id="modal-title" class="text-lg font-semibold text-slate-900">
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5 dark:ring-slate-700">
+			<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/40">
+				<h2 id="modal-title" class="text-lg font-semibold text-slate-900 dark:text-gray-100">
 					{isEditMode ? 'Edit Alert Channel' : 'Create Alert Channel'}
 				</h2>
 				<button
 					type="button"
 					on:click={closeModal}
-					class="text-slate-400 hover:text-slate-500 transition-colors"
+					class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
 					aria-label="Close modal"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,17 +223,17 @@
 
 				<!-- Name -->
 				<div>
-					<label for="name" class="block text-sm font-medium leading-6 text-slate-900">
+					   <label for="name" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 						Name <span class="text-red-500">*</span>
 					</label>
 					<div class="mt-2">
-						<input
-							type="text"
-							id="name"
-							bind:value={formData.name}
-							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-							placeholder="e.g., DevOps Team Discord"
-						/>
+						   <input
+							   type="text"
+							   id="name"
+							   bind:value={formData.name}
+							   class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							   placeholder="e.g., DevOps Team Discord"
+						   />
 					</div>
 					{#if errors.name}
 						<p class="mt-2 text-sm text-red-600">{errors.name}</p>
@@ -242,16 +242,16 @@
 
 				<!-- Type -->
 				<div>
-					<label for="type" class="block text-sm font-medium leading-6 text-slate-900">
+					   <label for="type" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 						Channel Type <span class="text-red-500">*</span>
 					</label>
 					<div class="mt-2">
-						<select
-							id="type"
-							bind:value={formData.type}
-							on:change={handleTypeChange}
-							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-						>
+						   <select
+							   id="type"
+							   bind:value={formData.type}
+							   on:change={handleTypeChange}
+							   class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						   >
 							<option value="webhook">Webhook</option>
 							<option value="discord">Discord</option>
 							<option value="email">Email</option>
@@ -264,52 +264,52 @@
 
 				<!-- Configuration -->
 				<div class="border-t border-slate-200 pt-6">
-					<h3 class="text-base font-semibold leading-6 text-slate-900 mb-4">Configuration</h3>
+					   <h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-slate-100 mb-4">Configuration</h3>
 					
 					{#if formData.type === 'webhook'}
 						<div>
-							<label for="webhook_url" class="block text-sm font-medium leading-6 text-slate-900">
+							   <label for="webhook_url" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 								Webhook URL <span class="text-red-500">*</span>
 							</label>
 							<div class="mt-2">
-								<input
-									type="url"
-									id="webhook_url"
-									bind:value={config.url}
-									class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-									placeholder="https://api.example.com/webhook"
-								/>
+								   <input
+									   type="url"
+									   id="webhook_url"
+									   bind:value={config.url}
+									   class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+									   placeholder="https://api.example.com/webhook"
+								   />
 							</div>
 							<p class="mt-2 text-sm text-slate-500">We'll send a POST request with JSON payload to this URL.</p>
 						</div>
 					{:else if formData.type === 'discord'}
 						<div>
-							<label for="discord_url" class="block text-sm font-medium leading-6 text-slate-900">
+							   <label for="discord_url" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 								Discord Webhook URL <span class="text-red-500">*</span>
 							</label>
 							<div class="mt-2">
-								<input
-									type="url"
-									id="discord_url"
-									bind:value={config.webhook_url}
-									class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-									placeholder="https://discord.com/api/webhooks/..."
-								/>
+								   <input
+									   type="url"
+									   id="discord_url"
+									   bind:value={config.webhook_url}
+									   class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+									   placeholder="https://discord.com/api/webhooks/..."
+								   />
 							</div>
 						</div>
 					{:else if formData.type === 'email'}
 						<div>
-							<label for="email_to" class="block text-sm font-medium leading-6 text-slate-900">
+							   <label for="email_to" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
 								Email Address <span class="text-red-500">*</span>
 							</label>
 							<div class="mt-2">
-								<input
-									type="email"
-									id="email_to"
-									bind:value={config.to}
-									class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-									placeholder="alerts@example.com"
-								/>
+								   <input
+									   type="email"
+									   id="email_to"
+									   bind:value={config.to}
+									   class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+									   placeholder="alerts@example.com"
+								   />
 							</div>
 						</div>
 					{/if}
@@ -332,8 +332,8 @@
 							/>
 						</div>
 						<div class="text-sm leading-6">
-							<label for="enabled" class="font-medium text-slate-900">Enable this channel</label>
-							<p class="text-slate-500">If disabled, no notifications will be sent to this channel.</p>
+							   <label for="enabled" class="font-medium text-slate-900 dark:text-slate-200">Enable this channel</label>
+							   <p class="text-slate-500 dark:text-slate-400">If disabled, no notifications will be sent to this channel.</p>
 						</div>
 					</div>
 				</div>

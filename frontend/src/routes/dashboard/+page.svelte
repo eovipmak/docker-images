@@ -188,15 +188,15 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 		<div>
-			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
-			<p class="mt-1 text-sm text-slate-500">Overview of your monitoring status and system metrics.</p>
+			<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
+			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Overview of your monitoring status and system metrics.</p>
 		</div>
 	</div>
 
 	{#if isLoading}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {#each Array(6) as _}
-                <div class="h-32 bg-slate-100 rounded-xl animate-pulse"></div>
+                <div class="h-32 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>
             {/each}
         </div>
 	{/if}
@@ -206,7 +206,7 @@
 			<StatCard 
                 title="Total Monitors" 
                 value={stats.total_monitors} 
-                valueColor="text-slate-900" 
+                valueColor="text-slate-900 dark:text-white" 
                 icon='<path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />'
             />
 			<StatCard 
@@ -245,10 +245,10 @@
 			<!-- Open Incidents -->
 			<div class="lg:col-span-2 space-y-6">
 				<Card>
-					<div slot="header" class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-						<h2 class="text-lg font-semibold text-slate-900">Open Incidents</h2>
+					<div slot="header" class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+						<h2 class="text-lg font-semibold text-slate-900 dark:text-white">Open Incidents</h2>
 						{#if openIncidents.length > 0}
-							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200">
+							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
 								{openIncidents.length} Active
 							</span>
 						{/if}
@@ -256,18 +256,18 @@
                     
 					{#if openIncidents.length === 0}
 						<div class="p-12 text-center">
-                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-600">
+                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-600 dark:text-emerald-400">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
-                            <h3 class="text-sm font-medium text-slate-900">All systems operational</h3>
-                            <p class="mt-1 text-sm text-slate-500">No active incidents reported at this time.</p>
+                            <h3 class="text-sm font-medium text-slate-900 dark:text-white">All systems operational</h3>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">No active incidents reported at this time.</p>
                         </div>
                     {:else}
-                        <div class="divide-y divide-slate-100">
+                        <div class="divide-y divide-slate-100 dark:divide-slate-700">
                             {#each openIncidents as { incident, monitor }}
-                                <div class="p-4 sm:p-6 hover:bg-slate-50 transition-colors">
+                                <div class="p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                     <div class="flex items-start justify-between">
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-3 mb-1">
@@ -275,20 +275,20 @@
                                                     status={incident.status} 
                                                     severity={getIncidentSeverity(incident.trigger_value)} 
                                                 />
-                                                <span class="font-medium text-slate-900 truncate">{monitor.name}</span>
+                                                <span class="font-medium text-slate-900 dark:text-white truncate">{monitor.name}</span>
                                             </div>
-                                            <p class="text-sm text-slate-500 truncate mb-2">{monitor.url}</p>
+                                            <p class="text-sm text-slate-500 dark:text-slate-400 truncate mb-2">{monitor.url}</p>
                                             {#if incident.trigger_value}
-                                                <div class="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-xs text-slate-600">
+                                                <div class="inline-flex items-center px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-xs text-slate-600 dark:text-slate-300">
                                                     <span class="font-medium mr-1">Trigger:</span> {incident.trigger_value}
                                                 </div>
                                             {/if}
                                         </div>
                                         <div class="text-right ml-4 flex-shrink-0">
-                                            <p class="text-xs font-medium text-slate-500">
+                                            <p class="text-xs font-medium text-slate-500 dark:text-slate-400">
                                                 Started {formatRelativeTime(incident.started_at)}
                                             </p>
-                                            <p class="text-xs text-slate-400 mt-1">
+                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
                                                 {formatDate(incident.started_at)}
                                             </p>
                                         </div>
