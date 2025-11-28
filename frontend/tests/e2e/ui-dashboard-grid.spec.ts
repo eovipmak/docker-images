@@ -24,9 +24,9 @@ test('Dashboard monitors & alerts preview grid renders', async ({ request, page 
 
   // Create monitors via API for this user
   const monitorsToCreate = [
-    { name: 'Example 1', url: 'https://example-1.com', check_interval: 60, timeout: 10, enabled: true },
-    { name: 'Example 2', url: 'https://example-2.com', check_interval: 60, timeout: 10, enabled: true },
-    { name: 'Example 3', url: 'https://example-3.com', check_interval: 60, timeout: 10, enabled: true }
+    { name: 'Example 1', url: 'https://google.com', check_interval: 60, timeout: 10, enabled: true },
+    { name: 'Example 2', url: 'https://youtube.com', check_interval: 60, timeout: 10, enabled: true },
+    { name: 'Example 3', url: 'https://facebook.com', check_interval: 60, timeout: 10, enabled: true }
   ];
 
   for (const m of monitorsToCreate) {
