@@ -1,8 +1,8 @@
 module github.com/eovipmak/v-insight/backend
 
-go 1.24.0
+go 1.23
 
-toolchain go1.24.10
+toolchain go1.23.10
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

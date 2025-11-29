@@ -1,10 +1,10 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /build
 
 # Install build dependencies
-RUN apk add --no-cache git
+RUN apk add --no-cache git gcc musl-dev
 
 # Copy go mod files
 COPY backend/go.mod backend/go.sum* ./
@@ -16,10 +16,10 @@ RUN go mod download
 COPY backend/ ./
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/api
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o main ./cmd/api
 
 # Development stage
-FROM golang:1.24-alpine AS development
+FROM golang:1.23-alpine AS development
 
 WORKDIR /app
 
