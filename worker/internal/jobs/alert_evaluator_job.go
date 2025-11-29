@@ -169,12 +169,13 @@ func (j *AlertEvaluatorJob) getAllEnabledRules() ([]*AlertRule, error) {
 func (j *AlertEvaluatorJob) getLatestMonitorChecks(duration time.Duration) ([]*MonitorCheck, error) {
 	var checks []*MonitorCheck
 	query := `
-		SELECT DISTINCT ON (monitor_id) 
-			id, monitor_id, checked_at, status_code, response_time_ms, 
-			ssl_valid, ssl_expires_at, error_message, success
-		FROM monitor_checks
-		WHERE checked_at >= $1
-		ORDER BY monitor_id, checked_at DESC
+		SELECT DISTINCT ON (mc.monitor_id) 
+			mc.id, mc.monitor_id, m.tenant_id, mc.checked_at, mc.status_code, mc.response_time_ms, 
+			mc.ssl_valid, mc.ssl_expires_at, mc.error_message, mc.success
+		FROM monitor_checks mc
+		JOIN monitors m ON mc.monitor_id = m.id
+		WHERE mc.checked_at >= $1
+		ORDER BY mc.monitor_id, mc.checked_at DESC
 	`
 
 	cutoffTime := time.Now().Add(-duration)
@@ -192,6 +193,11 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 	incidentsResolved := 0
 
 	for _, rule := range rules {
+		// Skip rules that don't belong to the same tenant as the monitor
+		if rule.TenantID != check.TenantID {
+			continue
+		}
+
 		// Skip if rule is monitor-specific and doesn't match this check's monitor
 		if rule.MonitorID.Valid && rule.MonitorID.String != check.MonitorID {
 			continue
@@ -224,7 +230,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 					)
 				}
 				
-				// Get monitor info for tenant ID
+				// Get monitor info for tenant ID (already have it)
 				j.broadcastIncidentCreatedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name, triggerValue)
 			}
 		} else {

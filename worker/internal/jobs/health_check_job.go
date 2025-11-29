@@ -33,6 +33,7 @@ type Monitor struct {
 type MonitorCheck struct {
 	ID             string         `db:"id"`
 	MonitorID      string         `db:"monitor_id"`
+	TenantID       int            `db:"tenant_id"`
 	CheckedAt      time.Time      `db:"checked_at"`
 	StatusCode     sql.NullInt64  `db:"status_code"`
 	ResponseTimeMs sql.NullInt64  `db:"response_time_ms"`
@@ -187,6 +188,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 	// Create check record
 	check := &MonitorCheck{
 		MonitorID: monitor.ID,
+		TenantID:  monitor.TenantID,
 		CheckedAt: checkedAt,
 		Success:   result.Success,
 	}
