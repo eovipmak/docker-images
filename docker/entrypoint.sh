@@ -15,8 +15,11 @@ done
 
 echo "PostgreSQL is up - running migrations"
 
+# Change to the app directory
+cd /app
+
 # Run migrations with error handling
-if ! migrate -path=/app/migrations -database "$DATABASE_URL" up; then
+if ! migrate -path=./migrations -database "$DATABASE_URL" up; then
   echo "Migration failed"
   exit 1
 fi
