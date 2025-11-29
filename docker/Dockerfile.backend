@@ -16,7 +16,7 @@ RUN go mod download
 COPY backend/ ./
 
 # Build the application
-RUN CC=musl-gcc CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflags "-static" -w -s' -o main ./cmd/api
+RUN CC=gcc CGO_ENABLED=1 GOOS=linux go build -a -ldflags '-linkmode external -extldflags "-static" -w -s' -o main ./cmd/api
 
 # Development stage
 FROM golang:1.24-alpine AS development
