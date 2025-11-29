@@ -70,6 +70,14 @@ jobs:
           cd frontend
           npx playwright install
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Run E2E tests
         run: |
           cd frontend
@@ -99,7 +107,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GB_TOKEN }}
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
@@ -109,6 +117,8 @@ jobs:
           push: true
           target: production
           tags: ${{ env.IMAGE_NAME_BACKEND }}:${{ steps.date.outputs.date_stamp }},${{ env.IMAGE_NAME_BACKEND }}:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
 
       - name: Build and push Worker image
         uses: docker/build-push-action@v5
@@ -118,6 +128,8 @@ jobs:
           push: true
           target: production
           tags: ${{ env.IMAGE_NAME_WORKER }}:${{ steps.date.outputs.date_stamp }},${{ env.IMAGE_NAME_WORKER }}:latest
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -127,6 +139,8 @@ jobs:
           push: true
           target: production
           tags: ${{ env.IMAGE_NAME_FRONTEND }}:${{ steps.date.outputs.date_stamp }},${{ env.IMAGE_NAME_FRONTEND }}:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
       - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -137,7 +151,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd v-insight  # Replace with actual path on VPS
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose down
+            docker compose pull
+            docker compose up -d
             docker system prune -f
