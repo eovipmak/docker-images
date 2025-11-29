@@ -50,8 +50,8 @@ services:
 
   worker:
     build:
-      context: ./worker
-      dockerfile: ../docker/Dockerfile.worker
+      context: .
+      dockerfile: docker/Dockerfile.worker
       target: development
     container_name: v-insight-worker
     environment:
