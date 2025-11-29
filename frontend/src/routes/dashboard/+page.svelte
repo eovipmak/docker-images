@@ -194,15 +194,15 @@
 	</div>
 
 	{#if isLoading}
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {#each Array(6) as _}
-                <div class="h-32 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+                <div class="h-24 sm:h-32 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse"></div>
             {/each}
         </div>
 	{/if}
 	{#if !isLoading}
 		<!-- Stats Cards -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+		<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
 			<StatCard 
                 title="Total Monitors" 
                 value={stats.total_monitors} 
@@ -241,12 +241,12 @@
 			/>
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 			<!-- Open Incidents -->
 			<div class="lg:col-span-2 space-y-6">
 				<Card>
-					<div slot="header" class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-						<h2 class="text-lg font-semibold text-slate-900 dark:text-white">Open Incidents</h2>
+					<div slot="header" class="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+						<h2 class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Open Incidents</h2>
 						{#if openIncidents.length > 0}
 							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
 								{openIncidents.length} Active
@@ -268,9 +268,9 @@
                         <div class="divide-y divide-slate-100 dark:divide-slate-700">
                             {#each openIncidents as { incident, monitor }}
                                 <div class="p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                    <div class="flex items-start justify-between">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                                         <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-3 mb-1">
+                                            <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
                                                 <IncidentBadge 
                                                     status={incident.status} 
                                                     severity={getIncidentSeverity(incident.trigger_value)} 
@@ -284,11 +284,11 @@
                                                 </div>
                                             {/if}
                                         </div>
-                                        <div class="text-right ml-4 flex-shrink-0">
+                                        <div class="text-left sm:text-right flex-shrink-0">
                                             <p class="text-xs font-medium text-slate-500 dark:text-slate-400">
                                                 Started {formatRelativeTime(incident.started_at)}
                                             </p>
-                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 sm:mt-1 hidden sm:block">
                                                 {formatDate(incident.started_at)}
                                             </p>
                                         </div>

@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { authStore } from '$lib/stores/auth';
 	import { themeStore, toggleTheme } from '$lib/stores/theme';
+	import { sidebarOpen, toggleSidebar, closeSidebar } from '$lib/stores/sidebar';
 
 	const authenticatedNavItems = [
 		{ 
@@ -35,12 +36,39 @@
 		authStore.logout();
 		window.location.href = '/login';
 	}
+
+	function handleNavClick() {
+		// Close sidebar on mobile after navigation
+		closeSidebar();
+	}
 </script>
 
-<aside class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-gray-100 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl border-r border-slate-200 dark:border-slate-800">
+<!-- Mobile Overlay -->
+{#if $sidebarOpen}
+	<div 
+		class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
+		on:click={closeSidebar}
+		on:keydown={(e) => e.key === 'Escape' && closeSidebar()}
+		role="button"
+		tabindex="0"
+		aria-label="Close sidebar"
+	></div>
+{/if}
+
+<aside class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 text-slate-900 dark:text-gray-100 transition-transform duration-300 ease-in-out transform {$sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl border-r border-slate-200 dark:border-slate-800">
     <!-- Logo -->
-    <div class="flex items-center justify-center h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800">
+    <div class="flex items-center justify-between h-16 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 px-4">
         <span class="text-xl font-bold tracking-wider text-blue-400 dark:text-blue-400">V-INSIGHT</span>
+        <!-- Close button for mobile -->
+        <button
+            class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            on:click={closeSidebar}
+            aria-label="Close sidebar"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
     </div>
 
     <!-- Navigation -->
@@ -49,6 +77,7 @@
             {#each authenticatedNavItems as item}
                 <a
                     href={item.href}
+                    on:click={handleNavClick}
                     class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
                     {$page.url.pathname === item.href
                         ? 'bg-blue-600 text-white shadow-md'
@@ -64,6 +93,7 @@
         {:else}
              <a
                 href="/login"
+                on:click={handleNavClick}
                 class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-3 text-slate-400">

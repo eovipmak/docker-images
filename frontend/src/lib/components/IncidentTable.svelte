@@ -48,16 +48,45 @@
 			<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Incidents will appear here when alerts are triggered.</p>
 		</div>
 	{:else}
-		<div class="overflow-x-auto">
+		<!-- Mobile Card View -->
+		<div class="block md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+			{#each incidents as incident (incident.id)}
+				<div
+					class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+					on:click={() => handleRowClick(incident.id)}
+					on:keydown={(e) => e.key === 'Enter' && handleRowClick(incident.id)}
+					role="button"
+					tabindex="0"
+				>
+					<div class="flex items-start justify-between mb-2">
+						<div class="flex-1 min-w-0">
+							<div class="text-sm font-medium text-slate-900 dark:text-gray-100">{incident.monitor_name || 'Unknown'}</div>
+							<div class="text-xs text-slate-500 dark:text-slate-400 truncate">{incident.monitor_url || ''}</div>
+						</div>
+						<IncidentBadge status={incident.status} severity={incident.severity || 'warning'} />
+					</div>
+					<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+						<span>Rule: {incident.alert_rule_name || 'Unknown'}</span>
+						<span>Duration: {formatDuration(incident.duration)}</span>
+					</div>
+					<div class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+						Started: {formatDate(incident.started_at)}
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Desktop Table View -->
+		<div class="hidden md:block overflow-x-auto">
 			<table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
 				<thead class="bg-slate-50 dark:bg-slate-950/40">
 					<tr>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Monitor</th>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alert Rule</th>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Started At</th>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Resolved At</th>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Duration</th>
-						<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Monitor</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">Alert Rule</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Started At</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">Resolved At</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Duration</th>
+						<th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
 					</tr>
 				</thead>
 				<tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
@@ -69,25 +98,25 @@
 							tabindex="0"
 							on:keydown={(e) => e.key === 'Enter' && handleRowClick(incident.id)}
 						>
-							<td class="px-6 py-4">
+							<td class="px-4 lg:px-6 py-4">
 								<div class="text-sm font-medium text-slate-900 dark:text-gray-100">{incident.monitor_name || 'Unknown'}</div>
-								<div class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">{incident.monitor_url || ''}</div>
+								<div class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-[200px] lg:max-w-xs">{incident.monitor_url || ''}</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap">
+							<td class="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
 								<div class="text-sm text-slate-900 dark:text-gray-100">{incident.alert_rule_name || 'Unknown'}</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap">
+							<td class="px-4 lg:px-6 py-4 whitespace-nowrap">
 								<div class="text-sm text-slate-600 dark:text-slate-300">{formatDate(incident.started_at)}</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap">
+							<td class="px-4 lg:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
 								<div class="text-sm text-slate-600 dark:text-slate-300">
 									{incident.resolved_at && incident.resolved_at.Valid ? formatDate(incident.resolved_at.Time) : 'Ongoing'}
 								</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap">
+							<td class="px-4 lg:px-6 py-4 whitespace-nowrap">
 								<div class="text-sm text-slate-600 dark:text-slate-300">{formatDuration(incident.duration)}</div>
 							</td>
-							<td class="px-6 py-4 whitespace-nowrap">
+							<td class="px-4 lg:px-6 py-4 whitespace-nowrap">
 								<IncidentBadge status={incident.status} severity={incident.severity || 'warning'} />
 							</td>
 						</tr>

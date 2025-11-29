@@ -373,15 +373,69 @@
                         </div>
                     </div>
                 {:else}
-                    <div class="overflow-x-auto">
+                    <!-- Mobile Card View -->
+                    <div class="block md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+                        {#each alertChannels as channel (channel.id)}
+                            <div class="p-4">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div>
+                                        <div class="text-sm font-medium text-slate-900 dark:text-white">{channel.name}</div>
+                                        <span class="inline-flex items-center mt-1 rounded-md bg-slate-50 dark:bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                            {getChannelTypeLabel(channel.type)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        on:click={() => handleToggleChannelEnabled(channel)}
+                                        class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {channel.enabled ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400'}"
+                                    >
+                                        {channel.enabled ? 'Enabled' : 'Disabled'}
+                                    </button>
+                                </div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 truncate mb-3">
+                                    {#if channel.type === 'webhook'}
+                                        {channel.config.url || 'N/A'}
+                                    {:else if channel.type === 'discord'}
+                                        {channel.config.webhook_url || 'N/A'}
+                                    {:else if channel.type === 'email'}
+                                        {channel.config.to || 'N/A'}
+                                    {:else}
+                                        N/A
+                                    {/if}
+                                </div>
+                                <div class="flex gap-4 text-sm">
+                                    <button
+                                        on:click={() => handleTestChannel(channel)}
+                                        class="text-purple-600 dark:text-purple-400"
+                                    >
+                                        Test
+                                    </button>
+                                    <button
+                                        on:click={() => handleEditChannel(channel)}
+                                        class="text-blue-600 dark:text-blue-400"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        on:click={() => handleDeleteChannel(channel)}
+                                        class="text-red-600 dark:text-red-400"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+
+                    <!-- Desktop Table View -->
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                             <thead class="bg-slate-50 dark:bg-slate-900/50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Configuration</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="relative px-6 py-3">
+                                    <th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+                                    <th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
+                                    <th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden lg:table-cell">Configuration</th>
+                                    <th scope="col" class="px-4 lg:px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="relative px-4 lg:px-6 py-3">
                                         <span class="sr-only">Actions</span>
                                     </th>
                                 </tr>
@@ -389,13 +443,13 @@
                             <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                                 {#each alertChannels as channel (channel.id)}
                                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{channel.name}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                                        <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{channel.name}</td>
+                                        <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
                                             <span class="inline-flex items-center rounded-md bg-slate-50 dark:bg-slate-700/50 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 ring-1 ring-inset ring-slate-600/20 dark:ring-slate-500/30">
                                                 {getChannelTypeLabel(channel.type)}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                        <td class="px-4 lg:px-6 py-4 text-sm text-slate-500 dark:text-slate-400 hidden lg:table-cell">
                                             <div class="truncate max-w-xs">
                                                 {#if channel.type === 'webhook'}
                                                     {channel.config.url || 'N/A'}
@@ -408,7 +462,7 @@
                                                 {/if}
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-4 lg:px-6 py-4 whitespace-nowrap">
                                             <button
                                                 on:click={() => handleToggleChannelEnabled(channel)}
                                                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {channel.enabled ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20 dark:ring-green-500/30 hover:bg-green-100 dark:hover:bg-green-900/50' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 ring-1 ring-inset ring-slate-500/10 dark:ring-slate-500/30 hover:bg-slate-100 dark:hover:bg-slate-700/70'}"
@@ -416,8 +470,8 @@
                                                 {channel.enabled ? 'Enabled' : 'Disabled'}
                                             </button>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex justify-end gap-3">
+                                        <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div class="flex justify-end gap-2 lg:gap-3">
                                                 <button
                                                     on:click={() => handleTestChannel(channel)}
                                                     class="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 transition-colors"

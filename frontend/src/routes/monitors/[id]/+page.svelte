@@ -507,65 +507,65 @@
 		</div>
 
 		<!-- Stats Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+		<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
 			<!-- Status Overview -->
-			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
 				<div class="flex items-center justify-between mb-2">
-					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Current Status</h3>
-					<div class="p-2 bg-slate-50 rounded-lg">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					   <h3 class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Current Status</h3>
+					<div class="p-1.5 sm:p-2 bg-slate-50 rounded-lg hidden sm:block">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100 capitalize">{getMonitorStatus()}</span>
+					   <span class="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 capitalize">{getMonitorStatus()}</span>
 				</div>
 			</div>
 
 			<!-- Uptime -->
-			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
 				<div class="flex items-center justify-between mb-2">
-					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Uptime (24h)</h3>
-					<div class="p-2 bg-slate-50 rounded-lg">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					   <h3 class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Uptime (24h)</h3>
+					<div class="p-1.5 sm:p-2 bg-slate-50 rounded-lg hidden sm:block">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100">{calculateUptime()}</span>
+					   <span class="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{calculateUptime()}</span>
 				</div>
 			</div>
 
 			<!-- Response Time -->
-			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
 				<div class="flex items-center justify-between mb-2">
-					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Avg Response</h3>
-					<div class="p-2 bg-slate-50 rounded-lg">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					   <h3 class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Avg Response</h3>
+					<div class="p-1.5 sm:p-2 bg-slate-50 rounded-lg hidden sm:block">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
 						</svg>
 					</div>
 				</div>
 				<div class="flex items-baseline gap-2">
-					   <span class="text-2xl font-bold text-slate-900 dark:text-slate-100">{getAverageResponseTime()}</span>
+					   <span class="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{getAverageResponseTime()}</span>
 				</div>
 			</div>
 			
 			<!-- SSL Information -->
-			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+			   <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-5">
 				<div class="flex items-center justify-between mb-2">
-					   <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">SSL Status</h3>
-					<div class="p-2 bg-slate-50 rounded-lg">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					   <h3 class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">SSL Status</h3>
+					<div class="p-1.5 sm:p-2 bg-slate-50 rounded-lg hidden sm:block">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
 						</svg>
 					</div>
 				</div>
 				{#if monitor.check_ssl && sslStatus}
 					<div class="flex flex-col">
-						   <span class="text-2xl font-bold {sslStatus.valid ? 'text-emerald-600' : 'text-rose-600'} dark:text-slate-100">
+						   <span class="text-lg sm:text-2xl font-bold {sslStatus.valid ? 'text-emerald-600' : 'text-rose-600'} dark:text-slate-100">
 							{sslStatus.valid ? 'Valid' : 'Invalid'}
 						</span>
 						{#if sslStatus.expires_at}
@@ -575,26 +575,26 @@
 						{/if}
 					</div>
 				{:else if monitor.check_ssl}
-					   <span class="text-lg font-medium text-slate-500 dark:text-slate-400">Checking...</span>
+					   <span class="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400">Checking...</span>
 				{:else}
-					   <span class="text-lg font-medium text-slate-400 dark:text-slate-500">Disabled</span>
+					   <span class="text-base sm:text-lg font-medium text-slate-400 dark:text-slate-500">Disabled</span>
 				{/if}
 			</div>
 		</div>
 
 		<!-- History Charts -->
-		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-			<div class="flex justify-between items-center mb-6">
-				   <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">History</h2>
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+			<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+				   <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">History</h2>
 				   <div class="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
 					<button
-						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'uptime' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+						   class="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all {chartType === 'uptime' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => chartType = 'uptime'}
 					>
 						Uptime
 					</button>
 					<button
-						   class="px-3 py-1.5 text-sm font-medium rounded-md transition-all {chartType === 'response' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
+						   class="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all {chartType === 'response' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
 						on:click={() => chartType = 'response'}
 					>
 						Response Time
