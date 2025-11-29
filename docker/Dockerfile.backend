@@ -93,4 +93,4 @@ EXPOSE 8080
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Run the binary
-CMD ["./main"]
+CMD ["/app/main"]
