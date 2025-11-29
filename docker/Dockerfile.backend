@@ -37,6 +37,7 @@ RUN go install github.com/cosmtrek/air@v1.49.0 && \
 
 # Set PATH to include Go binaries
 ENV PATH="/go/bin:$PATH"
+ENV GOTOOLCHAIN=auto
 
 # Copy go mod files
 COPY backend/go.mod backend/go.sum* ./
