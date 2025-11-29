@@ -24,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: '1.24'
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -65,18 +65,16 @@ jobs:
       - name: Wait for services
         run: sleep 30
 
+      - name: Install Playwright browsers
+        run: |
+          cd frontend
+          npx playwright install
+
       - name: Cache Playwright browsers
         uses: actions/cache@v3
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright browsers
-        run: |
-          cd frontend
-          npx playwright install --with-deps
 
       - name: Run E2E tests
         run: |
