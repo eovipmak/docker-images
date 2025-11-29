@@ -37,7 +37,7 @@ jobs:
       - name: Run backend tests
         run: |
           cd backend
-          go test ./...
+          go test ./... -v -cover
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -124,7 +124,7 @@ jobs:
       - name: Build and push Worker image
         uses: docker/build-push-action@v5
         with:
-          context: ./worker
+          context: .
           file: ./docker/Dockerfile.worker
           push: true
           target: production
