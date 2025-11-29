@@ -1,34 +1,95 @@
-# Project: V-Insight
+# V-Insight Project
 
-## General Instructions
-- You are an AI coding agent working on V-Insight, a Docker-based multi-tenant monitoring SaaS with Go backend, worker, and SvelteKit frontend.
-- Prioritize multi-tenant security: every query/modification must filter by `tenant_id` from JWT context.
-- Use CORS-free proxy architecture; never add CORS middleware—proxy handles all `/api/*` requests.
-- Follow existing patterns: handlers retrieve `tenantID := c.Get("tenant_id")`; verify ownership; repos use `GetByTenantID(tenantID int)`.
-- Worker jobs process all tenants without filtering; store results in `monitor_checks` with success/error details.
-- Auto-migrations run on backend startup; use `sql.Null*` for optional fields; timestamps managed by triggers.
+This document provides a comprehensive overview of the V-Insight project, its architecture, and key development workflows.
 
-## Coding Style
-- Go: Use tabs for indentation; PascalCase for exported types/functions; camelCase for unexported; Gin for HTTP, Fiber for worker.
-- TypeScript/SvelteKit: Use 2 spaces for indentation; camelCase for variables/functions; PascalCase for types.
-- Middleware chain: AuthRequired → TenantRequired; validate access via `tenantUserRepo.HasAccess()`.
-- API proxy in `frontend/src/routes/api/[...path]/+server.ts`: strips 'host', 'connection'; uses `BACKEND_API_URL`.
-- Database: PostgreSQL 15 with JSONB; migrations in `backend/migrations/`; create with `make migrate-create`.
-- Tests: Go tests in backend/worker; TypeScript checks in frontend; Playwright E2E.
+## Project Overview
 
-## Specific Components
-- **Backend Handlers** (`backend/internal/api/handlers/`): Enforce tenant scoping; example: `if monitor.TenantID != tenantID { return forbidden }`.
-- **Worker Jobs** (`worker/internal/jobs/`): Use executor for concurrent processing; query all monitors.
-- **Frontend Proxy** (`frontend/src/routes/api/[...path]/+server.ts`): Forwards methods to backend without CORS.
-- **Migrations** (`backend/migrations/`): Up/down SQL files; auto-run on startup.
-- **Alert Flow**: Check → Eval (1m) → Incident → Notify (30s) to webhook/Discord channels.
+V-Insight is a web-based monitoring platform designed to provide real-time insights into the health and performance of web services. It consists of three main components:
 
-## Dependencies and Integration
-- Avoid new deps unless necessary; state reason if adding.
-- External integrations: Webhook POST JSON; Discord embeds; email ready.
-- Worker schedules: Health checks 30s, SSL 5m, alert eval 1m, notifications 30s.
+*   **Backend:** A Go-based REST API that handles data storage, authentication, and business logic.
+*   **Frontend:** A SvelteKit-based web interface that provides a user-friendly dashboard for managing monitors, viewing incidents, and configuring alerts.
+*   **Worker:** A Go-based background worker that performs health checks, SSL certificate monitoring, and sends notifications.
 
-## Workflows
-- Start: `cp .env.example .env; make up` (wait 30s).
-- Test: `cd backend && go test ./...`; `cd frontend && npm run check`; `cd frontend && npm run test:e2e`.
-- Debug: Use `make logs-*`; prefer breakpoints; check `docker compose ps`; limit log viewing to max 1 minute to avoid loops.
+The entire project is containerized using Docker, which simplifies development and deployment.
+
+## Architecture
+
+*   **Backend:**
+    *   **Language:** Go
+    *   **Framework:** Gin
+    *   **Database:** PostgreSQL
+    *   **Authentication:** JWT
+*   **Frontend:**
+    *   **Framework:** SvelteKit
+    *   **Language:** TypeScript
+    *   **Styling:** Tailwind CSS
+*   **Worker:**
+    *   **Language:** Go
+    *   **Job Scheduler:** robfig/cron
+
+## Building and Running
+
+The project uses a `Makefile` to streamline common development tasks.
+
+### Prerequisites
+
+*   Docker
+*   Docker Compose
+
+### Development
+
+To start all services for development, run the following command from the project root:
+
+```bash
+make up
+```
+
+This will start the backend, frontend, worker, and a PostgreSQL database in Docker containers.
+
+*   Frontend is available at `http://localhost:3000`
+*   Backend is available at `http://localhost:8080`
+*   Worker is available at `http://localhost:8081`
+
+To stop all services, run:
+
+```bash
+make down
+```
+
+### Testing
+
+The project has a suite of tests for each component.
+
+*   **Run all tests:**
+
+    ```bash
+    make test-all
+    ```
+
+*   **Run backend tests:**
+
+    ```bash
+    make test-backend
+    ```
+
+*   **Run worker tests:**
+
+    ```bash
+    make test-worker
+    ```
+
+*   **Run frontend tests:**
+
+    ```bash
+    make test-frontend
+    ```
+
+## Development Conventions
+
+*   **Multi-tenancy:** The backend enforces multi-tenant behavior. All persisted objects include a `tenant_id`.
+*   **CORS:** The frontend uses a server-side proxy to handle API requests, so there is no need to configure CORS in the backend.
+*   **Database Migrations:** Database migrations are located in the `backend/migrations` directory and are run automatically at startup. New migrations should be created using the `make migrate-create` command.
+*   **API Documentation:** The backend API is documented using Swagger. The documentation is available at `/swagger/` in the development environment.
+*   **Code Style:** Follow the existing code style and conventions in the codebase.
+*   **Commit Messages:** Follow the conventional commit format.
+*   **Pull Requests:** Create a pull request for any new features or bug fixes.
