@@ -6,6 +6,7 @@
 	import { latestMonitorChecks, connectEventStream, disconnectEventStream, type MonitorCheckEvent } from '$lib/api/events';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
+	import ResponseTimeChart from '$lib/components/charts/ResponseTimeChart.svelte';
 
 	let monitorId: string = '';
 	let monitor: any = null;
@@ -18,7 +19,6 @@
 	let error = '';
 	let uptimePeriod: '7d' | '30d' = '7d';
 	let responseTimePeriod: '1h' | '6h' | '12h' | '24h' | '1w' = '24h';
-	let chartType: 'uptime' | 'response' = 'uptime';
 
 	// Get a cutoff Date for the provided period
 	function getCutoffForPeriod(period = responseTimePeriod) {
@@ -598,112 +598,44 @@
 		<!-- History Charts -->
 		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
 			<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
-				   <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">History</h2>
-				   <div class="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-					<button
-						   class="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all {chartType === 'uptime' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
-						on:click={() => chartType = 'uptime'}
-					>
-						Uptime
-					</button>
-					<button
-						   class="px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all {chartType === 'response' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'}"
-						on:click={() => chartType = 'response'}
-					>
-						Response Time
-					</button>
-				</div>
+				   <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
 			</div>
 
-			{#if chartType === 'uptime'}
-				<!-- Uptime History Chart -->
-				{#if checks && checks.length > 0}
-					<div class="flex items-end gap-1 h-24">
-						{#each checks.slice(0, 48).reverse() as check}
-							<div
-								class="flex-1 rounded-sm transition-all hover:opacity-80"
-								class:bg-emerald-500={check.success}
-								class:bg-rose-500={!check.success}
-								style="height: {check.success ? '100%' : '20%'}"
-								title="{formatDate(check.checked_at)} - {check.success ? 'Up' : 'Down'}"
-							></div>
-						{/each}
-					</div>
-					<div class="flex justify-between text-xs text-slate-400 dark:text-blue-300 mt-3 font-medium">
-						<span>24h ago</span>
-						<span>Now</span>
-					</div>
-				{:else}
-                    
-					<div class="flex flex-col items-center justify-center h-32 text-slate-400">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-						</svg>
-						<p>No check history available</p>
-					</div>
-				{/if}
-			{:else}
-				<!-- Response Time Chart -->
-				<div class="mb-6 flex justify-end">
-					<div class="flex bg-slate-100 rounded-lg p-1 w-fit">
-						<button
-							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '1h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => { responseTimePeriod = '1h'; }}
-						>
-							1h
-						</button>
-						<button
-							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '6h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => { responseTimePeriod = '6h'; }}
-						>
-							6h
-						</button>
-						<button
-							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '12h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => { responseTimePeriod = '12h'; }}
-						>
-							12h
-						</button>
-						<button
-							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '24h' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => { responseTimePeriod = '24h'; }}
-						>
-							24h
-						</button>
-						<button
-							class="px-3 py-1 text-xs font-medium rounded-md transition-all {responseTimePeriod === '1w' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}"
-							on:click={() => { responseTimePeriod = '1w'; }}
-						>
-							1w
-						</button>
-					</div>
+			<!-- Uptime History Chart -->
+			{#if checks && checks.length > 0}
+				<div class="flex items-end gap-1 h-24">
+					{#each checks.slice(0, 48).reverse() as check}
+						<div
+							class="flex-1 rounded-sm transition-all hover:opacity-80"
+							class:bg-emerald-500={check.success}
+							class:bg-rose-500={!check.success}
+							style="height: {check.success ? '100%' : '20%'}"
+							title="{formatDate(check.checked_at)} - {check.success ? 'Up' : 'Down'}"
+						></div>
+					{/each}
 				</div>
-				{#if chartsLoaded && LineChart && responseTimeSeries && hasResponseTimeSeries}
-                    
-					{#key responseTimePeriod}
-					<div class="h-64">
-						<svelte:component 
-							this={LineChart}
-							data={responseTimeSeries} 
-							label="Response Time" 
-							color="#3B82F6"
-							yAxisLabel="Response Time (ms)"
-							timeRange={currentTimeRange}
-							timeUnit={currentTimeRange?.unit}
-							suggestedMax={Math.ceil(Math.max(p95Time * 1.25, maxTime * 1.05))}
-							spanGapsProp={false}
-						/>
-					</div>
-					{/key}
-				{:else}
-					<div class="flex flex-col items-center justify-center h-32 text-slate-400">
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-						</svg>
-						<p>No response time data available for the selected period. Try selecting a longer time range like 24h or 1w.</p>
-					</div>
-				{/if}
+				<div class="flex justify-between text-xs text-slate-400 dark:text-blue-300 mt-3 font-medium">
+					<span>24h ago</span>
+					<span>Now</span>
+				</div>
+			{:else}
+                
+				<div class="flex flex-col items-center justify-center h-32 text-slate-400">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+					</svg>
+					<p>No check history available</p>
+				</div>
 			{/if}
+		</div>
+
+		<!-- Response Time Statistics (24h) -->
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+			<div class="mb-6">
+				<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Response Time (Last 24 Hours)</h2>
+				<p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Hourly average response times</p>
+			</div>
+			<ResponseTimeChart {monitorId} />
 		</div>
 
 		<!-- Uptime Chart -->

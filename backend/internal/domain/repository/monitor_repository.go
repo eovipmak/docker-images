@@ -26,6 +26,9 @@ type MonitorRepository interface {
 	// GetChecksByMonitorID retrieves all check history for a specific monitor
 	GetChecksByMonitorID(monitorID string, limit int) ([]*entities.MonitorCheck, error)
 
+	// GetStatsByMonitorID retrieves response time statistics for a monitor over the last 24 hours
+	GetStatsByMonitorID(monitorID string) ([]*entities.MonitorStat, error)
+
 	// GetMonitorsNeedingCheck retrieves enabled monitors that need to be checked
 	GetMonitorsNeedingCheck(now time.Time) ([]*entities.Monitor, error)
 

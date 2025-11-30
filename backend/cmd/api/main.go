@@ -247,6 +247,7 @@ func main() {
 		protected.DELETE("/monitors/:id", monitorHandler.Delete)
 		protected.GET("/monitors/:id/checks", monitorHandler.GetChecks)
 		protected.GET("/monitors/:id/ssl-status", monitorHandler.GetSSLStatus)
+		protected.GET("/monitors/:id/stats", monitorHandler.GetStats)
 		protected.GET("/monitors/:id/metrics", metricsHandler.GetMonitorMetrics)
 
 		// Alert rule endpoints

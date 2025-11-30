@@ -249,3 +249,28 @@ func (r *monitorRepository) UpdateLastCheckedAt(monitorID string, checkedAt time
 
 	return nil
 }
+
+// GetStatsByMonitorID retrieves response time statistics for a monitor over the last 24 hours
+// Groups data by hour and calculates average response time
+func (r *monitorRepository) GetStatsByMonitorID(monitorID string) ([]*entities.MonitorStat, error) {
+	var stats []*entities.MonitorStat
+
+	query := `
+		SELECT 
+			date_trunc('hour', checked_at) as timestamp,
+			ROUND(AVG(response_time_ms))::bigint as response_time_ms
+		FROM monitor_checks
+		WHERE monitor_id = $1
+			AND checked_at > NOW() - INTERVAL '24 hours'
+			AND response_time_ms IS NOT NULL
+		GROUP BY date_trunc('hour', checked_at)
+		ORDER BY timestamp ASC
+	`
+
+	err := r.db.Select(&stats, query, monitorID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get monitor stats: %w", err)
+	}
+
+	return stats, nil
+}

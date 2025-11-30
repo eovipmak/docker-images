@@ -596,6 +596,67 @@ func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
 	})
 }
 
+// GetStats godoc
+// @Summary Get monitor response time statistics
+// @Description Get response time statistics for a monitor over the last 24 hours
+// @Tags Monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Monitor ID"
+// @Success 200 {array} entities.MonitorStat "Array of response time statistics"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Access denied"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /monitors/{id}/stats [get]
+func (h *MonitorHandler) GetStats(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "monitor ID required"})
+		return
+	}
+
+	// Get tenant ID from context for authorization check
+	tenantIDValue, exists := c.Get("tenant_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		return
+	}
+	tenantID := tenantIDValue.(int)
+
+	// Get existing monitor to verify ownership
+	monitor, err := h.monitorRepo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "monitor not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve monitor"})
+		return
+	}
+
+	// Verify that the monitor belongs to the current tenant
+	if monitor.TenantID != tenantID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
+	stats, err := h.monitorRepo.GetStatsByMonitorID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve stats"})
+		return
+	}
+
+	// Return empty array instead of null if no stats found
+	if stats == nil {
+		stats = []*entities.MonitorStat{}
+	}
+
+	c.JSON(http.StatusOK, stats)
+}
+
 // createOrUpdateSSLAlertRule creates or updates an SSL expiry alert rule for a monitor
 func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entities.Monitor) error {
 	ruleName := fmt.Sprintf("SSL Expiry Alert - %s (%d days)", monitor.Name, monitor.SSLAlertDays)
