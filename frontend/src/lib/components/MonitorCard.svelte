@@ -28,18 +28,21 @@
 		 Keep the existing dispatched 'view' event for any parent component handlers. -->
 	<a data-testid="monitor-card" href={`/monitors/${monitor?.id || ''}`} class="block">
 	<Card className="cursor-pointer flex flex-col h-full" on:click={handleClick}>
-	<div class="flex items-start justify-between">
-		<div class="flex items-center gap-3">
-			<div class="p-2.5 bg-slate-100 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400">
-				<Favicon url={monitor.url} />
-			</div>
-			<div class="min-w-0">
-				<h3 class="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">{monitor.name}</h3>
-				<p class="text-xs text-slate-500 dark:text-slate-400 truncate">{monitor.url}</p>
-			</div>
-		</div>
-
-		<MonitorStatus status={(monitor.status || (monitor.enabled ? 'up' : 'unknown'))} showText={false} />
+		<div class="flex items-start justify-between">
+			<div class="flex items-center gap-3">
+				<div class="p-2.5 bg-slate-100 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400 relative">
+					<Favicon url={monitor.url} type={monitor.type} />
+					<!-- Monitor type indicator -->
+					<div class="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-xs font-bold
+						{monitor.type === 'tcp' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white'}">
+						{monitor.type === 'tcp' ? 'T' : 'H'}
+					</div>
+				</div>
+				<div class="min-w-0">
+					<h3 class="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">{monitor.name}</h3>
+					<p class="text-xs text-slate-500 dark:text-slate-400 truncate">{monitor.url}</p>
+				</div>
+			</div>		<MonitorStatus status={(monitor.status || (monitor.enabled ? 'up' : 'unknown'))} showText={false} />
 	</div>
 
 	<div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
@@ -13,6 +15,8 @@ import (
 	"github.com/eovipmak/v-insight/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
+
+var tcpAddressRegex = regexp.MustCompile(`^[^:]+:\d+$`)
 
 // MonitorHandler handles monitor-related HTTP requests
 type MonitorHandler struct {
@@ -35,7 +39,8 @@ func NewMonitorHandler(monitorRepo repository.MonitorRepository, alertRuleRepo r
 // CreateMonitorRequest represents the request body for creating a monitor
 type CreateMonitorRequest struct {
 	Name          string `json:"name" binding:"required"`
-	URL           string `json:"url" binding:"required,url"`
+	URL           string `json:"url" binding:"required"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
 	Enabled       *bool  `json:"enabled"`                                        // pointer to allow explicit false
@@ -46,7 +51,8 @@ type CreateMonitorRequest struct {
 // UpdateMonitorRequest represents the request body for updating a monitor
 type UpdateMonitorRequest struct {
 	Name          string `json:"name" binding:"omitempty"`
-	URL           string `json:"url" binding:"omitempty,url"`
+	URL           string `json:"url" binding:"omitempty"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
 	Enabled       *bool  `json:"enabled"`
@@ -81,6 +87,26 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		return
 	}
 	tenantID := tenantIDValue.(int)
+
+	// Validate URL based on monitor type
+	monitorType := req.Type
+	if monitorType == "" {
+		monitorType = "http" // default
+	}
+	
+	if monitorType == "http" {
+		// Validate as URL
+		if _, err := url.ParseRequestURI(req.URL); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL format"})
+			return
+		}
+	} else if monitorType == "tcp" {
+		// Validate as host:port
+		if !tcpAddressRegex.MatchString(req.URL) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
+			return
+		}
+	}
 
 	// Sanitize user inputs to prevent XSS
 	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
@@ -119,6 +145,7 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		TenantID:      tenantID,
 		Name:          sanitizedName,
 		URL:           req.URL,
+		Type:          monitorType,
 		CheckInterval: checkInterval,
 		Timeout:       timeout,
 		Enabled:       enabled,
@@ -279,6 +306,29 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 		return
 	}
 
+	// Determine monitor type for validation
+	monitorType := monitor.Type
+	if req.Type != "" {
+		monitorType = req.Type
+	}
+
+	// Validate URL if provided
+	if req.URL != "" {
+		if monitorType == "http" {
+			// Validate as URL
+			if _, err := url.ParseRequestURI(req.URL); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL format"})
+				return
+			}
+		} else if monitorType == "tcp" {
+			// Validate as host:port
+			if !tcpAddressRegex.MatchString(req.URL) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
+				return
+			}
+		}
+	}
+
 	// Update fields if provided
 	if req.Name != "" {
 		// Sanitize name to prevent XSS
@@ -291,6 +341,9 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	}
 	if req.URL != "" {
 		monitor.URL = req.URL
+	}
+	if req.Type != "" {
+		monitor.Type = req.Type
 	}
 	if req.CheckInterval > 0 {
 		monitor.CheckInterval = req.CheckInterval

@@ -165,7 +165,11 @@
 							<div>
 								<h3 class="font-semibold text-slate-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{monitor.name}</h3>
 								<div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-									<span class="truncate max-w-[150px]">{monitor.url}</span>
+									<span class="truncate max-w-[120px]">{monitor.url}</span>
+									<span class="px-1.5 py-0.5 rounded text-xs font-medium 
+										{monitor.type === 'tcp' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}">
+										{monitor.type === 'tcp' ? 'TCP' : 'HTTP'}
+									</span>
 								</div>
 							</div>
 						</div>

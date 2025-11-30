@@ -111,6 +111,13 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
 			return
 		}
+		
+		// Validate SSL expiry rules cannot be created for TCP monitors
+		if req.TriggerType == "ssl_expiry" && monitor.Type == "tcp" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "SSL expiry rules cannot be created for TCP monitors"})
+			return
+		}
+		
 		monitorID = sql.NullString{String: *req.MonitorID, Valid: true}
 	}
 
@@ -322,6 +329,17 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 				c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
 				return
 			}
+			
+			// Validate SSL expiry rules cannot be created for TCP monitors
+			triggerType := req.TriggerType
+			if triggerType == "" {
+				triggerType = rule.TriggerType
+			}
+			if triggerType == "ssl_expiry" && monitor.Type == "tcp" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "SSL expiry rules cannot be created for TCP monitors"})
+				return
+			}
+			
 			rule.MonitorID = sql.NullString{String: *req.MonitorID, Valid: true}
 		}
 	}

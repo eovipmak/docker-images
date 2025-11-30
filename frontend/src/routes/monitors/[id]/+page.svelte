@@ -491,13 +491,24 @@
 					<div class="flex items-center gap-3">
 						<h1 class="text-2xl font-bold text-slate-900 dark:text-white drop-shadow-sm">{monitor.name}</h1>
 						<MonitorStatus status={getMonitorStatus()} />
+						<span class="px-2 py-1 rounded-full text-xs font-medium 
+							{monitor.type === 'tcp' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}">
+							{monitor.type === 'tcp' ? 'TCP' : 'HTTP'}
+						</span>
 					</div>
-					<a href={monitor.url} target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline text-sm mt-1 flex items-center gap-1">
-						{monitor.url}
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-						</svg>
-					</a>
+					<div class="flex items-center gap-2 mt-1">
+						<a href={monitor.type === 'tcp' ? null : monitor.url} 
+						   target={monitor.type === 'tcp' ? null : "_blank"} 
+						   rel={monitor.type === 'tcp' ? null : "noopener noreferrer"} 
+						   class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline text-sm flex items-center gap-1 {monitor.type === 'tcp' ? 'cursor-default' : ''}">
+							{monitor.url}
+							{#if monitor.type !== 'tcp'}
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+								</svg>
+							{/if}
+						</a>
+					</div>
 				</div>
 			</div>
 			
@@ -563,7 +574,9 @@
 						</svg>
 					</div>
 				</div>
-				{#if monitor.check_ssl && sslStatus}
+				{#if monitor.type === 'tcp'}
+					   <span class="text-base sm:text-lg font-medium text-slate-400 dark:text-slate-500">N/A</span>
+				{:else if monitor.check_ssl && sslStatus}
 					<div class="flex flex-col">
 						   <span class="text-lg sm:text-2xl font-bold {sslStatus.valid ? 'text-emerald-600' : 'text-rose-600'} dark:text-slate-100">
 							{sslStatus.valid ? 'Valid' : 'Invalid'}
@@ -795,7 +808,7 @@
 									</td>
 									   <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">
 										   <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-											{extractInt64(check.status_code, 'N/A')}
+											{monitor.type === 'tcp' ? (check.success ? 'connected' : 'failed') : extractInt64(check.status_code, 'N/A')}
 										</span>
 									</td>
 									   <td class="px-4 py-3 whitespace-nowrap text-sm font-mono">

@@ -31,6 +31,7 @@
 	let channels: any[] = [];
 	let isLoadingData = false;
 	let lastRuleId: string | null = null;
+	let lastMonitorId: string | null = null;
 
 	// Only update formData when rule actually changes (different rule or switching between create/edit)
 	$: if (rule && rule.id !== lastRuleId) {
@@ -50,6 +51,7 @@
 			channel_ids: rule.channel_ids || []
 		};
 		lastRuleId = rule?.id || null;
+		lastMonitorId = monitorId;
 	} else if (!rule && lastRuleId !== null) {
 		// Switching from edit to create mode
 		formData = {
@@ -61,12 +63,35 @@
 			channel_ids: []
 		};
 		lastRuleId = null;
+		lastMonitorId = null;
 	}
 
 	$: isEditMode = !!rule;
 
 	$: thresholdLabel = getThresholdLabel(formData.trigger_type);
 	$: thresholdHelp = getThresholdHelp(formData.trigger_type);
+
+	// Get selected monitor info
+	$: selectedMonitor = formData.monitor_id ? monitors.find(m => m.id === formData.monitor_id) : null;
+
+	// Get available trigger types based on selected monitor
+	$: availableTriggerTypes = getAvailableTriggerTypes(selectedMonitor);
+
+	// Handle monitor change - reset trigger type if needed
+	function handleMonitorChange() {
+		if (formData.monitor_id !== lastMonitorId && selectedMonitor) {
+			lastMonitorId = formData.monitor_id;
+			if (formData.trigger_type && !availableTriggerTypes.includes(formData.trigger_type)) {
+				formData.trigger_type = availableTriggerTypes[0] || 'down';
+				formData.threshold_value = getDefaultThreshold(formData.trigger_type);
+			}
+		}
+	}
+
+	// Watch for monitor changes
+	$: if (selectedMonitor !== undefined) {
+		handleMonitorChange();
+	}
 
 	$: if (isOpen) {
 		loadData();
@@ -84,6 +109,24 @@
 			default:
 				return 0;
 		}
+	}
+
+	// Get available trigger types based on selected monitor
+	function getAvailableTriggerTypes(selectedMonitor: any): string[] {
+		const baseTypes = ['down', 'slow_response'];
+		
+		// If no specific monitor selected (All monitors), allow all types
+		if (!selectedMonitor) {
+			return [...baseTypes, 'ssl_expiry'];
+		}
+		
+		// If HTTP monitor, allow SSL expiry
+		if (selectedMonitor.type === 'http') {
+			return [...baseTypes, 'ssl_expiry'];
+		}
+		
+		// If TCP monitor, only allow down and slow_response
+		return baseTypes;
 	}
 
 	// Update threshold when trigger type changes
@@ -122,6 +165,16 @@
 
 		if (!formData.trigger_type) {
 			errors.trigger_type = 'Trigger type is required';
+		}
+
+		// Validate SSL expiry rules
+		if (formData.trigger_type === 'ssl_expiry') {
+			const selectedMonitor = formData.monitor_id ? monitors.find(m => m.id === formData.monitor_id) : null;
+			
+			// If a specific TCP monitor is selected, SSL expiry is not allowed
+			if (selectedMonitor && selectedMonitor.type === 'tcp') {
+				errors.trigger_type = 'SSL Expiry rules cannot be created for TCP monitors';
+			}
 		}
 
 		if (formData.threshold_value < 0) {
@@ -353,9 +406,13 @@
 									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
 								}}
 							>
-								<option value="down">Down</option>
-								<option value="slow_response">Slow Response</option>
-								<option value="ssl_expiry">SSL Expiry</option>
+								{#each availableTriggerTypes as triggerType}
+									<option value={triggerType}>
+										{triggerType === 'down' ? 'Down' : 
+										 triggerType === 'slow_response' ? 'Slow Response' : 
+										 triggerType === 'ssl_expiry' ? 'SSL Expiry' : triggerType}
+									</option>
+								{/each}
 							</select>
 						</div>
 						{#if errors.trigger_type}

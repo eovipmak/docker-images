@@ -23,8 +23,8 @@ func NewMonitorRepository(db *sqlx.DB) repository.MonitorRepository {
 // Create creates a new monitor in the database
 func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 	query := `
-		INSERT INTO monitors (tenant_id, name, url, check_interval, timeout, enabled, check_ssl, ssl_alert_days, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+		INSERT INTO monitors (tenant_id, name, url, type, check_interval, timeout, enabled, check_ssl, ssl_alert_days, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
@@ -33,6 +33,7 @@ func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 		monitor.TenantID,
 		monitor.Name,
 		monitor.URL,
+		monitor.Type,
 		monitor.CheckInterval,
 		monitor.Timeout,
 		monitor.Enabled,
@@ -51,7 +52,7 @@ func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 	monitor := &entities.Monitor{}
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
+		SELECT id, tenant_id, name, url, type, check_interval, timeout, enabled, 
 		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE id = $1
@@ -72,7 +73,7 @@ func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 func (r *monitorRepository) GetByTenantID(tenantID int) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
+		SELECT id, tenant_id, name, url, type, check_interval, timeout, enabled, 
 		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE tenant_id = $1
@@ -91,9 +92,9 @@ func (r *monitorRepository) GetByTenantID(tenantID int) ([]*entities.Monitor, er
 func (r *monitorRepository) Update(monitor *entities.Monitor) error {
 	query := `
 		UPDATE monitors
-		SET name = $1, url = $2, check_interval = $3, timeout = $4, enabled = $5, 
-		    check_ssl = $6, ssl_alert_days = $7, updated_at = NOW()
-		WHERE id = $8
+		SET name = $1, url = $2, type = $3, check_interval = $4, timeout = $5, enabled = $6, 
+		    check_ssl = $7, ssl_alert_days = $8, updated_at = NOW()
+		WHERE id = $9
 		RETURNING updated_at
 	`
 
@@ -101,6 +102,7 @@ func (r *monitorRepository) Update(monitor *entities.Monitor) error {
 		query,
 		monitor.Name,
 		monitor.URL,
+		monitor.Type,
 		monitor.CheckInterval,
 		monitor.Timeout,
 		monitor.Enabled,
@@ -174,7 +176,7 @@ func (r *monitorRepository) GetChecksByMonitorID(monitorID string, limit int) ([
 func (r *monitorRepository) GetMonitorsNeedingCheck(now time.Time) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled, 
+		SELECT id, tenant_id, name, url, type, check_interval, timeout, enabled, 
 		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE enabled = true

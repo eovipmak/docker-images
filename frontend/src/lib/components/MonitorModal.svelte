@@ -10,6 +10,7 @@
 	interface FormData {
 		name: string;
 		url: string;
+		type: string;
 		check_interval: number;
 		timeout: number;
 		enabled: boolean;
@@ -20,6 +21,7 @@
 	let formData: FormData = {
 		name: '',
 		url: '',
+		type: 'http',
 		check_interval: 60,
 		timeout: 30,
 		enabled: true,
@@ -36,6 +38,7 @@
 		formData = {
 			name: monitor.name || '',
 			url: monitor.url || '',
+			type: monitor.type || 'http',
 			check_interval: monitor.check_interval || 60,
 			timeout: monitor.timeout || 30,
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
@@ -48,6 +51,7 @@
 		formData = {
 			name: '',
 			url: '',
+			type: 'http',
 			check_interval: 60,
 			timeout: 30,
 			enabled: true,
@@ -59,6 +63,11 @@
 
 	$: isEditMode = !!monitor;
 
+	// Reset SSL settings when switching to TCP
+	$: if (formData.type === 'tcp') {
+		formData.check_ssl = false;
+	}
+
 	function validateForm(): boolean {
 		errors = {};
 
@@ -67,12 +76,18 @@
 		}
 
 		if (!formData.url.trim()) {
-			errors.url = 'URL is required';
-		} else {
+			errors.url = formData.type === 'tcp' ? 'Host:Port is required' : 'URL is required';
+		} else if (formData.type === 'http') {
 			try {
 				new URL(formData.url);
 			} catch {
 				errors.url = 'Invalid URL format';
+			}
+		} else if (formData.type === 'tcp') {
+			// Basic validation for host:port format
+			const tcpPattern = /^([^:]+):(\d+)$/;
+			if (!tcpPattern.test(formData.url)) {
+				errors.url = 'Invalid Host:Port format. Use format: host:port';
 			}
 		}
 
@@ -84,7 +99,7 @@
 			errors.timeout = 'Timeout must be between 5 and 120 seconds';
 		}
 
-		if (formData.ssl_alert_days < 1) {
+		if (formData.check_ssl && formData.ssl_alert_days < 1) {
 			errors.ssl_alert_days = 'SSL alert days must be at least 1';
 		}
 
@@ -176,16 +191,32 @@
 									{/if}
 								</div>
 
-								<!-- URL -->
+								<!-- Monitor Type -->
 								<div>
-									<label for="url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">URL</label>
+									<label for="type" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Monitor Type</label>
+									<select
+										name="type"
+										id="type"
+										bind:value={formData.type}
+										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+									>
+										<option value="http">HTTP/HTTPS</option>
+										<option value="tcp">TCP</option>
+									</select>
+								</div>
+
+								<!-- URL / Host:Port -->
+								<div>
+									<label for="url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+										{formData.type === 'tcp' ? 'Host:Port' : 'URL'}
+									</label>
 									<input
 										type="text"
 										name="url"
 										id="url"
 										bind:value={formData.url}
 										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-										placeholder="https://example.com"
+										placeholder={formData.type === 'tcp' ? 'example.com:80' : 'https://example.com'}
 									/>
 									{#if errors.url}
 										<p class="mt-1 text-sm text-red-600">{errors.url}</p>
@@ -202,7 +233,7 @@
 											id="check_interval"
 											bind:value={formData.check_interval}
 											min="60"
-											class="mt-1 block w-full border-slate-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+											class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 										/>
 										{#if errors.check_interval}
 											<p class="mt-1 text-sm text-red-600">{errors.check_interval}</p>
@@ -228,40 +259,42 @@
 								</div>
 
 								<!-- SSL Settings -->
-								<div class="space-y-3 pt-2">
-									<div class="flex items-start">
-										<div class="flex items-center h-5">
-											<input
-												id="check_ssl"
-												name="check_ssl"
-												type="checkbox"
-												bind:checked={formData.check_ssl}
-												class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
-											/>
+								{#if formData.type === 'http'}
+									<div class="space-y-3 pt-2">
+										<div class="flex items-start">
+											<div class="flex items-center h-5">
+												<input
+													id="check_ssl"
+													name="check_ssl"
+													type="checkbox"
+													bind:checked={formData.check_ssl}
+													class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-slate-300 rounded"
+												/>
+											</div>
+											<div class="ml-3 text-sm">
+												<label for="check_ssl" class="font-medium text-slate-700 dark:text-slate-300">Check SSL Certificate</label>
+												<p class="text-slate-500 dark:text-slate-400">Monitor SSL certificate validity and expiration.</p>
+											</div>
 										</div>
-										<div class="ml-3 text-sm">
-											<label for="check_ssl" class="font-medium text-slate-700 dark:text-slate-300">Check SSL Certificate</label>
-											<p class="text-slate-500 dark:text-slate-400">Monitor SSL certificate validity and expiration.</p>
-										</div>
-									</div>
 
-									{#if formData.check_ssl}
-										<div>
-											<label for="ssl_alert_days" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Alert before expiry (days)</label>
-											<input
-												type="number"
-												name="ssl_alert_days"
-												id="ssl_alert_days"
-												bind:value={formData.ssl_alert_days}
-												min="1"
-												class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-											/>
-											{#if errors.ssl_alert_days}
-												<p class="mt-1 text-sm text-red-600">{errors.ssl_alert_days}</p>
-											{/if}
-										</div>
-									{/if}
-								</div>
+										{#if formData.check_ssl}
+											<div>
+												<label for="ssl_alert_days" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Alert before expiry (days)</label>
+												<input
+													type="number"
+													name="ssl_alert_days"
+													id="ssl_alert_days"
+													bind:value={formData.ssl_alert_days}
+													min="1"
+													class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+												/>
+												{#if errors.ssl_alert_days}
+													<p class="mt-1 text-sm text-red-600">{errors.ssl_alert_days}</p>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								{/if}
 
                                 <!-- Enabled -->
                                 <div class="flex items-start">

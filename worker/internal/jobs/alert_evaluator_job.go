@@ -170,7 +170,7 @@ func (j *AlertEvaluatorJob) getLatestMonitorChecks(duration time.Duration) ([]*M
 	var checks []*MonitorCheck
 	query := `
 		SELECT DISTINCT ON (mc.monitor_id) 
-			mc.id, mc.monitor_id, m.tenant_id, mc.checked_at, mc.status_code, mc.response_time_ms, 
+			mc.id, mc.monitor_id, m.tenant_id, m.type as monitor_type, mc.checked_at, mc.status_code, mc.response_time_ms, 
 			mc.ssl_valid, mc.ssl_expires_at, mc.error_message, mc.success
 		FROM monitor_checks mc
 		JOIN monitors m ON mc.monitor_id = m.id
@@ -200,6 +200,11 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 
 		// Skip if rule is monitor-specific and doesn't match this check's monitor
 		if rule.MonitorID.Valid && rule.MonitorID.String != check.MonitorID {
+			continue
+		}
+
+		// Skip SSL expiry rules for TCP monitors when rule applies to all monitors
+		if rule.TriggerType == "ssl_expiry" && !rule.MonitorID.Valid && check.MonitorType == "tcp" {
 			continue
 		}
 
