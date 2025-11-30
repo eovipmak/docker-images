@@ -64,7 +64,9 @@ jobs:
         run: make up
 
       - name: Wait for services
-        run: sleep 30
+        uses: wait4x/wait4x-action@v0.0.1
+        with:
+          command: wait4x http http://localhost:8080/health --timeout=60s
 
       - name: Install Playwright browsers
         run: |
