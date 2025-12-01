@@ -9,6 +9,9 @@ RUN apk add --no-cache git
 # Copy go mod files
 COPY worker/go.mod worker/go.sum* ./
 
+# Copy shared module
+COPY shared /shared
+
 # Download dependencies
 RUN go mod download
 
@@ -32,6 +35,9 @@ ENV PATH="/go/bin:$PATH"
 
 # Copy go mod files
 COPY worker/go.mod worker/go.sum* ./
+
+# Copy shared module
+COPY shared /shared
 
 # Download dependencies
 RUN go mod download

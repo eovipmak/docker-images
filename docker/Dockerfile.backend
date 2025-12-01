@@ -9,6 +9,9 @@ RUN apk add --no-cache git gcc musl-dev build-base
 # Copy go mod files
 COPY backend/go.mod backend/go.sum* ./
 
+# Copy shared module
+COPY shared /shared
+
 # Download dependencies
 RUN go mod download
 
@@ -41,6 +44,9 @@ ENV GOTOOLCHAIN=auto
 
 # Copy go mod files
 COPY backend/go.mod backend/go.sum* ./
+
+# Copy shared module
+COPY shared /shared
 
 # Download dependencies
 RUN go mod download
