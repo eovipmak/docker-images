@@ -521,6 +521,9 @@ func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationDa
 		return fmt.Errorf("invalid email address: contains control characters")
 	}
 
+	if j.smtpConfig.Host == "" {
+		return fmt.Errorf("SMTP host not configured")
+	}
 	// Extract SMTP config from channel
 	smtpHost, ok := channel.Config["smtp_host"].(string)
 	if !ok || smtpHost == "" {
@@ -577,11 +580,22 @@ Time: %s
 
 --
 V-Insight Monitoring
+`, title, j.smtpConfig.From, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
 `, title, smtpFrom, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
 
 	// Replace \n with \r\n for SMTP compliance
 	body = strings.ReplaceAll(body, "\n", "\r\n")
 
+	auth := smtp.PlainAuth("", j.smtpConfig.User, j.smtpConfig.Password, j.smtpConfig.Host)
+	smtpAddr := fmt.Sprintf("%s:%d", j.smtpConfig.Host, j.smtpConfig.Port)
+
+	// Note: smtp.SendMail requires valid auth. If no auth is needed, auth should be nil.
+	// We assume auth is needed if User is set.
+	if j.smtpConfig.User == "" {
+		auth = nil
+	}
+
+	err = smtp.SendMail(smtpAddr, auth, j.smtpConfig.From, []string{to}, []byte(body))
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
 	smtpAddr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
