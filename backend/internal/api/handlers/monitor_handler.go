@@ -40,7 +40,8 @@ func NewMonitorHandler(monitorRepo repository.MonitorRepository, alertRuleRepo r
 type CreateMonitorRequest struct {
 	Name          string `json:"name" binding:"required"`
 	URL           string `json:"url" binding:"required"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
+	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
 	Enabled       *bool  `json:"enabled"`                                        // pointer to allow explicit false
@@ -52,7 +53,8 @@ type CreateMonitorRequest struct {
 type UpdateMonitorRequest struct {
 	Name          string `json:"name" binding:"omitempty"`
 	URL           string `json:"url" binding:"omitempty"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
+	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
 	Enabled       *bool  `json:"enabled"`
@@ -106,6 +108,12 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
 			return
 		}
+	} else if monitorType == "ping" {
+		// Validate as hostname or IP (no protocol)
+		if strings.Contains(req.URL, "://") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Hostname/IP format. Do not include protocol (http://, etc.)"})
+			return
+		}
 	}
 
 	// Sanitize user inputs to prevent XSS
@@ -141,11 +149,17 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		sslAlertDays = req.SSLAlertDays
 	}
 
+	keyword := ""
+	if req.Keyword != nil {
+		keyword = *req.Keyword
+	}
+
 	monitor := &entities.Monitor{
 		TenantID:      tenantID,
 		Name:          sanitizedName,
 		URL:           req.URL,
 		Type:          monitorType,
+		Keyword:       keyword,
 		CheckInterval: checkInterval,
 		Timeout:       timeout,
 		Enabled:       enabled,
@@ -159,7 +173,8 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	}
 
 	// Auto-create SSL expiry alert rule if SSL checking is enabled
-	if monitor.CheckSSL && monitor.SSLAlertDays > 0 {
+	// (Only for HTTP)
+	if monitorType == "http" && monitor.CheckSSL && monitor.SSLAlertDays > 0 {
 		if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
 			// Log error but don't fail the monitor creation
 			fmt.Printf("Warning: Failed to create SSL alert rule for monitor %s: %v\n", monitor.Name, err)
@@ -326,6 +341,12 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
 				return
 			}
+		} else if monitorType == "ping" {
+			// Validate as hostname or IP (no protocol)
+			if strings.Contains(req.URL, "://") {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Hostname/IP format. Do not include protocol (http://, etc.)"})
+				return
+			}
 		}
 	}
 
@@ -345,6 +366,12 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	if req.Type != "" {
 		monitor.Type = req.Type
 	}
+
+	// Update keyword if provided (including empty string if explicitly sent)
+	if req.Keyword != nil {
+		monitor.Keyword = *req.Keyword
+	}
+
 	if req.CheckInterval > 0 {
 		monitor.CheckInterval = req.CheckInterval
 	}
@@ -367,7 +394,8 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	}
 
 	// Update SSL alert rule if SSL settings changed
-	if req.CheckSSL != nil || req.SSLAlertDays > 0 {
+	// (Only if type is HTTP)
+	if monitorType == "http" && (req.CheckSSL != nil || req.SSLAlertDays > 0) {
 		if monitor.CheckSSL && monitor.SSLAlertDays > 0 {
 			if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
 				fmt.Printf("Warning: Failed to update SSL alert rule for monitor %s: %v\n", monitor.Name, err)
@@ -378,7 +406,18 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 				fmt.Printf("Warning: Failed to disable SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 			}
 		}
-	}
+	} else if monitorType != "http" {
+        // If type changed from HTTP to something else, disable SSL rule?
+        // We probably should.
+        // If monitor.Type was updated, we should check if we need to clean up SSL rules.
+        // But simplifying: just leave it for now or disable if type changed.
+        // If we switched away from HTTP, we should probably disable SSL monitoring rules.
+        if req.Type != "" && req.Type != "http" {
+             if err := h.disableSSLAlertRule(tenantID, monitor.ID); err != nil {
+				fmt.Printf("Warning: Failed to disable SSL alert rule for monitor %s: %v\n", monitor.Name, err)
+			}
+        }
+    }
 
 	c.JSON(http.StatusOK, monitor)
 }

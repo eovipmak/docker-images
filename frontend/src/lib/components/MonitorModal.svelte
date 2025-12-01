@@ -11,6 +11,7 @@
 		name: string;
 		url: string;
 		type: string;
+		keyword: string;
 		check_interval: number;
 		timeout: number;
 		enabled: boolean;
@@ -22,6 +23,7 @@
 		name: '',
 		url: '',
 		type: 'http',
+		keyword: '',
 		check_interval: 60,
 		timeout: 30,
 		enabled: true,
@@ -39,6 +41,7 @@
 			name: monitor.name || '',
 			url: monitor.url || '',
 			type: monitor.type || 'http',
+			keyword: monitor.keyword || '',
 			check_interval: monitor.check_interval || 60,
 			timeout: monitor.timeout || 30,
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
@@ -52,6 +55,7 @@
 			name: '',
 			url: '',
 			type: 'http',
+			keyword: '',
 			check_interval: 60,
 			timeout: 30,
 			enabled: true,
@@ -63,9 +67,10 @@
 
 	$: isEditMode = !!monitor;
 
-	// Reset SSL settings when switching to TCP
-	$: if (formData.type === 'tcp') {
+	// Reset SSL settings/Keyword when switching to TCP or Ping
+	$: if (formData.type === 'tcp' || formData.type === 'ping') {
 		formData.check_ssl = false;
+        formData.keyword = '';
 	}
 
 	function validateForm(): boolean {
@@ -76,7 +81,7 @@
 		}
 
 		if (!formData.url.trim()) {
-			errors.url = formData.type === 'tcp' ? 'Host:Port is required' : 'URL is required';
+			errors.url = formData.type === 'tcp' ? 'Host:Port is required' : 'Address is required';
 		} else if (formData.type === 'http') {
 			try {
 				new URL(formData.url);
@@ -89,7 +94,11 @@
 			if (!tcpPattern.test(formData.url)) {
 				errors.url = 'Invalid Host:Port format. Use format: host:port';
 			}
-		}
+		} else if (formData.type === 'ping') {
+            if (formData.url.includes('://')) {
+                errors.url = 'Enter a hostname or IP address (no protocol)';
+            }
+        }
 
 		if (formData.check_interval < 60) {
 			errors.check_interval = 'Check interval must be at least 60 seconds';
@@ -141,6 +150,24 @@
 	function handleClose() {
 		dispatch('close');
 	}
+
+    function getPlaceholderForType(type: string): string {
+        switch (type) {
+            case 'http': return 'https://example.com';
+            case 'tcp': return 'example.com:80';
+            case 'ping': return 'example.com';
+            default: return '';
+        }
+    }
+
+    function getLabelForType(type: string): string {
+        switch (type) {
+            case 'http': return 'URL';
+            case 'tcp': return 'Host:Port';
+            case 'ping': return 'Hostname / IP';
+            default: return 'Address';
+        }
+    }
 </script>
 
 {#if isOpen}
@@ -202,13 +229,14 @@
 									>
 										<option value="http">HTTP/HTTPS</option>
 										<option value="tcp">TCP</option>
+                                        <option value="ping">Ping (ICMP)</option>
 									</select>
 								</div>
 
-								<!-- URL / Host:Port -->
+								<!-- Address Input -->
 								<div>
 									<label for="url" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
-										{formData.type === 'tcp' ? 'Host:Port' : 'URL'}
+										{getLabelForType(formData.type)}
 									</label>
 									<input
 										type="text"
@@ -216,12 +244,32 @@
 										id="url"
 										bind:value={formData.url}
 										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
-										placeholder={formData.type === 'tcp' ? 'example.com:80' : 'https://example.com'}
+										placeholder={getPlaceholderForType(formData.type)}
 									/>
 									{#if errors.url}
 										<p class="mt-1 text-sm text-red-600">{errors.url}</p>
 									{/if}
 								</div>
+
+                                <!-- Keyword Search (HTTP only) -->
+                                {#if formData.type === 'http'}
+                                    <div>
+                                        <label for="keyword" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Keyword Search (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="keyword"
+                                            id="keyword"
+                                            bind:value={formData.keyword}
+                                            class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                                            placeholder="e.g. 'Welcome' or 'Status: OK'"
+                                        />
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            If set, the monitor will be considered DOWN if this keyword is not found in the response body.
+                                        </p>
+                                    </div>
+                                {/if}
 
 								<div class="grid grid-cols-2 gap-4">
 									<!-- Check Interval -->
