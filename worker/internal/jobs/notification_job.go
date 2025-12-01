@@ -521,8 +521,27 @@ func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationDa
 		return fmt.Errorf("invalid email address: contains control characters")
 	}
 
-	if j.smtpConfig.Host == "" {
+	// Extract SMTP config from channel
+	smtpHost, ok := channel.Config["smtp_host"].(string)
+	if !ok || smtpHost == "" {
 		return fmt.Errorf("SMTP host not configured")
+	}
+	smtpPortFloat, ok := channel.Config["smtp_port"].(float64)
+	if !ok || smtpPortFloat <= 0 {
+		return fmt.Errorf("SMTP port not configured or invalid")
+	}
+	smtpPort := int(smtpPortFloat)
+	smtpUser, ok := channel.Config["smtp_user"].(string)
+	if !ok {
+		smtpUser = ""
+	}
+	smtpPassword, ok := channel.Config["smtp_password"].(string)
+	if !ok {
+		smtpPassword = ""
+	}
+	smtpFrom, ok := channel.Config["smtp_from"].(string)
+	if !ok || smtpFrom == "" {
+		return fmt.Errorf("SMTP from email not configured")
 	}
 
 	// Determine title and color (text based representation)
@@ -558,21 +577,21 @@ Time: %s
 
 --
 V-Insight Monitoring
-`, title, j.smtpConfig.From, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
+`, title, smtpFrom, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
 
 	// Replace \n with \r\n for SMTP compliance
 	body = strings.ReplaceAll(body, "\n", "\r\n")
 
-	auth := smtp.PlainAuth("", j.smtpConfig.User, j.smtpConfig.Password, j.smtpConfig.Host)
-	smtpAddr := fmt.Sprintf("%s:%d", j.smtpConfig.Host, j.smtpConfig.Port)
+	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+	smtpAddr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
 	// Note: smtp.SendMail requires valid auth. If no auth is needed, auth should be nil.
 	// We assume auth is needed if User is set.
-	if j.smtpConfig.User == "" {
+	if smtpUser == "" {
 		auth = nil
 	}
 
-	err = smtp.SendMail(smtpAddr, auth, j.smtpConfig.From, []string{to}, []byte(body))
+	err = smtp.SendMail(smtpAddr, auth, smtpFrom, []string{to}, []byte(body))
 	if err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
