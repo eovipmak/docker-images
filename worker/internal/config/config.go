@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Database DatabaseConfig
 	Worker   WorkerConfig
+	SMTP     SMTPConfig
 }
 
 // DatabaseConfig holds database connection configuration
@@ -32,6 +33,15 @@ type DatabaseConfig struct {
 type WorkerConfig struct {
 	Port string
 	Env  string
+}
+
+// SMTPConfig holds email configuration
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+	From     string
 }
 
 // Load loads configuration from environment variables
@@ -54,6 +64,13 @@ func Load() (*Config, error) {
 		Worker: WorkerConfig{
 			Port: getEnv("PORT", "8081"),
 			Env:  getEnv("ENV", "development"),
+		},
+		SMTP: SMTPConfig{
+			Host:     getEnv("SMTP_HOST", ""),
+			Port:     getEnvAsInt("SMTP_PORT", 587),
+			User:     getEnv("SMTP_USER", ""),
+			Password: getEnv("SMTP_PASSWORD", ""),
+			From:     getEnv("SMTP_FROM", "alerts@v-insight.com"),
 		},
 	}
 

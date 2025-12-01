@@ -6,9 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
+	"net/smtp"
+	"strings"
 	"time"
 
 	"github.com/eovipmak/v-insight/worker/internal"
+	"github.com/eovipmak/v-insight/worker/internal/config"
 	"github.com/eovipmak/v-insight/worker/internal/database"
 	"go.uber.org/zap"
 )
@@ -72,15 +76,17 @@ type DiscordEmbedField struct {
 type NotificationJob struct {
 	db         *database.DB
 	httpClient *http.Client
+	smtpConfig config.SMTPConfig
 }
 
 // NewNotificationJob creates a new notification job
-func NewNotificationJob(db *database.DB) *NotificationJob {
+func NewNotificationJob(db *database.DB, smtpConfig config.SMTPConfig) *NotificationJob {
 	return &NotificationJob{
 		db: db,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
+		smtpConfig: smtpConfig,
 	}
 }
 
@@ -254,6 +260,8 @@ func (j *NotificationJob) processIncidentNotifications(incident *IncidentNotific
 			err = j.sendWebhookNotification(incident, channel)
 		case "discord":
 			err = j.sendDiscordNotification(incident, channel)
+		case "email":
+			err = j.sendEmailNotification(incident, channel)
 		default:
 			if internal.Log != nil {
 				internal.Log.Warn("Unsupported channel type",
@@ -488,6 +496,81 @@ func (j *NotificationJob) sendDiscordNotification(incident *IncidentNotification
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("Discord webhook returned non-success status: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// sendEmailNotification sends an email notification
+func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationData, channel *AlertChannelConfig) error {
+	to, ok := channel.Config["to"].(string)
+	if !ok || to == "" {
+		return fmt.Errorf("email address not configured")
+	}
+
+	// Parse and validate email address
+	addr, err := mail.ParseAddress(to)
+	if err != nil {
+		return fmt.Errorf("invalid email address: %w", err)
+	}
+	// Use parsed address to be safe
+	to = addr.Address
+
+	// Extra safety check for header injection
+	if strings.ContainsAny(to, "\r\n") {
+		return fmt.Errorf("invalid email address: contains control characters")
+	}
+
+	if j.smtpConfig.Host == "" {
+		return fmt.Errorf("SMTP host not configured")
+	}
+
+	// Determine title and color (text based representation)
+	var title string
+	if incident.Status == "open" {
+		switch incident.TriggerType {
+		case "down":
+			title = "🔴 Monitor Down: " + incident.MonitorName
+		case "slow_response":
+			title = "🐌 Slow Response: " + incident.MonitorName
+		case "ssl_expiry":
+			title = "🔒 SSL Expiry: " + incident.MonitorName
+		default:
+			title = "🚨 Incident: " + incident.MonitorName
+		}
+	} else {
+		title = "✅ Resolved: " + incident.MonitorName
+	}
+
+	// Simple text body
+	body := fmt.Sprintf(`Subject: %s
+From: %s
+To: %s
+
+%s
+
+Monitor: %s
+URL: %s
+Status: %s
+Message: %s
+Time: %s
+
+--
+V-Insight Monitoring
+`, title, j.smtpConfig.From, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
+
+	auth := smtp.PlainAuth("", j.smtpConfig.User, j.smtpConfig.Password, j.smtpConfig.Host)
+	smtpAddr := fmt.Sprintf("%s:%d", j.smtpConfig.Host, j.smtpConfig.Port)
+
+	// Note: smtp.SendMail requires valid auth. If no auth is needed, auth should be nil.
+	// We assume auth is needed if User is set.
+	if j.smtpConfig.User == "" {
+		auth = nil
+	}
+
+	err = smtp.SendMail(smtpAddr, auth, j.smtpConfig.From, []string{to}, []byte(body))
+	if err != nil {
+		return fmt.Errorf("failed to send email: %w", err)
 	}
 
 	return nil
