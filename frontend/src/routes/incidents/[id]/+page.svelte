@@ -5,6 +5,7 @@
 	import { fetchAPI } from '$lib/api/client';
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
 	import IncidentTimeline from '$lib/components/IncidentTimeline.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	let incidentId: string = '';
 	let incident: any = null;
@@ -12,6 +13,12 @@
 	let isLoading = true;
 	let isResolving = false;
 	let error = '';
+
+	// Confirm modal state
+	let isConfirmModalOpen = false;
+	let confirmTitle = '';
+	let confirmMessage = '';
+	let onConfirmCallback: (() => void) | null = null;
 
 	$: incidentId = $page.params.id || '';
 
@@ -63,28 +70,40 @@
 	}
 
 	async function handleResolve() {
-		if (!confirm('Are you sure you want to manually resolve this incident?')) {
-			return;
-		}
+		confirmTitle = 'Resolve Incident';
+		confirmMessage = 'Are you sure you want to manually resolve this incident?';
+		onConfirmCallback = async () => {
+			isResolving = true;
+			try {
+				const response = await fetchAPI(`/api/v1/incidents/${incidentId}/resolve`, {
+					method: 'POST'
+				});
 
-		isResolving = true;
-		try {
-			const response = await fetchAPI(`/api/v1/incidents/${incidentId}/resolve`, {
-				method: 'POST'
-			});
+				if (!response.ok) {
+					throw new Error('Failed to resolve incident');
+				}
 
-			if (!response.ok) {
-				throw new Error('Failed to resolve incident');
+				// Reload incident details
+				await loadIncidentDetails();
+			} catch (err: any) {
+				console.error('Error resolving incident:', err);
+				alert(err.message || 'Failed to resolve incident');
+			} finally {
+				isResolving = false;
 			}
+		};
+		isConfirmModalOpen = true;
+	}
 
-			// Reload incident details
-			await loadIncidentDetails();
-		} catch (err: any) {
-			console.error('Error resolving incident:', err);
-			alert(err.message || 'Failed to resolve incident');
-		} finally {
-			isResolving = false;
+	function handleConfirmDelete() {
+		if (onConfirmCallback) {
+			onConfirmCallback();
 		}
+		isConfirmModalOpen = false;
+	}
+
+	function handleCancelDelete() {
+		isConfirmModalOpen = false;
 	}
 
 	function formatDate(dateString: string): string {
@@ -288,3 +307,11 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmModal
+	isOpen={isConfirmModalOpen}
+	title={confirmTitle}
+	message={confirmMessage}
+	on:confirm={handleConfirmDelete}
+	on:cancel={handleCancelDelete}
+/>

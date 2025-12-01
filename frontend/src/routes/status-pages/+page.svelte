@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
 	import Card from '$lib/components/Card.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	interface StatusPage {
 		id: string;
@@ -27,6 +28,12 @@
 	// Toast notification
 	let showToast = false;
 	let toastMessage = '';
+
+	// Confirm modal state
+	let isConfirmModalOpen = false;
+	let confirmTitle = '';
+	let confirmMessage = '';
+	let onConfirmCallback: (() => void) | null = null;
 
 	async function loadStatusPages() {
 		try {
@@ -76,18 +83,30 @@
 	}
 
 	async function handleDelete(statusPage: StatusPage) {
-		if (!confirm(`Are you sure you want to delete "${statusPage.name}"?`)) {
-			return;
-		}
+		confirmTitle = 'Delete Status Page';
+		confirmMessage = `Are you sure you want to delete "${statusPage.name}"?`;
+		onConfirmCallback = async () => {
+			try {
+				await fetchAPI(`/api/v1/status-pages/${statusPage.id}`, {
+					method: 'DELETE'
+				});
+				await loadStatusPages();
+			} catch (err: any) {
+				alert(`Failed to delete status page: ${err.message}`);
+			}
+		};
+		isConfirmModalOpen = true;
+	}
 
-		try {
-			await fetchAPI(`/api/v1/status-pages/${statusPage.id}`, {
-				method: 'DELETE'
-			});
-			await loadStatusPages();
-		} catch (err: any) {
-			alert(`Failed to delete status page: ${err.message}`);
+	function handleConfirmDelete() {
+		if (onConfirmCallback) {
+			onConfirmCallback();
 		}
+		isConfirmModalOpen = false;
+	}
+
+	function handleCancelDelete() {
+		isConfirmModalOpen = false;
 	}
 
 	async function loadModal() {
@@ -294,6 +313,14 @@
 		on:save={handleModalSave}
 	/>
 {/if}
+
+<ConfirmModal
+	isOpen={isConfirmModalOpen}
+	title={confirmTitle}
+	message={confirmMessage}
+	on:confirm={handleConfirmDelete}
+	on:cancel={handleCancelDelete}
+/>
 
 <!-- Toast notification -->
 {#if showToast}

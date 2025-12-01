@@ -4,6 +4,7 @@
     import AlertRuleModal from '$lib/components/AlertRuleModal.svelte';
     import AlertChannelModal from '$lib/components/AlertChannelModal.svelte';
     import AlertCard from '$lib/components/AlertCard.svelte';
+    import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
     type Tab = 'rules' | 'channels';
 
@@ -18,6 +19,12 @@
     let isChannelModalOpen = false;
     let selectedRule: any = null;
     let selectedChannel: any = null;
+
+    // Confirm modal state
+    let isConfirmModalOpen = false;
+    let confirmTitle = '';
+    let confirmMessage = '';
+    let onConfirmCallback: (() => void) | null = null;
 
     onMount(() => {
         loadData();
@@ -61,24 +68,25 @@
     }
 
     async function handleDeleteRule(rule: any) {
-        if (!confirm(`Are you sure you want to delete "${rule.name}"?`)) {
-            return;
-        }
+        confirmTitle = 'Delete Alert Rule';
+        confirmMessage = `Are you sure you want to delete "${rule.name}"?`;
+        onConfirmCallback = async () => {
+            try {
+                const response = await fetchAPI(`/api/v1/alert-rules/${rule.id}`, {
+                    method: 'DELETE'
+                });
 
-        try {
-            const response = await fetchAPI(`/api/v1/alert-rules/${rule.id}`, {
-                method: 'DELETE'
-            });
+                if (!response.ok) {
+                    throw new Error('Failed to delete alert rule');
+                }
 
-            if (!response.ok) {
-                throw new Error('Failed to delete alert rule');
+                await loadData();
+            } catch (err: any) {
+                console.error('Error deleting alert rule:', err);
+                alert(err.message || 'Failed to delete alert rule');
             }
-
-            await loadData();
-        } catch (err: any) {
-            console.error('Error deleting alert rule:', err);
-            alert(err.message || 'Failed to delete alert rule');
-        }
+        };
+        isConfirmModalOpen = true;
     }
 
     async function handleToggleRuleEnabled(rule: any) {
@@ -111,24 +119,36 @@
     }
 
     async function handleDeleteChannel(channel: any) {
-        if (!confirm(`Are you sure you want to delete "${channel.name}"?`)) {
-            return;
-        }
+        confirmTitle = 'Delete Alert Channel';
+        confirmMessage = `Are you sure you want to delete "${channel.name}"?`;
+        onConfirmCallback = async () => {
+            try {
+                const response = await fetchAPI(`/api/v1/alert-channels/${channel.id}`, {
+                    method: 'DELETE'
+                });
 
-        try {
-            const response = await fetchAPI(`/api/v1/alert-channels/${channel.id}`, {
-                method: 'DELETE'
-            });
+                if (!response.ok) {
+                    throw new Error('Failed to delete alert channel');
+                }
 
-            if (!response.ok) {
-                throw new Error('Failed to delete alert channel');
+                await loadData();
+            } catch (err: any) {
+                console.error('Error deleting alert channel:', err);
+                alert(err.message || 'Failed to delete alert channel');
             }
+        };
+        isConfirmModalOpen = true;
+    }
 
-            await loadData();
-        } catch (err: any) {
-            console.error('Error deleting alert channel:', err);
-            alert(err.message || 'Failed to delete alert channel');
+    function handleConfirmDelete() {
+        if (onConfirmCallback) {
+            onConfirmCallback();
         }
+        isConfirmModalOpen = false;
+    }
+
+    function handleCancelDelete() {
+        isConfirmModalOpen = false;
     }
 
     async function handleToggleChannelEnabled(channel: any) {
@@ -516,3 +536,11 @@
     on:save={handleChannelModalSave}
     on:close={handleChannelModalClose}
 /> 
+
+<ConfirmModal
+    isOpen={isConfirmModalOpen}
+    title={confirmTitle}
+    message={confirmMessage}
+    on:confirm={handleConfirmDelete}
+    on:cancel={handleCancelDelete}
+/>
