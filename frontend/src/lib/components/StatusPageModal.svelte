@@ -85,7 +85,11 @@
 			console.log('Monitors API response status:', response.status);
 			if (response.ok) {
 				const data = await response.json();
-				monitors = data.monitors || [];
+				if (Array.isArray(data)) {
+					monitors = data;
+				} else {
+					monitors = data.monitors || [];
+				}
 				console.log('Loaded monitors:', monitors.length, monitors);
 			} else {
 				console.error('Failed to load monitors - bad response:', response.status, response.statusText);
