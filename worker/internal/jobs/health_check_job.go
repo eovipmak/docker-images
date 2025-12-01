@@ -173,6 +173,13 @@ func (j *HealthCheckJob) checkMonitorsConcurrently(ctx context.Context, monitors
 			defer cancel()
 
 			// Perform the check
+			if internal.Log != nil {
+				internal.Log.Info("Checking monitor",
+					zap.String("type", m.Type),
+					zap.String("url", m.URL),
+					zap.String("id", m.ID),
+				)
+			}
 			j.checkMonitor(checkCtx, m)
 		}(monitor)
 	}
@@ -183,11 +190,14 @@ func (j *HealthCheckJob) checkMonitorsConcurrently(ctx context.Context, monitors
 
 // checkMonitor performs a health check on a single monitor
 func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
+	// Clean up monitor type to ensure reliable comparisons
+	monitor.Type = strings.ToLower(strings.TrimSpace(monitor.Type))
+
 	if internal.Log != nil {
 		internal.Log.Debug("Checking monitor",
 			zap.String("monitor_name", monitor.Name),
-			zap.String("url", monitor.URL),
 			zap.String("type", monitor.Type),
+			zap.String("url", monitor.URL),
 		)
 	}
 	
@@ -199,6 +209,14 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 	var checkError error
 
 	// Perform check based on monitor type
+	if internal.Log != nil {
+		internal.Log.Info("Processing monitor check",
+			zap.String("monitor_id", monitor.ID),
+			zap.String("type", monitor.Type),
+			zap.String("url", monitor.URL),
+		)
+	}
+
 	if monitor.Type == "tcp" {
 		// Parse TCP URL (expected format: host:port or tcp://host:port)
 		host, port, err := j.parseTCPAddress(monitor.URL)
@@ -214,7 +232,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 				checkError = tcpResult.Error
 			}
 		}
-	} else if monitor.Type == "ping" {
+	} else if monitor.Type == "ping" || monitor.Type == "icmp" {
 		// Prepare host for ping (strip protocol)
 		host := monitor.URL
 		if strings.HasPrefix(host, "http://") {
@@ -236,7 +254,10 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 			checkError = icmpResult.Error
 		}
 	} else {
-		// Default to HTTP check
+		if internal.Log != nil {
+			internal.Log.Info("Falling back to HTTP check", zap.String("type", monitor.Type))
+		}
+		// HTTP/HTTPS check
 		httpResult := j.httpChecker.CheckURL(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second, monitor.Keyword)
 		success = httpResult.Success
 		responseTime = httpResult.ResponseTime
@@ -276,7 +297,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 	}
 
 	// Check SSL certificate for HTTPS URLs if enabled (only for HTTP monitors)
-	if monitor.Type != "tcp" && monitor.Type != "ping" && monitor.CheckSSL && (len(monitor.URL) >= 5 && monitor.URL[:5] == "https") {
+	if monitor.Type != "tcp" && monitor.Type != "ping" && monitor.Type != "icmp" && monitor.CheckSSL && (len(monitor.URL) >= 5 && monitor.URL[:5] == "https") {
 		sslResult := j.sslChecker.CheckSSL(monitor.URL)
 		
 		// Set SSL validity
@@ -350,7 +371,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 					zap.String("address", monitor.URL),
 					zap.Int64("response_time_ms", responseTime.Milliseconds()),
 				)
-			} else if monitor.Type == "ping" {
+			} else if monitor.Type == "ping" || monitor.Type == "icmp" {
 				internal.Log.Info("Ping monitor check successful",
 					zap.String("monitor_name", monitor.Name),
 					zap.String("address", monitor.URL),
@@ -373,7 +394,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 					zap.String("address", monitor.URL),
 					zap.Error(checkError),
 				)
-			} else if monitor.Type == "ping" {
+			} else if monitor.Type == "ping" || monitor.Type == "icmp" {
 				internal.Log.Warn("Ping monitor check failed",
 					zap.String("monitor_name", monitor.Name),
 					zap.String("address", monitor.URL),

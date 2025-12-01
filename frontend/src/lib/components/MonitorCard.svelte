@@ -34,8 +34,8 @@
 					<Favicon url={monitor.url} type={monitor.type} />
 					<!-- Monitor type indicator -->
 					<div class="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-xs font-bold
-						{monitor.type === 'tcp' ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white'}">
-						{monitor.type === 'tcp' ? 'T' : 'H'}
+						{monitor.type === 'tcp' ? 'bg-orange-500 text-white' : monitor.type === 'icmp' ? 'bg-purple-500 text-white' : 'bg-blue-500 text-white'}">
+						{monitor.type === 'tcp' ? 'T' : monitor.type === 'icmp' ? 'I' : 'H'}
 					</div>
 				</div>
 				<div class="min-w-0">

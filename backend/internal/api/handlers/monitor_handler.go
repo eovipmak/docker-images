@@ -40,8 +40,7 @@ func NewMonitorHandler(monitorRepo repository.MonitorRepository, alertRuleRepo r
 type CreateMonitorRequest struct {
 	Name          string `json:"name" binding:"required"`
 	URL           string `json:"url" binding:"required"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
 	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
@@ -54,8 +53,7 @@ type CreateMonitorRequest struct {
 type UpdateMonitorRequest struct {
 	Name          string `json:"name" binding:"omitempty"`
 	URL           string `json:"url" binding:"omitempty"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
 	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
@@ -110,7 +108,7 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
 			return
 		}
-	} else if monitorType == "ping" {
+	} else if monitorType == "ping" || monitorType == "icmp" {
 		// Validate as hostname or IP (no protocol)
 		if strings.Contains(req.URL, "://") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Hostname/IP format. Do not include protocol (http://, etc.)"})
@@ -343,7 +341,7 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Host:Port format. Use format: host:port"})
 				return
 			}
-		} else if monitorType == "ping" {
+		} else if monitorType == "ping" || monitorType == "icmp" {
 			// Validate as hostname or IP (no protocol)
 			if strings.Contains(req.URL, "://") {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Hostname/IP format. Do not include protocol (http://, etc.)"})

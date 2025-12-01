@@ -31,6 +31,8 @@
 	<div class="{className} flex items-center justify-center text-slate-400">
 		{#if type === 'tcp'}
 			<span class="text-xs font-bold text-orange-500">TCP</span>
+		{:else if type === 'icmp'}
+			<span class="text-xs font-bold text-purple-500">ICMP</span>
 		{:else}
 			<slot>
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">

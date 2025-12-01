@@ -491,17 +491,19 @@
 						<h1 class="text-2xl font-bold text-slate-900 dark:text-white drop-shadow-sm">{monitor.name}</h1>
 						<MonitorStatus status={getMonitorStatus()} />
 						<span class="px-2 py-1 rounded-full text-xs font-medium 
-							{monitor.type === 'tcp' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}">
-							{monitor.type === 'tcp' ? 'TCP' : 'HTTP'}
+							{monitor.type === 'tcp' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 
+							 monitor.type === 'icmp' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 
+							 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}">
+							{monitor.type === 'tcp' ? 'TCP' : monitor.type === 'icmp' ? 'ICMP' : 'HTTP'}
 						</span>
 					</div>
 					<div class="flex items-center gap-2 mt-1">
-						<a href={monitor.type === 'tcp' ? null : monitor.url} 
-						   target={monitor.type === 'tcp' ? null : "_blank"} 
-						   rel={monitor.type === 'tcp' ? null : "noopener noreferrer"} 
-						   class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline text-sm flex items-center gap-1 {monitor.type === 'tcp' ? 'cursor-default' : ''}">
+						<a href={monitor.type === 'tcp' || monitor.type === 'icmp' ? null : monitor.url} 
+						   target={monitor.type === 'tcp' || monitor.type === 'icmp' ? null : "_blank"} 
+						   rel={monitor.type === 'tcp' || monitor.type === 'icmp' ? null : "noopener noreferrer"} 
+						   class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline text-sm flex items-center gap-1 {monitor.type === 'tcp' || monitor.type === 'icmp' ? 'cursor-default' : ''}">
 							{monitor.url}
-							{#if monitor.type !== 'tcp'}
+							{#if monitor.type !== 'tcp' && monitor.type !== 'icmp'}
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
 								</svg>

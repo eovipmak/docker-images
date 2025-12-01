@@ -68,7 +68,7 @@
 	$: isEditMode = !!monitor;
 
 	// Reset SSL settings/Keyword when switching to TCP or Ping
-	$: if (formData.type === 'tcp' || formData.type === 'ping') {
+	$: if (formData.type === 'tcp' || formData.type === 'icmp') {
 		formData.check_ssl = false;
         formData.keyword = '';
 	}
@@ -94,7 +94,7 @@
 			if (!tcpPattern.test(formData.url)) {
 				errors.url = 'Invalid Host:Port format. Use format: host:port';
 			}
-		} else if (formData.type === 'ping') {
+		} else if (formData.type === 'icmp') {
             if (formData.url.includes('://')) {
                 errors.url = 'Enter a hostname or IP address (no protocol)';
             }
@@ -155,7 +155,7 @@
         switch (type) {
             case 'http': return 'https://example.com';
             case 'tcp': return 'example.com:80';
-            case 'ping': return 'example.com';
+            case 'icmp': return 'example.com';
             default: return '';
         }
     }
@@ -164,7 +164,7 @@
         switch (type) {
             case 'http': return 'URL';
             case 'tcp': return 'Host:Port';
-            case 'ping': return 'Hostname / IP';
+            case 'icmp': return 'Hostname / IP';
             default: return 'Address';
         }
     }
@@ -229,7 +229,7 @@
 									>
 										<option value="http">HTTP/HTTPS</option>
 										<option value="tcp">TCP</option>
-                                        <option value="ping">Ping (ICMP)</option>
+                                        <option value="icmp">Ping (ICMP)</option>
 									</select>
 								</div>
 

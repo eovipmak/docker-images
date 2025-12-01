@@ -90,10 +90,12 @@ func (r *incidentRepository) GetOpenIncident(monitorID, alertRuleID string) (*en
 func (r *incidentRepository) GetByMonitorID(monitorID string) ([]*entities.Incident, error) {
 	var incidents []*entities.Incident
 	query := `
-		SELECT id, monitor_id, alert_rule_id, started_at, resolved_at, status, trigger_value, created_at
-		FROM incidents
-		WHERE monitor_id = $1
-		ORDER BY started_at DESC
+		SELECT i.id, i.monitor_id, i.alert_rule_id, i.started_at, i.resolved_at, i.status, i.trigger_value, i.created_at, i.notified_at,
+		       ar.name as alert_rule_name
+		FROM incidents i
+		LEFT JOIN alert_rules ar ON i.alert_rule_id = ar.id
+		WHERE i.monitor_id = $1
+		ORDER BY i.started_at DESC
 	`
 
 	err := r.db.Select(&incidents, query, monitorID)
@@ -164,9 +166,12 @@ func (r *incidentRepository) Resolve(id string) error {
 // List retrieves incidents with filtering options
 func (r *incidentRepository) List(filters repository.IncidentFilters) ([]*entities.Incident, error) {
 	query := `
-		SELECT i.id, i.monitor_id, i.alert_rule_id, i.started_at, i.resolved_at, i.status, i.trigger_value, i.created_at
+		SELECT i.id, i.monitor_id, i.alert_rule_id, i.started_at, i.resolved_at, i.status, i.trigger_value, i.created_at, i.notified_at,
+		       m.name as monitor_name, m.url as monitor_url,
+		       ar.name as alert_rule_name
 		FROM incidents i
 		INNER JOIN monitors m ON i.monitor_id = m.id
+		LEFT JOIN alert_rules ar ON i.alert_rule_id = ar.id
 		WHERE m.tenant_id = $1
 	`
 	

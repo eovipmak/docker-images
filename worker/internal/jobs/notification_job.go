@@ -564,7 +564,6 @@ func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationDa
 		title = "✅ Resolved: " + incident.MonitorName
 	}
 
-	// Simple text body (using \n)
 	// Simple text body
 	body := fmt.Sprintf(`Subject: %s
 From: %s
@@ -580,22 +579,11 @@ Time: %s
 
 --
 V-Insight Monitoring
-`, title, j.smtpConfig.From, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
 `, title, smtpFrom, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
 
 	// Replace \n with \r\n for SMTP compliance
 	body = strings.ReplaceAll(body, "\n", "\r\n")
 
-	auth := smtp.PlainAuth("", j.smtpConfig.User, j.smtpConfig.Password, j.smtpConfig.Host)
-	smtpAddr := fmt.Sprintf("%s:%d", j.smtpConfig.Host, j.smtpConfig.Port)
-
-	// Note: smtp.SendMail requires valid auth. If no auth is needed, auth should be nil.
-	// We assume auth is needed if User is set.
-	if j.smtpConfig.User == "" {
-		auth = nil
-	}
-
-	err = smtp.SendMail(smtpAddr, auth, j.smtpConfig.From, []string{to}, []byte(body))
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
 	smtpAddr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
 
@@ -615,11 +603,7 @@ V-Insight Monitoring
 
 // markIncidentAsNotified marks an incident as notified
 func (j *NotificationJob) markIncidentAsNotified(incidentID string) error {
-	query := `
-		UPDATE incidents
-		SET notified_at = $1
-		WHERE id = $2 AND notified_at IS NULL
-	`
+	query := "UPDATE incidents SET notified_at = $1 WHERE id = $2 AND notified_at IS NULL"
 
 	result, err := j.db.Exec(query, time.Now(), incidentID)
 	if err != nil {
