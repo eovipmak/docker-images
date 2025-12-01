@@ -9,7 +9,7 @@ import (
 
 	"github.com/eovipmak/v-insight/backend/internal/api/handlers"
 	"github.com/eovipmak/v-insight/backend/internal/api/middleware"
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"

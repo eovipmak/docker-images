@@ -1,16 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/svelte';
 import MonitorCard from '../MonitorCard.svelte';
+import type { Monitor } from '../../types';
 
 describe('MonitorCard', () => {
   it('renders monitor content and link', () => {
-    const monitor = {
+    const monitor: Monitor = {
       id: 'mon-1',
+      tenant_id: 1,
       name: 'Example Monitor',
       url: 'https://example.com',
+      type: 'http',
       enabled: true,
+      check_interval: 60,
+      timeout: 30,
+      check_ssl: true,
+      ssl_alert_days: 30,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       last_checked_at: new Date().toISOString(),
-      response_time_ms: 123
+      last_check: {
+          monitor_id: 'mon-1',
+          checked_at: new Date().toISOString(),
+          response_time_ms: 123,
+          success: true
+      }
     };
 
     const { getByText, container } = render(MonitorCard, { props: { monitor } });

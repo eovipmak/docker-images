@@ -3,16 +3,17 @@
 	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
 	import { latestMonitorChecks } from '$lib/api/events';
+	import type { Monitor } from '$lib/types';
 	import MonitorCard from '$lib/components/MonitorCard.svelte';
 	import MonitorList from '$lib/components/MonitorList.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
-	let monitors: any[] = [];
+	let monitors: Monitor[] = [];
 	let isLoading = true;
 	let error = '';
 	let isModalOpen = false;
-	let selectedMonitor: any = null;
+	let selectedMonitor: Monitor | null = null;
 	let searchQuery = '';
 	let sortField: 'name' | 'status' = 'name';
 	let sortDirection: 'asc' | 'desc' = 'asc';

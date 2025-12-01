@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/eovipmak/v-insight/backend/internal"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

@@ -12,7 +12,7 @@ import (
 	"github.com/eovipmak/v-insight/backend/internal/config"
 	"github.com/eovipmak/v-insight/backend/internal/database"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
-	"github.com/eovipmak/v-insight/backend/internal/repository/postgres"
+	"github.com/eovipmak/v-insight/shared/repository/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"

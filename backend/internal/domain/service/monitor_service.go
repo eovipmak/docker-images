@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/database"
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // MonitorService provides business logic for monitor operations

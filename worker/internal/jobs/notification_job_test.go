@@ -3,24 +3,27 @@ package jobs
 import (
 	"testing"
 	"time"
+
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
-// TestIncidentNotificationData_StructFields tests that IncidentNotificationData struct has all required fields
-func TestIncidentNotificationData_StructFields(t *testing.T) {
-	incident := IncidentNotificationData{
-		IncidentID:   "test-incident-id",
-		MonitorID:    "test-monitor-id",
-		MonitorName:  "Test Monitor",
-		MonitorURL:   "https://example.com",
-		AlertRuleID:  "test-alert-rule-id",
-		AlertName:    "Test Alert",
-		Status:       "open",
-		Message:      "Monitor is down",
-		Timestamp:    time.Now(),
+// TestIncident_StructFields tests that Incident struct has all required fields for notification
+func TestIncident_StructFields(t *testing.T) {
+	now := time.Now()
+	incident := entities.Incident{
+		ID:            "test-incident-id",
+		MonitorID:     "test-monitor-id",
+		MonitorName:   "Test Monitor",
+		MonitorURL:    "https://example.com",
+		AlertRuleID:   "test-alert-rule-id",
+		AlertRuleName: "Test Alert",
+		Status:        "open",
+		TriggerValue:  "Monitor is down",
+		StartedAt:     now,
 	}
 
-	if incident.IncidentID != "test-incident-id" {
-		t.Errorf("Expected IncidentID 'test-incident-id', got '%s'", incident.IncidentID)
+	if incident.ID != "test-incident-id" {
+		t.Errorf("Expected ID 'test-incident-id', got '%s'", incident.ID)
 	}
 	if incident.MonitorName != "Test Monitor" {
 		t.Errorf("Expected MonitorName 'Test Monitor', got '%s'", incident.MonitorName)
@@ -30,13 +33,13 @@ func TestIncidentNotificationData_StructFields(t *testing.T) {
 	}
 }
 
-// TestAlertChannelConfig_StructFields tests that AlertChannelConfig struct has all required fields
-func TestAlertChannelConfig_StructFields(t *testing.T) {
-	channel := AlertChannelConfig{
+// TestAlertChannel_StructFields tests that AlertChannel struct has all required fields
+func TestAlertChannel_StructFields(t *testing.T) {
+	channel := entities.AlertChannel{
 		ID:   "test-channel-id",
 		Type: "webhook",
 		Name: "Test Webhook",
-		Config: map[string]interface{}{
+		Config: entities.ChannelConfig{
 			"url": "https://example.com/webhook",
 		},
 		Enabled: true,
@@ -60,11 +63,11 @@ func TestAlertChannelConfig_StructFields(t *testing.T) {
 	}
 
 	// Test email channel config
-	emailChannel := AlertChannelConfig{
+	emailChannel := entities.AlertChannel{
 		ID:   "test-email-channel-id",
 		Type: "email",
 		Name: "Test Email",
-		Config: map[string]interface{}{
+		Config: entities.ChannelConfig{
 			"to":            "test@example.com",
 			"smtp_host":     "smtp.gmail.com",
 			"smtp_port":     587.0,

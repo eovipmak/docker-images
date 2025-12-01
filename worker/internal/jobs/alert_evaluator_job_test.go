@@ -3,6 +3,8 @@ package jobs
 import (
 	"database/sql"
 	"testing"
+
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // Note: These are placeholder tests. Full integration testing would require
@@ -20,11 +22,11 @@ func TestAlertEvaluatorJob_Name(t *testing.T) {
 func TestEvaluateRule_Down(t *testing.T) {
 	job := &AlertEvaluatorJob{}
 
-	check := &MonitorCheck{
+	check := &entities.MonitorCheck{
 		Success: false,
 	}
 
-	rule := &AlertRule{
+	rule := &entities.AlertRule{
 		TriggerType: "down",
 	}
 
@@ -41,11 +43,11 @@ func TestEvaluateRule_Down(t *testing.T) {
 func TestEvaluateRule_Down_NotTriggered(t *testing.T) {
 	job := &AlertEvaluatorJob{}
 
-	check := &MonitorCheck{
+	check := &entities.MonitorCheck{
 		Success: true,
 	}
 
-	rule := &AlertRule{
+	rule := &entities.AlertRule{
 		TriggerType: "down",
 	}
 
@@ -58,7 +60,7 @@ func TestEvaluateRule_Down_NotTriggered(t *testing.T) {
 func TestEvaluateRule_SlowResponse_Triggered(t *testing.T) {
 	job := &AlertEvaluatorJob{}
 
-	check := &MonitorCheck{
+	check := &entities.MonitorCheck{
 		Success: true,
 		ResponseTimeMs: sql.NullInt64{
 			Int64: 5000,
@@ -66,7 +68,7 @@ func TestEvaluateRule_SlowResponse_Triggered(t *testing.T) {
 		},
 	}
 
-	rule := &AlertRule{
+	rule := &entities.AlertRule{
 		TriggerType:    "slow_response",
 		ThresholdValue: 3000,
 	}
@@ -84,7 +86,7 @@ func TestEvaluateRule_SlowResponse_Triggered(t *testing.T) {
 func TestEvaluateRule_SlowResponse_NotTriggered(t *testing.T) {
 	job := &AlertEvaluatorJob{}
 
-	check := &MonitorCheck{
+	check := &entities.MonitorCheck{
 		Success: true,
 		ResponseTimeMs: sql.NullInt64{
 			Int64: 100,
@@ -92,7 +94,7 @@ func TestEvaluateRule_SlowResponse_NotTriggered(t *testing.T) {
 		},
 	}
 
-	rule := &AlertRule{
+	rule := &entities.AlertRule{
 		TriggerType:    "slow_response",
 		ThresholdValue: 3000,
 	}

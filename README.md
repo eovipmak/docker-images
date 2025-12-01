@@ -6,6 +6,7 @@ V-Insight is a Docker-based multi-tenant monitoring platform with a focus on rel
 - Worker: Go (port 8081)
 - Frontend: SvelteKit (port 3000)
 - Database: PostgreSQL 15
+- Shared: Go module for domain entities and repositories
 
 ---
 
@@ -14,6 +15,8 @@ V-Insight is a Docker-based multi-tenant monitoring platform with a focus on rel
 V-Insight performs automated health checks (HTTP/HTTPS) and SSL expiry monitoring, evaluates alert rules, creates incidents, and notifies configured channels (webhook, Discord, email-ready).
 
 It supports multi-tenant isolation via `tenant_id` on all main tables and enforces tenant-scoped queries consistently in handlers and repositories.
+
+**Architecture Refactoring:** The project now uses a **Go Workspace** (`go.work`) with a `shared` module to centralize domain logic and repositories, reducing duplication between Backend and Worker services.
 
 ---
 
@@ -53,10 +56,18 @@ Migrations run automatically on startup.
 
 ## For developers and contributors
 
-- Backend tests: `cd backend && go test ./...`
-- Worker tests: `cd worker && go test ./...`
-- Frontend TypeScript checks: `cd frontend && npm run check`
-- E2E: `cd frontend && npx playwright test`
+This project uses Go Workspaces.
+
+- **Setup Workspace**: `go work sync`
+- **Shared Module**: `shared/` contains entities and repositories.
+- **Backend**: `backend/` contains API handlers and services.
+- **Worker**: `worker/` contains background jobs.
+
+Tests:
+- Shared: `cd shared && go test ./...`
+- Backend: `cd backend && go test ./...`
+- Worker: `cd worker && go test ./...`
+- Frontend: `cd frontend && npm run check` (TypeScript), `npx playwright test` (E2E)
 
 Tips:
 - Do not commit `.env` files to the repository – use environment configurations for production.

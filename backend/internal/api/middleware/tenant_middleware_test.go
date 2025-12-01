@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 	"github.com/gin-gonic/gin"
 )
 

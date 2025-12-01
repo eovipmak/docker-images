@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/eovipmak/v-insight/backend/internal/domain/entities"
+import "github.com/eovipmak/v-insight/shared/domain/entities"
 
 // UserRepository defines the interface for user data operations
 type UserRepository interface {

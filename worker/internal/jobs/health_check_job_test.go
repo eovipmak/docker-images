@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"testing"
 	"time"
+
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // TestMonitor_StructFields tests that Monitor struct has all required fields
 func TestMonitor_StructFields(t *testing.T) {
-	monitor := Monitor{
+	now := time.Now()
+	monitor := entities.Monitor{
 		ID:            "test-id",
 		TenantID:      1,
 		Name:          "Test Monitor",
@@ -17,7 +20,7 @@ func TestMonitor_StructFields(t *testing.T) {
 		CheckInterval: 300,
 		Timeout:       30,
 		Enabled:       true,
-		LastCheckedAt: sql.NullTime{Time: time.Now(), Valid: true},
+		LastCheckedAt: &now,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
@@ -38,7 +41,7 @@ func TestMonitor_StructFields(t *testing.T) {
 
 // TestMonitorCheck_StructFields tests that MonitorCheck struct has all required fields
 func TestMonitorCheck_StructFields(t *testing.T) {
-	check := MonitorCheck{
+	check := entities.MonitorCheck{
 		ID:             "check-id",
 		MonitorID:      "monitor-id",
 		CheckedAt:      time.Now(),
@@ -84,28 +87,13 @@ func TestHealthCheckJob_NewHealthCheckJob(t *testing.T) {
 	}
 }
 
-// TestHealthCheckJob_Run_ContextCancellation tests graceful handling of context cancellation
-func TestHealthCheckJob_Run_ContextCancellation(t *testing.T) {
-	job := NewHealthCheckJob(nil)
-	
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
-	
-	// Should handle cancelled context gracefully
-	err := job.Run(ctx)
-	// With nil DB, it should return an error when trying to query
-	if err == nil {
-		t.Error("Expected error with cancelled context and nil DB, got nil")
-	}
-}
-
 // TestHealthCheckJob_CheckMonitorsConcurrently_EmptyList tests concurrent checking with empty list
 func TestHealthCheckJob_CheckMonitorsConcurrently_EmptyList(t *testing.T) {
 	job := NewHealthCheckJob(nil)
 	ctx := context.Background()
 	
 	// Should handle empty list gracefully
-	monitors := []*Monitor{}
+	monitors := []*entities.Monitor{}
 	
 	// This should not panic
 	defer func() {

@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // IncidentRepository defines the interface for incident data operations
@@ -28,6 +28,12 @@ type IncidentRepository interface {
 
 	// Resolve marks an incident as resolved
 	Resolve(id string) error
+
+	// GetUnnotifiedIncidents retrieves incidents that haven't been notified yet
+	GetUnnotifiedIncidents() ([]*entities.Incident, error)
+
+	// MarkAsNotified marks an incident as notified
+	MarkAsNotified(id string) error
 }
 
 // IncidentFilters defines filtering options for incident queries

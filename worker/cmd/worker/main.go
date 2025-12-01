@@ -11,6 +11,7 @@ import (
 
 	"github.com/eovipmak/v-insight/worker/internal"
 	"github.com/eovipmak/v-insight/worker/internal/config"
+	"github.com/eovipmak/v-insight/shared/repository/postgres"
 	"github.com/eovipmak/v-insight/worker/internal/database"
 	"github.com/eovipmak/v-insight/worker/internal/executor"
 	"github.com/eovipmak/v-insight/worker/internal/jobs"
@@ -77,11 +78,17 @@ func main() {
 	// Initialize cron scheduler
 	sched := scheduler.New()
 
+	// Initialize repositories
+	monitorRepo := postgres.NewMonitorRepository(db.DB)
+	alertRuleRepo := postgres.NewAlertRuleRepository(db.DB)
+	incidentRepo := postgres.NewIncidentRepository(db.DB)
+	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
+
 	// Register jobs
-	healthCheckJob := jobs.NewHealthCheckJob(db)
+	healthCheckJob := jobs.NewHealthCheckJob(monitorRepo)
 	sslCheckJob := jobs.NewSSLCheckJob(db)
-	alertEvaluatorJob := jobs.NewAlertEvaluatorJob(db)
-	notificationJob := jobs.NewNotificationJob(db, cfg.SMTP)
+	alertEvaluatorJob := jobs.NewAlertEvaluatorJob(alertRuleRepo, incidentRepo, monitorRepo)
+	notificationJob := jobs.NewNotificationJob(incidentRepo, alertChannelRepo, cfg.SMTP)
 
 	// Schedule health check job to run every 30 seconds
 	if err := sched.AddJob("*/30 * * * * *", healthCheckJob); err != nil {

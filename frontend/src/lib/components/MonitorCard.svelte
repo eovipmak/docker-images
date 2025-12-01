@@ -2,9 +2,10 @@
 	import MonitorStatus from './MonitorStatus.svelte';
 	import Favicon from './Favicon.svelte';
 	import Card from './Card.svelte';
+	import type { Monitor } from '$lib/types';
 	import { createEventDispatcher } from 'svelte';
 
-	export let monitor: any;
+	export let monitor: Monitor;
 
 	const dispatch = createEventDispatcher();
 
@@ -54,8 +55,8 @@
 			{/if}
 		</div>
 		<div class="flex gap-2 items-center">
-			{#if monitor.response_time_ms}
-				<span class="text-slate-400 dark:text-slate-500">{Math.round(monitor.response_time_ms)}ms</span>
+			{#if monitor.last_check?.response_time_ms}
+				<span class="text-slate-400 dark:text-slate-500">{Math.round(monitor.last_check.response_time_ms)}ms</span>
 			{/if}
 			<div class="flex gap-2 items-center opacity-0 group-hover:opacity-100 transition-opacity">
 				<button
