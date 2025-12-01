@@ -19,7 +19,7 @@ func TestHTTPChecker_CheckURL_Success(t *testing.T) {
 	checker := NewHTTPChecker()
 	ctx := context.Background()
 
-	result := checker.CheckURL(ctx, server.URL, 5*time.Second)
+	result := checker.CheckURL(ctx, server.URL, 5*time.Second, "")
 
 	if !result.Success {
 		t.Errorf("Expected success=true, got false")
@@ -45,7 +45,7 @@ func TestHTTPChecker_CheckURL_ServerError(t *testing.T) {
 	checker := NewHTTPChecker()
 	ctx := context.Background()
 
-	result := checker.CheckURL(ctx, server.URL, 5*time.Second)
+	result := checker.CheckURL(ctx, server.URL, 5*time.Second, "")
 
 	if result.Success {
 		t.Errorf("Expected success=false for 500 error, got true")
@@ -69,7 +69,7 @@ func TestHTTPChecker_CheckURL_Redirect(t *testing.T) {
 	checker := NewHTTPChecker()
 	ctx := context.Background()
 
-	result := checker.CheckURL(ctx, server.URL+"/redirect", 5*time.Second)
+	result := checker.CheckURL(ctx, server.URL+"/redirect", 5*time.Second, "")
 
 	if !result.Success {
 		t.Errorf("Expected success=true after redirect, got false")
@@ -91,7 +91,7 @@ func TestHTTPChecker_CheckURL_Timeout(t *testing.T) {
 	ctx := context.Background()
 
 	// Use a very short timeout to trigger timeout
-	result := checker.CheckURL(ctx, server.URL, 50*time.Millisecond)
+	result := checker.CheckURL(ctx, server.URL, 50*time.Millisecond, "")
 
 	if result.Success {
 		t.Errorf("Expected success=false on timeout, got true")
@@ -105,7 +105,7 @@ func TestHTTPChecker_CheckURL_InvalidURL(t *testing.T) {
 	checker := NewHTTPChecker()
 	ctx := context.Background()
 
-	result := checker.CheckURL(ctx, "://invalid-url", 5*time.Second)
+	result := checker.CheckURL(ctx, "://invalid-url", 5*time.Second, "")
 
 	if result.Success {
 		t.Errorf("Expected success=false for invalid URL, got true")
@@ -129,7 +129,7 @@ func TestHTTPChecker_CheckURL_ContextCancellation(t *testing.T) {
 	// Cancel context immediately
 	cancel()
 
-	result := checker.CheckURL(ctx, server.URL, 5*time.Second)
+	result := checker.CheckURL(ctx, server.URL, 5*time.Second, "")
 
 	if result.Success {
 		t.Errorf("Expected success=false on context cancellation, got true")
@@ -151,9 +151,35 @@ func TestHTTPChecker_CheckURL_UserAgent(t *testing.T) {
 	checker := NewHTTPChecker()
 	ctx := context.Background()
 
-	checker.CheckURL(ctx, server.URL, 5*time.Second)
+	checker.CheckURL(ctx, server.URL, 5*time.Second, "")
 
 	if receivedUserAgent != "V-Insight-Monitor/1.0" {
 		t.Errorf("Expected User-Agent 'V-Insight-Monitor/1.0', got '%s'", receivedUserAgent)
+	}
+}
+
+func TestHTTPChecker_CheckURL_Keyword(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Hello World Application"))
+	}))
+	defer server.Close()
+
+	checker := NewHTTPChecker()
+	ctx := context.Background()
+
+	// Test Match
+	result := checker.CheckURL(ctx, server.URL, 5*time.Second, "World")
+	if !result.Success {
+		t.Errorf("Expected success for matching keyword, got error: %v", result.Error)
+	}
+
+	// Test No Match
+	result = checker.CheckURL(ctx, server.URL, 5*time.Second, "Universe")
+	if result.Success {
+		t.Errorf("Expected failure for non-matching keyword, got success")
+	}
+	if result.Error == nil {
+		t.Errorf("Expected error for non-matching keyword, got nil")
 	}
 }

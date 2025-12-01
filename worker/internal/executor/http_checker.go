@@ -3,7 +3,9 @@ package executor
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -37,7 +39,7 @@ func NewHTTPChecker() *HTTPChecker {
 
 // CheckURL performs an HTTP health check on the given URL
 // Returns status code, response time, and any error encountered
-func (c *HTTPChecker) CheckURL(ctx context.Context, url string, timeout time.Duration) HTTPCheckResult {
+func (c *HTTPChecker) CheckURL(ctx context.Context, url string, timeout time.Duration, keyword string) HTTPCheckResult {
 	// Create a context with timeout
 	checkCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -73,6 +75,29 @@ func (c *HTTPChecker) CheckURL(ctx context.Context, url string, timeout time.Dur
 
 	// Consider 2xx and 3xx status codes as successful
 	success := resp.StatusCode >= 200 && resp.StatusCode < 400
+
+	if success && keyword != "" {
+		// Read body and check for keyword (limit to 1MB to prevent OOM)
+		bodyReader := io.LimitReader(resp.Body, 1024*1024)
+		bodyBytes, err := io.ReadAll(bodyReader)
+		if err != nil {
+			return HTTPCheckResult{
+				StatusCode:   resp.StatusCode,
+				ResponseTime: responseTime,
+				Error:        fmt.Errorf("failed to read response body: %w", err),
+				Success:      false,
+			}
+		}
+
+		if !strings.Contains(string(bodyBytes), keyword) {
+			return HTTPCheckResult{
+				StatusCode:   resp.StatusCode,
+				ResponseTime: responseTime,
+				Error:        fmt.Errorf("keyword '%s' not found in response", keyword),
+				Success:      false,
+			}
+		}
+	}
 
 	return HTTPCheckResult{
 		StatusCode:   resp.StatusCode,

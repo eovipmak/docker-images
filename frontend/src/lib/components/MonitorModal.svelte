@@ -11,6 +11,7 @@
 		name: string;
 		url: string;
 		type: string;
+		keyword: string;
 		check_interval: number;
 		timeout: number;
 		enabled: boolean;
@@ -22,6 +23,7 @@
 		name: '',
 		url: '',
 		type: 'http',
+		keyword: '',
 		check_interval: 60,
 		timeout: 30,
 		enabled: true,
@@ -39,6 +41,7 @@
 			name: monitor.name || '',
 			url: monitor.url || '',
 			type: monitor.type || 'http',
+			keyword: monitor.keyword || '',
 			check_interval: monitor.check_interval || 60,
 			timeout: monitor.timeout || 30,
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
@@ -52,6 +55,7 @@
 			name: '',
 			url: '',
 			type: 'http',
+			keyword: '',
 			check_interval: 60,
 			timeout: 30,
 			enabled: true,
@@ -222,6 +226,26 @@
 										<p class="mt-1 text-sm text-red-600">{errors.url}</p>
 									{/if}
 								</div>
+
+                                <!-- Keyword Search (HTTP only) -->
+                                {#if formData.type === 'http'}
+                                    <div>
+                                        <label for="keyword" class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Keyword Search (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="keyword"
+                                            id="keyword"
+                                            bind:value={formData.keyword}
+                                            class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+                                            placeholder="e.g. 'Welcome' or 'Status: OK'"
+                                        />
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            If set, the monitor will be considered DOWN if this keyword is not found in the response body.
+                                        </p>
+                                    </div>
+                                {/if}
 
 								<div class="grid grid-cols-2 gap-4">
 									<!-- Check Interval -->

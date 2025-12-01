@@ -41,6 +41,7 @@ type CreateMonitorRequest struct {
 	Name          string `json:"name" binding:"required"`
 	URL           string `json:"url" binding:"required"`
 	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
 	Enabled       *bool  `json:"enabled"`                                        // pointer to allow explicit false
@@ -53,6 +54,7 @@ type UpdateMonitorRequest struct {
 	Name          string `json:"name" binding:"omitempty"`
 	URL           string `json:"url" binding:"omitempty"`
 	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
+	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
 	Enabled       *bool  `json:"enabled"`
@@ -141,11 +143,17 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		sslAlertDays = req.SSLAlertDays
 	}
 
+	keyword := ""
+	if req.Keyword != nil {
+		keyword = *req.Keyword
+	}
+
 	monitor := &entities.Monitor{
 		TenantID:      tenantID,
 		Name:          sanitizedName,
 		URL:           req.URL,
 		Type:          monitorType,
+		Keyword:       keyword,
 		CheckInterval: checkInterval,
 		Timeout:       timeout,
 		Enabled:       enabled,
@@ -345,6 +353,12 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	if req.Type != "" {
 		monitor.Type = req.Type
 	}
+
+	// Update keyword if provided (including empty string if explicitly sent)
+	if req.Keyword != nil {
+		monitor.Keyword = *req.Keyword
+	}
+
 	if req.CheckInterval > 0 {
 		monitor.CheckInterval = req.CheckInterval
 	}

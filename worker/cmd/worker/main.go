@@ -81,7 +81,7 @@ func main() {
 	healthCheckJob := jobs.NewHealthCheckJob(db)
 	sslCheckJob := jobs.NewSSLCheckJob(db)
 	alertEvaluatorJob := jobs.NewAlertEvaluatorJob(db)
-	notificationJob := jobs.NewNotificationJob(db)
+	notificationJob := jobs.NewNotificationJob(db, cfg.SMTP)
 
 	// Schedule health check job to run every 30 seconds
 	if err := sched.AddJob("*/30 * * * * *", healthCheckJob); err != nil {
