@@ -11,6 +11,7 @@ type Monitor struct {
 	Name          string       `db:"name" json:"name"`
 	URL           string       `db:"url" json:"url"`
 	Type          string       `db:"type" json:"type"`
+	Keyword       string       `db:"keyword" json:"keyword"`
 	CheckInterval int          `db:"check_interval" json:"check_interval"` // seconds
 	Timeout       int          `db:"timeout" json:"timeout"`                // seconds
 	Enabled       bool         `db:"enabled" json:"enabled"`

@@ -542,6 +542,7 @@ func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationDa
 		title = "✅ Resolved: " + incident.MonitorName
 	}
 
+	// Simple text body (using \n)
 	// Simple text body
 	body := fmt.Sprintf(`Subject: %s
 From: %s
@@ -558,6 +559,9 @@ Time: %s
 --
 V-Insight Monitoring
 `, title, j.smtpConfig.From, to, title, incident.MonitorName, incident.MonitorURL, incident.Status, incident.Message, incident.Timestamp.Format(time.RFC3339))
+
+	// Replace \n with \r\n for SMTP compliance
+	body = strings.ReplaceAll(body, "\n", "\r\n")
 
 	auth := smtp.PlainAuth("", j.smtpConfig.User, j.smtpConfig.Password, j.smtpConfig.Host)
 	smtpAddr := fmt.Sprintf("%s:%d", j.smtpConfig.Host, j.smtpConfig.Port)

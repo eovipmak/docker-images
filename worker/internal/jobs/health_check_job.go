@@ -22,6 +22,7 @@ type Monitor struct {
 	Name          string       `db:"name"`
 	URL           string       `db:"url"`
 	Type          string       `db:"type"`
+	Keyword       string       `db:"keyword"`
 	CheckInterval int          `db:"check_interval"`
 	Timeout       int          `db:"timeout"`
 	Enabled       bool         `db:"enabled"`
@@ -126,7 +127,7 @@ func (j *HealthCheckJob) Run(ctx context.Context) error {
 func (j *HealthCheckJob) getMonitorsNeedingCheck(now time.Time) ([]*Monitor, error) {
 	var monitors []*Monitor
 	query := `
-		SELECT id, tenant_id, name, url, type, check_interval, timeout, enabled, 
+		SELECT id, tenant_id, name, url, type, keyword, check_interval, timeout, enabled,
 		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE enabled = true
@@ -212,7 +213,7 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *Monitor) {
 		}
 	} else {
 		// Default to HTTP check
-		httpResult := j.httpChecker.CheckURL(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second)
+		httpResult := j.httpChecker.CheckURL(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second, monitor.Keyword)
 		success = httpResult.Success
 		responseTime = httpResult.ResponseTime
 		statusCode = httpResult.StatusCode
