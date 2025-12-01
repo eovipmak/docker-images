@@ -63,10 +63,14 @@ jobs:
       - name: Start services
         run: make up
 
+      - name: Install wait4x
+        run: |
+          curl -LO https://github.com/wait4x/wait4x/releases/download/v3.6.0/wait4x-linux-amd64.tar.gz
+          tar -xf wait4x-linux-amd64.tar.gz
+          sudo mv wait4x /usr/local/bin/
+
       - name: Wait for services
-        uses: wait4x/wait4x-action@v0.0.1
-        with:
-          command: wait4x http http://localhost:8080/health --timeout=60s
+        run: wait4x http http://localhost:8080/health --timeout=60s
 
       - name: Install Playwright browsers
         run: |
