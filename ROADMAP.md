@@ -6,6 +6,8 @@ This document outlines the development plan for the next features of V-Insight. 
 - [x] Stage 1: Implement Email Notifications (Implemented)
 - [x] Stage 2: Add Keyword Monitoring
 - [x] Stage 3: Add Ping (ICMP) Monitoring
+- [x] Stage 2: Add Keyword Monitoring
+- [ ] Stage 3: Add Ping (ICMP) Monitoring
 - [ ] Stage 4: Add DNS Monitoring
 - [ ] Stage 5: Add Telegram Notifications
 - [ ] Stage 6: User Profile Management

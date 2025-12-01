@@ -6,7 +6,6 @@
 	import { latestMonitorChecks, connectEventStream, disconnectEventStream, type MonitorCheckEvent } from '$lib/api/events';
 	import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 	import { extractInt64, extractString, isValidSqlNull } from '$lib/utils/sqlNull';
-	import ResponseTimeChart from '$lib/components/charts/ResponseTimeChart.svelte';
 
 	let monitorId: string = '';
 	let monitor: any = null;
@@ -635,7 +634,32 @@
 				<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Response Time (Last 24 Hours)</h2>
 				<p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Hourly average response times</p>
 			</div>
-			<ResponseTimeChart {monitorId} />
+			{#if hasResponseTimeSeries && chartsLoaded && LineChart}
+				<div class="h-64">
+					<svelte:component 
+						this={LineChart}
+						data={responseTimeSeries}
+						label="Response Time"
+						color="#3B82F6"
+						yAxisLabel="Response Time (ms)"
+						timeRange={currentTimeRange}
+						timeUnit="hour"
+						spanGapsProp={true}
+						suggestedMax={p95Time}
+					/>
+				</div>
+			{:else if !isLoading}
+				<div class="flex flex-col items-center justify-center h-64 text-slate-400">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+					</svg>
+					<p class="text-sm">No response time data available for the last 24 hours</p>
+				</div>
+			{:else}
+				<div class="flex items-center justify-center h-64">
+					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Uptime Chart -->

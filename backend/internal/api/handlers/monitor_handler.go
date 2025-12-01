@@ -41,6 +41,7 @@ type CreateMonitorRequest struct {
 	Name          string `json:"name" binding:"required"`
 	URL           string `json:"url" binding:"required"`
 	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
 	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
@@ -54,6 +55,7 @@ type UpdateMonitorRequest struct {
 	Name          string `json:"name" binding:"omitempty"`
 	URL           string `json:"url" binding:"omitempty"`
 	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping"`
+	Type          string `json:"type" binding:"omitempty,oneof=http tcp"`
 	Keyword       *string `json:"keyword" binding:"omitempty"`
 	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
 	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`

@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/smtp"
+	"strings"
 	"time"
 
 	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
@@ -41,6 +43,11 @@ type UpdateAlertChannelRequest struct {
 	Name    string                 `json:"name" binding:"omitempty"`
 	Config  map[string]interface{} `json:"config"`
 	Enabled *bool                  `json:"enabled"`
+}
+
+// TestAlertChannelRequest represents the request body for testing an alert channel
+type TestAlertChannelRequest struct {
+	TestEmail string `json:"test_email" binding:"required,email"`
 }
 
 // Create godoc
@@ -322,6 +329,7 @@ func (h *AlertChannelHandler) Delete(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Alert Channel ID"
+// @Param request body TestAlertChannelRequest true "Test configuration"
 // @Success 200 {object} map[string]string "Test notification sent successfully"
 // @Failure 400 {object} map[string]string "Invalid request"
 // @Failure 401 {object} map[string]string "Unauthorized"
@@ -333,6 +341,12 @@ func (h *AlertChannelHandler) Test(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "alert channel ID required"})
+		return
+	}
+
+	var req TestAlertChannelRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -362,7 +376,7 @@ func (h *AlertChannelHandler) Test(c *gin.Context) {
 	}
 
 	// Send test notification
-	if err := h.sendTestNotification(channel); err != nil {
+	if err := h.sendTestNotification(channel, req.TestEmail); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send test notification: " + err.Error()})
 		return
 	}
@@ -371,7 +385,7 @@ func (h *AlertChannelHandler) Test(c *gin.Context) {
 }
 
 // sendTestNotification sends a test notification to the given channel
-func (h *AlertChannelHandler) sendTestNotification(channel *entities.AlertChannel) error {
+func (h *AlertChannelHandler) sendTestNotification(channel *entities.AlertChannel, testEmail string) error {
 	// Create test data similar to notification job
 	testData := map[string]interface{}{
 		"incident_id":  "test-incident-123",
@@ -388,7 +402,7 @@ func (h *AlertChannelHandler) sendTestNotification(channel *entities.AlertChanne
 	case "discord":
 		return h.sendTestDiscord(channel, testData)
 	case "email":
-		return h.sendTestEmail(channel, testData)
+		return h.sendTestEmail(channel, testData, testEmail)
 	default:
 		return fmt.Errorf("unsupported channel type: %s", channel.Type)
 	}
@@ -496,8 +510,69 @@ func (h *AlertChannelHandler) sendTestDiscord(channel *entities.AlertChannel, da
 	return nil
 }
 
-// sendTestEmail sends a test email notification (placeholder)
-func (h *AlertChannelHandler) sendTestEmail(channel *entities.AlertChannel, data map[string]interface{}) error {
-	// Email implementation is ready for future development
-	return fmt.Errorf("email notifications not yet implemented")
+// sendTestEmail sends a test email notification
+func (h *AlertChannelHandler) sendTestEmail(channel *entities.AlertChannel, data map[string]interface{}, testEmail string) error {
+	// Extract SMTP config from channel
+	smtpHost, ok := channel.Config["smtp_host"].(string)
+	if !ok || smtpHost == "" {
+		return fmt.Errorf("SMTP host not configured")
+	}
+	smtpPortFloat, ok := channel.Config["smtp_port"].(float64)
+	if !ok || smtpPortFloat <= 0 {
+		return fmt.Errorf("SMTP port not configured or invalid")
+	}
+	smtpPort := int(smtpPortFloat)
+	smtpUser, ok := channel.Config["smtp_user"].(string)
+	if !ok {
+		smtpUser = ""
+	}
+	smtpPassword, ok := channel.Config["smtp_password"].(string)
+	if !ok {
+		smtpPassword = ""
+	}
+	smtpFrom, ok := channel.Config["smtp_from"].(string)
+	if !ok || smtpFrom == "" {
+		return fmt.Errorf("SMTP from email not configured")
+	}
+
+	// Validate test email
+	if testEmail == "" {
+		return fmt.Errorf("test email address is required")
+	}
+
+	// Create test email content
+	subject := "🧪 V-Insight Test Email"
+	body := fmt.Sprintf(`Subject: %s
+From: %s
+To: %s
+
+%s
+
+Monitor: %s
+URL: %s
+Status: %s
+Message: %s
+Time: %s
+
+--
+V-Insight Test Notification
+`, subject, smtpFrom, testEmail, subject, data["monitor_name"], data["monitor_url"], data["status"], data["message"], data["timestamp"])
+
+	// Replace \n with \r\n for SMTP compliance
+	body = strings.ReplaceAll(body, "\n", "\r\n")
+
+	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
+	smtpAddr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
+
+	// Note: smtp.SendMail requires valid auth. If no auth is needed, auth should be nil.
+	if smtpUser == "" {
+		auth = nil
+	}
+
+	err := smtp.SendMail(smtpAddr, auth, smtpFrom, []string{testEmail}, []byte(body))
+	if err != nil {
+		return fmt.Errorf("failed to send test email: %w", err)
+	}
+
+	return nil
 }

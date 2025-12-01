@@ -58,6 +58,34 @@ func TestAlertChannelConfig_StructFields(t *testing.T) {
 	if !ok || url != "https://example.com/webhook" {
 		t.Errorf("Expected Config URL 'https://example.com/webhook', got '%v'", url)
 	}
+
+	// Test email channel config
+	emailChannel := AlertChannelConfig{
+		ID:   "test-email-channel-id",
+		Type: "email",
+		Name: "Test Email",
+		Config: map[string]interface{}{
+			"to":            "test@example.com",
+			"smtp_host":     "smtp.gmail.com",
+			"smtp_port":     587.0,
+			"smtp_user":     "user@gmail.com",
+			"smtp_password": "password",
+			"smtp_from":     "noreply@example.com",
+		},
+		Enabled: true,
+	}
+
+	if emailChannel.Type != "email" {
+		t.Errorf("Expected Type 'email', got '%s'", emailChannel.Type)
+	}
+	to, ok := emailChannel.Config["to"].(string)
+	if !ok || to != "test@example.com" {
+		t.Errorf("Expected Config to 'test@example.com', got '%v'", to)
+	}
+	smtpHost, ok := emailChannel.Config["smtp_host"].(string)
+	if !ok || smtpHost != "smtp.gmail.com" {
+		t.Errorf("Expected Config smtp_host 'smtp.gmail.com', got '%v'", smtpHost)
+	}
 }
 
 // TestWebhookPayload_StructFields tests that WebhookPayload struct has all required fields
