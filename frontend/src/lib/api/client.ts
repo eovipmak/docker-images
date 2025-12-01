@@ -35,6 +35,9 @@ export async function fetchAPI(endpoint: string, options: FetchOptions = {}): Pr
 		const authToken = token || getAuthToken();
 		if (authToken) {
 			headers['Authorization'] = `Bearer ${authToken}`;
+			console.log('Sending auth token:', authToken.substring(0, 20) + '...');
+		} else {
+			console.log('No auth token found');
 		}
 	}
 

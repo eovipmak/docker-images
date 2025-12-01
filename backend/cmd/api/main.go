@@ -120,11 +120,13 @@ func main() {
 	alertRuleRepo := postgres.NewAlertRuleRepository(db.DB)
 	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
 	incidentRepo := postgres.NewIncidentRepository(db.DB)
+	statusPageRepo := postgres.NewStatusPageRepository(db.DB)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
 	monitorService := service.NewMonitorService(db)
 	metricsService := service.NewMetricsService(db.DB)
+	statusPageService := service.NewStatusPageService(db, statusPageRepo, monitorRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
@@ -135,6 +137,8 @@ func main() {
 	dashboardHandler := handlers.NewDashboardHandler(monitorRepo, incidentRepo, metricsService)
 	incidentHandler := handlers.NewIncidentHandler(incidentRepo, monitorRepo, alertRuleRepo, alertChannelRepo)
 	streamHandler := handlers.NewStreamHandler()
+	statusPageHandler := handlers.NewStatusPageHandler(statusPageService)
+	publicStatusPageHandler := handlers.NewPublicStatusPageHandler(statusPageService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -235,6 +239,12 @@ func main() {
 		internal.POST("/broadcast", streamHandler.HandleBroadcast)
 	}
 
+	// Public status page routes (no auth required)
+	public := router.Group("/api/public")
+	{
+		public.GET("/status/:slug", publicStatusPageHandler.GetPublicStatusPage)
+	}
+
 	// Protected routes requiring authentication and tenant context
 	protected := api.Group("/")
 	protected.Use(authMiddleware.AuthRequired(), tenantMiddleware.TenantRequired())
@@ -274,6 +284,16 @@ func main() {
 		protected.GET("/incidents", incidentHandler.List)
 		protected.GET("/incidents/:id", incidentHandler.GetByID)
 		protected.POST("/incidents/:id/resolve", incidentHandler.Resolve)
+
+		// Status page endpoints
+		protected.POST("/status-pages", statusPageHandler.CreateStatusPage)
+		protected.GET("/status-pages", statusPageHandler.GetStatusPages)
+		protected.GET("/status-pages/:id", statusPageHandler.GetStatusPage)
+		protected.PUT("/status-pages/:id", statusPageHandler.UpdateStatusPage)
+		protected.DELETE("/status-pages/:id", statusPageHandler.DeleteStatusPage)
+		protected.GET("/status-pages/:id/monitors", statusPageHandler.GetStatusPageMonitors)
+		protected.POST("/status-pages/:id/monitors/:monitor_id", statusPageHandler.AddMonitorToStatusPage)
+		protected.DELETE("/status-pages/:id/monitors/:monitor_id", statusPageHandler.RemoveMonitorFromStatusPage)
 
 		// SSE Stream endpoint
 		protected.GET("/stream/events", streamHandler.HandleSSE)
