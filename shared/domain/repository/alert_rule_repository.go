@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/eovipmak/v-insight/backend/internal/domain/entities"
+import "github.com/eovipmak/v-insight/shared/domain/entities"
 
 // AlertRuleRepository defines the interface for alert rule data operations
 type AlertRuleRepository interface {

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 )
 
 // Mock incident repository for testing
@@ -76,6 +76,14 @@ func (m *mockIncidentRepository) List(filters repository.IncidentFilters) ([]*en
 		result = append(result, incident)
 	}
 	return result, nil
+}
+
+func (m *mockIncidentRepository) GetUnnotifiedIncidents() ([]*entities.Incident, error) {
+	return nil, nil
+}
+
+func (m *mockIncidentRepository) MarkAsNotified(id string) error {
+	return nil
 }
 
 // Mock alert rule repository for testing

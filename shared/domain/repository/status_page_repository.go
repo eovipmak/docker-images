@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // StatusPageRepository defines the interface for status page data operations

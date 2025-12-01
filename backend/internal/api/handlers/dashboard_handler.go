@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/eovipmak/v-insight/backend/internal/domain/service"
 	"github.com/gin-gonic/gin"
 )

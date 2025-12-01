@@ -2,8 +2,9 @@
 	import { createEventDispatcher } from 'svelte';
 	import MonitorStatus from './MonitorStatus.svelte';
 	import Favicon from './Favicon.svelte';
+	import type { Monitor } from '$lib/types';
 
-	export let monitors: any[] = [];
+	export let monitors: Monitor[] = [];
 
 	const dispatch = createEventDispatcher();
 
@@ -32,10 +33,8 @@
 	}
 
 	// Get monitor status based on last check
-	function getMonitorStatus(monitor: any): 'up' | 'down' | 'unknown' {
-		if (!monitor.last_checked_at) return 'unknown';
-		// This is a simplified status - in reality you'd check the last check result
-		return monitor.enabled ? 'up' : 'unknown';
+	function getMonitorStatus(monitor: Monitor): 'up' | 'down' | 'unknown' {
+		return monitor.status || 'unknown';
 	}
 
 	// Sort monitors
@@ -80,15 +79,15 @@
 			return 0;
 		});
 
-	function handleRowClick(monitor: any) {
+	function handleRowClick(monitor: Monitor) {
 		dispatch('view', monitor);
 	}
 
-	function handleEdit(monitor: any) {
+	function handleEdit(monitor: Monitor) {
 		dispatch('edit', monitor);
 	}
 
-	function handleDelete(monitor: any) {
+	function handleDelete(monitor: Monitor) {
 		dispatch('delete', monitor);
 	}
 </script>

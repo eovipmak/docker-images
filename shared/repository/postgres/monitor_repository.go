@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -275,4 +275,26 @@ func (r *monitorRepository) GetStatsByMonitorID(monitorID string) ([]*entities.M
 	}
 
 	return stats, nil
+}
+
+// GetLatestMonitorChecks retrieves the latest check for each monitor within the given duration
+func (r *monitorRepository) GetLatestMonitorChecks(duration time.Duration) ([]*entities.MonitorCheck, error) {
+	var checks []*entities.MonitorCheck
+	query := `
+		SELECT DISTINCT ON (mc.monitor_id)
+			mc.id, mc.monitor_id, m.tenant_id, m.type as monitor_type, mc.checked_at, mc.status_code, mc.response_time_ms,
+			mc.ssl_valid, mc.ssl_expires_at, mc.error_message, mc.success
+		FROM monitor_checks mc
+		JOIN monitors m ON mc.monitor_id = m.id
+		WHERE mc.checked_at >= $1
+		ORDER BY mc.monitor_id, mc.checked_at DESC
+	`
+
+	cutoffTime := time.Now().Add(-duration)
+	err := r.db.Select(&checks, query, cutoffTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get latest monitor checks: %w", err)
+	}
+
+	return checks, nil
 }

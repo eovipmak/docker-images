@@ -1,19 +1,20 @@
 <script lang="ts">
   import MonitorTable from './MonitorTable.svelte';
   import MonitorCard from './MonitorCard.svelte';
-  export let monitors: any[] = [];
+  import type { Monitor } from '$lib/types';
+  export let monitors: Monitor[] = [];
   export let useTable: boolean = false;
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
 
-  function handleView(monitor: any) {
+  function handleView(monitor: Monitor) {
     console.debug('[MonitorList] dispatch view', monitor?.id);
     dispatch('view', monitor);
   }
-  function handleEdit(monitor: any) {
+  function handleEdit(monitor: Monitor) {
     dispatch('edit', monitor);
   }
-  function handleDelete(monitor: any) {
+  function handleDelete(monitor: Monitor) {
     dispatch('delete', monitor);
   }
 </script>

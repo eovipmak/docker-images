@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )

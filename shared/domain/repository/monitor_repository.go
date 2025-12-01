@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 )
 
 // MonitorRepository defines the interface for monitor data operations
@@ -37,4 +37,7 @@ type MonitorRepository interface {
 
 	// UpdateLastCheckedAt updates the last_checked_at timestamp for a monitor
 	UpdateLastCheckedAt(monitorID string, checkedAt time.Time) error
+
+	// GetLatestMonitorChecks retrieves the latest check for each monitor within the given duration
+	GetLatestMonitorChecks(duration time.Duration) ([]*entities.MonitorCheck, error)
 }

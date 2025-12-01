@@ -18,7 +18,9 @@ type Incident struct {
 	CreatedAt    time.Time    `db:"created_at" json:"created_at"`
 	
 	// Joined fields
+	TenantID      int    `db:"tenant_id" json:"tenant_id,omitempty"`
 	MonitorName   string `db:"monitor_name" json:"monitor_name,omitempty"`
 	MonitorURL    string `db:"monitor_url" json:"monitor_url,omitempty"`
 	AlertRuleName string `db:"alert_rule_name" json:"alert_rule_name,omitempty"`
+	TriggerType   string `db:"trigger_type" json:"trigger_type,omitempty"`
 }

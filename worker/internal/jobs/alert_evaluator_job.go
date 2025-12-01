@@ -2,48 +2,32 @@ package jobs
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/eovipmak/v-insight/worker/internal"
-	"github.com/eovipmak/v-insight/worker/internal/database"
 	"go.uber.org/zap"
 )
 
-// AlertRule represents an alert rule (worker-side struct)
-type AlertRule struct {
-	ID             string         `db:"id"`
-	TenantID       int            `db:"tenant_id"`
-	MonitorID      sql.NullString `db:"monitor_id"`
-	Name           string         `db:"name"`
-	TriggerType    string         `db:"trigger_type"`
-	ThresholdValue int            `db:"threshold_value"`
-	Enabled        bool           `db:"enabled"`
-}
-
-// Incident represents an incident (worker-side struct)
-type Incident struct {
-	ID           string       `db:"id"`
-	MonitorID    string       `db:"monitor_id"`
-	AlertRuleID  string       `db:"alert_rule_id"`
-	StartedAt    time.Time    `db:"started_at"`
-	ResolvedAt   sql.NullTime `db:"resolved_at"`
-	Status       string       `db:"status"`
-	TriggerValue string       `db:"trigger_value"`
-	NotifiedAt   sql.NullTime `db:"notified_at"`
-	CreatedAt    time.Time    `db:"created_at"`
-}
-
 // AlertEvaluatorJob evaluates alert rules against monitor checks
 type AlertEvaluatorJob struct {
-	db *database.DB
+	alertRuleRepo repository.AlertRuleRepository
+	incidentRepo  repository.IncidentRepository
+	monitorRepo   repository.MonitorRepository
 }
 
 // NewAlertEvaluatorJob creates a new alert evaluator job
-func NewAlertEvaluatorJob(db *database.DB) *AlertEvaluatorJob {
+func NewAlertEvaluatorJob(
+	alertRuleRepo repository.AlertRuleRepository,
+	incidentRepo repository.IncidentRepository,
+	monitorRepo repository.MonitorRepository,
+) *AlertEvaluatorJob {
 	return &AlertEvaluatorJob{
-		db: db,
+		alertRuleRepo: alertRuleRepo,
+		incidentRepo:  incidentRepo,
+		monitorRepo:   monitorRepo,
 	}
 }
 
@@ -67,7 +51,7 @@ func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	}
 
 	// Get all enabled alert rules
-	rules, err := j.getAllEnabledRules()
+	rules, err := j.alertRuleRepo.GetAllEnabled()
 	if err != nil {
 		if internal.Log != nil {
 			internal.Log.Error("Failed to get alert rules", zap.Error(err))
@@ -90,7 +74,7 @@ func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	}
 
 	// Get latest monitor checks (last 5 minutes)
-	checks, err := j.getLatestMonitorChecks(5 * time.Minute)
+	checks, err := j.monitorRepo.GetLatestMonitorChecks(5 * time.Minute)
 	if err != nil {
 		if internal.Log != nil {
 			internal.Log.Error("Failed to get monitor checks", zap.Error(err))
@@ -147,48 +131,8 @@ func (j *AlertEvaluatorJob) Run(ctx context.Context) error {
 	return nil
 }
 
-// getAllEnabledRules retrieves all enabled alert rules
-func (j *AlertEvaluatorJob) getAllEnabledRules() ([]*AlertRule, error) {
-	var rules []*AlertRule
-	query := `
-		SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled
-		FROM alert_rules
-		WHERE enabled = true
-		ORDER BY created_at DESC
-	`
-
-	err := j.db.Select(&rules, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get enabled alert rules: %w", err)
-	}
-
-	return rules, nil
-}
-
-// getLatestMonitorChecks retrieves monitor checks from the last N duration
-func (j *AlertEvaluatorJob) getLatestMonitorChecks(duration time.Duration) ([]*MonitorCheck, error) {
-	var checks []*MonitorCheck
-	query := `
-		SELECT DISTINCT ON (mc.monitor_id) 
-			mc.id, mc.monitor_id, m.tenant_id, m.type as monitor_type, mc.checked_at, mc.status_code, mc.response_time_ms, 
-			mc.ssl_valid, mc.ssl_expires_at, mc.error_message, mc.success
-		FROM monitor_checks mc
-		JOIN monitors m ON mc.monitor_id = m.id
-		WHERE mc.checked_at >= $1
-		ORDER BY mc.monitor_id, mc.checked_at DESC
-	`
-
-	cutoffTime := time.Now().Add(-duration)
-	err := j.db.Select(&checks, query, cutoffTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest monitor checks: %w", err)
-	}
-
-	return checks, nil
-}
-
 // evaluateCheckAgainstRules evaluates a single check against all rules
-func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules []*AlertRule) (int, int, error) {
+func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *entities.MonitorCheck, rules []*entities.AlertRule) (int, int, error) {
 	incidentsCreated := 0
 	incidentsResolved := 0
 
@@ -213,7 +157,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 
 		if triggered {
 			// Alert triggered - create incident if not already open
-			created, err := j.createIncidentIfNeeded(check.MonitorID, rule.ID, triggerValue)
+			created, err := j.createIncidentIfNeeded(check.MonitorID, rule.ID, rule.TenantID, triggerValue)
 			if err != nil {
 				if internal.Log != nil {
 					internal.Log.Error("Failed to create incident",
@@ -240,7 +184,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 			}
 		} else {
 			// Alert not triggered - resolve incident if open
-			resolved, err := j.resolveIncidentIfOpen(check.MonitorID, rule.ID)
+			resolved, err := j.resolveIncidentIfOpen(check.MonitorID, rule.ID, rule.TenantID, rule.Name)
 			if err != nil {
 				if internal.Log != nil {
 					internal.Log.Error("Failed to resolve incident",
@@ -271,7 +215,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *MonitorCheck, rules
 }
 
 // evaluateRule evaluates a single rule against a check
-func (j *AlertEvaluatorJob) evaluateRule(check *MonitorCheck, rule *AlertRule) (bool, string) {
+func (j *AlertEvaluatorJob) evaluateRule(check *entities.MonitorCheck, rule *entities.AlertRule) (bool, string) {
 	switch rule.TriggerType {
 	case "down":
 		if !check.Success {
@@ -303,32 +247,28 @@ func (j *AlertEvaluatorJob) evaluateRule(check *MonitorCheck, rule *AlertRule) (
 }
 
 // createIncidentIfNeeded creates an incident if one doesn't already exist
-func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID, triggerValue string) (bool, error) {
+func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID string, tenantID int, triggerValue string) (bool, error) {
 	// Check if there's already an open incident
-	var count int
-	checkQuery := `
-		SELECT COUNT(*)
-		FROM incidents
-		WHERE monitor_id = $1 AND alert_rule_id = $2 AND status = 'open'
-	`
-
-	err := j.db.QueryRow(checkQuery, monitorID, ruleID).Scan(&count)
+	incident, err := j.incidentRepo.GetOpenIncident(monitorID, ruleID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check for existing incident: %w", err)
 	}
 
 	// Don't create duplicate incidents
-	if count > 0 {
+	if incident != nil {
 		return false, nil
 	}
 
 	// Create new incident
-	insertQuery := `
-		INSERT INTO incidents (monitor_id, alert_rule_id, started_at, status, trigger_value, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`
+	newIncident := &entities.Incident{
+		MonitorID:    monitorID,
+		AlertRuleID:  ruleID,
+		StartedAt:    time.Now(),
+		Status:       "open",
+		TriggerValue: triggerValue,
+	}
 
-	_, err = j.db.Exec(insertQuery, monitorID, ruleID, time.Now(), "open", triggerValue)
+	err = j.incidentRepo.Create(newIncident)
 	if err != nil {
 		return false, fmt.Errorf("failed to create incident: %w", err)
 	}
@@ -337,24 +277,22 @@ func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID, triggerVal
 }
 
 // resolveIncidentIfOpen resolves an open incident if it exists
-func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string) (bool, error) {
-	query := `
-		UPDATE incidents
-		SET resolved_at = $1, status = 'resolved'
-		WHERE monitor_id = $2 AND alert_rule_id = $3 AND status = 'open'
-	`
+func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string, tenantID int, ruleName string) (bool, error) {
+	incident, err := j.incidentRepo.GetOpenIncident(monitorID, ruleID)
+	if err != nil {
+		return false, fmt.Errorf("failed to check for open incident: %w", err)
+	}
 
-	result, err := j.db.Exec(query, time.Now(), monitorID, ruleID)
+	if incident == nil {
+		return false, nil
+	}
+
+	err = j.incidentRepo.Resolve(incident.ID)
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve incident: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return false, fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	return rowsAffected > 0, nil
+	return true, nil
 }
 
 // broadcastIncidentCreatedEvent broadcasts an incident created event

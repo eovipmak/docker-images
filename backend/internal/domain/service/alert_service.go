@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 )
 
 // AlertService handles alert evaluation and incident management

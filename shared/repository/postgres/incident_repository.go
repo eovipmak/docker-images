@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -228,4 +228,58 @@ func (r *incidentRepository) List(filters repository.IncidentFilters) ([]*entiti
 	}
 
 	return incidents, nil
+}
+
+// GetUnnotifiedIncidents retrieves incidents that haven't been notified yet
+func (r *incidentRepository) GetUnnotifiedIncidents() ([]*entities.Incident, error) {
+	var incidents []*entities.Incident
+	query := `
+		SELECT
+			i.id,
+			i.monitor_id,
+			m.tenant_id,
+			m.name as monitor_name,
+			m.url as monitor_url,
+			i.alert_rule_id,
+			ar.name as alert_rule_name,
+			ar.trigger_type,
+			i.status,
+			i.trigger_value,
+			i.started_at,
+			i.created_at
+		FROM incidents i
+		JOIN monitors m ON i.monitor_id = m.id
+		JOIN alert_rules ar ON i.alert_rule_id = ar.id
+		WHERE i.notified_at IS NULL
+		ORDER BY i.created_at ASC
+		LIMIT 100
+	`
+
+	err := r.db.Select(&incidents, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unnotified incidents: %w", err)
+	}
+
+	return incidents, nil
+}
+
+// MarkAsNotified marks an incident as notified
+func (r *incidentRepository) MarkAsNotified(id string) error {
+	query := "UPDATE incidents SET notified_at = NOW() WHERE id = $1 AND notified_at IS NULL"
+
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to mark incident as notified: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("incident not found or already notified")
+	}
+
+	return nil
 }

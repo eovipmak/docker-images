@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/eovipmak/v-insight/backend/internal/domain/entities"
+import "github.com/eovipmak/v-insight/shared/domain/entities"
 
 // TenantUserRepository defines the interface for tenant-user relationship operations
 type TenantUserRepository interface {

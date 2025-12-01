@@ -5,8 +5,8 @@ import (
 	"regexp"
 
 	"github.com/eovipmak/v-insight/backend/internal/database"
-	"github.com/eovipmak/v-insight/backend/internal/domain/entities"
-	"github.com/eovipmak/v-insight/backend/internal/domain/repository"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
+	"github.com/eovipmak/v-insight/shared/domain/repository"
 )
 
 // MonitorWithStatus represents a monitor with its current status for public display
