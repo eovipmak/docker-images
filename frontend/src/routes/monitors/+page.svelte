@@ -6,6 +6,7 @@
 	import MonitorCard from '$lib/components/MonitorCard.svelte';
 	import MonitorList from '$lib/components/MonitorList.svelte';
 	import Card from '$lib/components/Card.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	let monitors: any[] = [];
 	let isLoading = true;
@@ -16,6 +17,12 @@
 	let sortField: 'name' | 'status' = 'name';
 	let sortDirection: 'asc' | 'desc' = 'asc';
 	let useTable: boolean = false;
+
+	// Confirm modal state
+	let isConfirmModalOpen = false;
+	let confirmTitle = '';
+	let confirmMessage = '';
+	let onConfirmCallback: (() => void) | null = null;
 
 	// Lazy loaded modal component
 	let MonitorModal: any = null;
@@ -112,24 +119,36 @@
 	async function handleDeleteMonitor(event: CustomEvent) {
 		const monitor = event.detail;
 
-		if (!confirm(`Are you sure you want to delete "${monitor.name}"?`)) {
-			return;
-		}
+		confirmTitle = 'Delete Monitor';
+		confirmMessage = `Are you sure you want to delete "${monitor.name}"?`;
+		onConfirmCallback = async () => {
+			try {
+				const response = await fetchAPI(`/api/v1/monitors/${monitor.id}`, {
+					method: 'DELETE'
+				});
 
-		try {
-			const response = await fetchAPI(`/api/v1/monitors/${monitor.id}`, {
-				method: 'DELETE'
-			});
+				if (!response.ok) {
+					throw new Error('Failed to delete monitor');
+				}
 
-			if (!response.ok) {
-				throw new Error('Failed to delete monitor');
+				monitors = monitors.filter((m) => m.id !== monitor.id);
+			} catch (err: any) {
+				console.error('Error deleting monitor:', err);
+				alert(err.message || 'Failed to delete monitor');
 			}
+		};
+		isConfirmModalOpen = true;
+	}
 
-			monitors = monitors.filter((m) => m.id !== monitor.id);
-		} catch (err: any) {
-			console.error('Error deleting monitor:', err);
-			alert(err.message || 'Failed to delete monitor');
+	function handleConfirmDelete() {
+		if (onConfirmCallback) {
+			onConfirmCallback();
 		}
+		isConfirmModalOpen = false;
+	}
+
+	function handleCancelDelete() {
+		isConfirmModalOpen = false;
 	}
 
 	function handleMonitorSaved(event: CustomEvent) {
@@ -330,3 +349,11 @@
 		on:save={handleMonitorSaved}
 	/>
 {/if}
+
+<ConfirmModal
+	isOpen={isConfirmModalOpen}
+	title={confirmTitle}
+	message={confirmMessage}
+	on:confirm={handleConfirmDelete}
+	on:cancel={handleCancelDelete}
+/>

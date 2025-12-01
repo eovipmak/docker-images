@@ -543,6 +543,7 @@ func (j *NotificationJob) sendEmailNotification(incident *IncidentNotificationDa
 	}
 
 	// Simple text body (using \n)
+	// Simple text body
 	body := fmt.Sprintf(`Subject: %s
 From: %s
 To: %s
