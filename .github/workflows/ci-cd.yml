@@ -170,13 +170,14 @@ jobs:
   build-and-deploy:
     needs: [changes, test-backend, test-frontend]
     if: |
-      always() &&
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' &&
+      (needs.changes.outputs.backend == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped')
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - service: backend
@@ -236,8 +237,10 @@ jobs:
 
   # Deploy runs after all builds complete
   deploy:
-    needs: [build-and-deploy]
-    if: always() && needs.build-and-deploy.result == 'success'
+    needs: [changes, build-and-deploy]
+    if: |
+      needs.build-and-deploy.result == 'success' &&
+      (needs.changes.outputs.backend == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: SSH into VPS and deploy

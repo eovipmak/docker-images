@@ -12,8 +12,8 @@ COPY backend/go.mod backend/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
-# Download dependencies
-RUN go mod download
+# Sync dependencies
+RUN go mod tidy && go mod download
 
 # Copy source code
 COPY backend/ ./
@@ -48,8 +48,8 @@ COPY backend/go.mod backend/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
-# Download dependencies
-RUN go mod download
+# Sync dependencies
+RUN go mod tidy && go mod download
 
 # Copy source code
 COPY backend/ ./

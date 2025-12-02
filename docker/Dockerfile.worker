@@ -12,8 +12,8 @@ COPY worker/go.mod worker/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
-# Download dependencies
-RUN go mod download
+# Sync dependencies
+RUN go mod tidy && go mod download
 
 # Copy source code
 COPY worker/ ./
@@ -39,8 +39,8 @@ COPY worker/go.mod worker/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
-# Download dependencies
-RUN go mod download
+# Sync dependencies
+RUN go mod tidy && go mod download
 
 # Copy source code
 COPY worker/ ./
