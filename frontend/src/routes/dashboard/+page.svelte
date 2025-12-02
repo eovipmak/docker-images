@@ -123,21 +123,14 @@
 		// Start SSE connection for real-time updates
 		await connectEventStream();
 
-		// Subscribe to monitor check events
+		// Subscribe to monitor check events (for reference, but don't auto-refresh)
 		unsubscribeChecks = latestMonitorChecks.subscribe((checks) => {
-			// When SSE events arrive, refresh dashboard data to get updated stats
-			// This ensures we have accurate data while still benefiting from real-time notifications
-			if (!isLoading) {
-				loadDashboardData();
-			}
+			// Don't auto-refresh dashboard - only monitor detail page uses SSE
 		});
 
-		// Subscribe to incident events
+		// Subscribe to incident events (for reference, but don't auto-refresh)
 		unsubscribeIncidents = latestIncidents.subscribe((incidents) => {
-			// When incident events arrive, refresh dashboard data
-			if (!isLoading) {
-				loadDashboardData();
-			}
+			// Don't auto-refresh dashboard - only monitor detail page uses SSE
 		});
 	});
 
@@ -267,7 +260,10 @@
                     {:else}
                         <div class="divide-y divide-slate-100 dark:divide-slate-700">
                             {#each openIncidents as { incident, monitor }}
-                                <div class="p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <button 
+                                    type="button"
+                                    on:click={() => goto(`/incidents/${incident.id}`)}
+                                    class="w-full text-left p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
                                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
                                         <div class="flex-1 min-w-0">
                                             <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
@@ -293,7 +289,7 @@
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
                             {/each}
                         </div>
 					{/if}
