@@ -143,11 +143,21 @@ jobs:
       - name: Copy env & start services
         run: |
           cp .env.example .env
-          make up
-
+          docker compose up -d --build
+          
       - name: Wait for services
         run: |
-          timeout 60 bash -c 'until curl -s http://localhost:8080/health > /dev/null; do sleep 2; done'
+          echo "Waiting for containers to be healthy..."
+          # Wait for postgres first
+          timeout 120 bash -c 'until docker compose ps postgres | grep -q "healthy"; do echo "Waiting for postgres..."; sleep 5; done'
+          echo "Postgres is healthy"
+          
+          # Wait for backend
+          timeout 120 bash -c 'until docker compose ps backend | grep -q "healthy"; do echo "Waiting for backend..."; docker compose logs backend --tail=20; sleep 5; done'
+          echo "Backend is healthy"
+          
+          # Final health check via HTTP
+          curl -f http://localhost:8080/health || (docker compose logs && exit 1)
 
       - name: Run E2E tests
         run: |
