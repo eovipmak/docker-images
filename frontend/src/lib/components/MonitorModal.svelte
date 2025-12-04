@@ -17,6 +17,8 @@
 		enabled: boolean;
 		check_ssl: boolean;
 		ssl_alert_days: number;
+		tags: string[];
+		expected_status_codes: number[];
 	}
 
 	let formData: FormData = {
@@ -28,9 +30,13 @@
 		timeout: 30,
 		enabled: true,
 		check_ssl: true,
-		ssl_alert_days: 30
+		ssl_alert_days: 30,
+		tags: [],
+		expected_status_codes: [200]
 	};
 
+	let tagInput = '';
+	let statusCodeInput = '';
 	let errors: Record<string, string> = {};
 	let isSubmitting = false;
 	let lastMonitorId: string | null = null;
@@ -46,7 +52,9 @@
 			timeout: monitor.timeout || 30,
 			enabled: monitor.enabled !== undefined ? monitor.enabled : true,
 			check_ssl: monitor.check_ssl !== undefined ? monitor.check_ssl : true,
-			ssl_alert_days: monitor.ssl_alert_days || 30
+			ssl_alert_days: monitor.ssl_alert_days || 30,
+			tags: monitor.tags || [],
+			expected_status_codes: monitor.expected_status_codes || [200]
 		};
 		lastMonitorId = monitor?.id || null;
 	} else if (!monitor && lastMonitorId !== null) {
@@ -60,7 +68,9 @@
 			timeout: 30,
 			enabled: true,
 			check_ssl: true,
-			ssl_alert_days: 30
+			ssl_alert_days: 30,
+			tags: [],
+			expected_status_codes: [200]
 		};
 		lastMonitorId = null;
 	}
@@ -168,6 +178,30 @@
             default: return 'Address';
         }
     }
+
+	function addTag() {
+		const tag = tagInput.trim();
+		if (tag && !formData.tags.includes(tag)) {
+			formData.tags = [...formData.tags, tag];
+			tagInput = '';
+		}
+	}
+
+	function removeTag(tag: string) {
+		formData.tags = formData.tags.filter((t) => t !== tag);
+	}
+
+	function addStatusCode() {
+		const code = parseInt(statusCodeInput, 10);
+		if (code >= 100 && code <= 599 && !formData.expected_status_codes.includes(code)) {
+			formData.expected_status_codes = [...formData.expected_status_codes, code];
+			statusCodeInput = '';
+		}
+	}
+
+	function removeStatusCode(code: number) {
+		formData.expected_status_codes = formData.expected_status_codes.filter((c) => c !== code);
+	}
 </script>
 
 {#if isOpen}
@@ -360,6 +394,73 @@
                                         <p class="text-slate-500 dark:text-slate-400">Pause monitoring without deleting the configuration.</p>
                                     </div>
                                 </div>
+
+								<!-- Tags -->
+								<div>
+									<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags</label>
+									<div class="flex gap-2">
+										<input
+											type="text"
+											bind:value={tagInput}
+											on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+											class="flex-1 border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+											placeholder="Add a tag"
+										/>
+										<button
+											type="button"
+											on:click={addTag}
+											class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm"
+										>
+											Add
+										</button>
+									</div>
+									{#if formData.tags.length > 0}
+										<div class="mt-2 flex flex-wrap gap-2">
+											{#each formData.tags as tag}
+												<span class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded flex items-center gap-1">
+													{tag}
+													<button type="button" on:click={() => removeTag(tag)} class="hover:text-red-600 dark:hover:text-red-400">×</button>
+												</span>
+											{/each}
+										</div>
+									{/if}
+								</div>
+
+								<!-- Expected Status Codes (HTTP only) -->
+								{#if formData.type === 'http'}
+									<div>
+										<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Expected Status Codes</label>
+										<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">HTTP status codes considered as "healthy" (e.g., 200, 201, 404)</p>
+										<div class="flex gap-2">
+											<input
+												type="number"
+												bind:value={statusCodeInput}
+												on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addStatusCode())}
+												min="100"
+												max="599"
+												class="w-24 border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
+												placeholder="200"
+											/>
+											<button
+												type="button"
+												on:click={addStatusCode}
+												class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm"
+											>
+												Add
+											</button>
+										</div>
+										{#if formData.expected_status_codes.length > 0}
+											<div class="mt-2 flex flex-wrap gap-2">
+												{#each formData.expected_status_codes as code}
+													<span class="px-2 py-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded flex items-center gap-1">
+														{code}
+														<button type="button" on:click={() => removeStatusCode(code)} class="hover:text-red-600 dark:hover:text-red-400">×</button>
+													</span>
+												{/each}
+											</div>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						</div>
 					</div>

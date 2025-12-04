@@ -4,16 +4,12 @@
 	import Favicon from './Favicon.svelte';
 	import type { Monitor } from '$lib/types';
 
+	// Monitors are pre-filtered and sorted by parent
 	export let monitors: Monitor[] = [];
+	// Hide internal toolbar when controlled by parent
+	export let hideToolbar: boolean = false;
 
 	const dispatch = createEventDispatcher();
-
-	type SortField = 'name' | 'status';
-	type SortDirection = 'asc' | 'desc';
-
-	let sortField: SortField = 'name';
-	let sortDirection: SortDirection = 'asc';
-	let searchQuery = '';
 
 	// Format relative time
 	function formatRelativeTime(dateString?: string): string {
@@ -37,47 +33,25 @@
 		return monitor.status || 'unknown';
 	}
 
-	// Sort monitors
-	function sortMonitors(field: SortField) {
-		if (sortField === field) {
-			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-		} else {
-			sortField = field;
-			sortDirection = 'asc';
+	// Get monitor type display label
+	function getTypeLabel(type: string): string {
+		switch (type) {
+			case 'tcp': return 'TCP';
+			case 'icmp': 
+			case 'ping': return 'ICMP';
+			default: return 'HTTP';
 		}
 	}
 
-	// Filter and sort monitors
-	$: filteredAndSortedMonitors = monitors
-		.filter((monitor) => {
-			if (!searchQuery) return true;
-			const query = searchQuery.toLowerCase();
-			return (
-				monitor.name.toLowerCase().includes(query) ||
-				monitor.url.toLowerCase().includes(query)
-			);
-		})
-		.sort((a, b) => {
-			let aVal, bVal;
-
-			switch (sortField) {
-				case 'name':
-					aVal = a.name.toLowerCase();
-					bVal = b.name.toLowerCase();
-					break;
-				case 'status':
-					// Simple sort by status string for now
-					aVal = getMonitorStatus(a);
-					bVal = getMonitorStatus(b);
-					break;
-				default:
-					return 0;
-			}
-
-			if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-			if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-			return 0;
-		});
+	// Get type badge color classes
+	function getTypeBadgeClasses(type: string): string {
+		switch (type) {
+			case 'tcp': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+			case 'icmp':
+			case 'ping': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+			default: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+		}
+	}
 
 	function handleRowClick(monitor: Monitor) {
 		dispatch('view', monitor);
@@ -93,50 +67,8 @@
 </script>
 
 <div class="flex flex-col gap-6">
-	<!-- Toolbar -->
-	<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-		<div class="relative max-w-md w-full">
-			<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400 dark:text-slate-500">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-				</svg>
-			</div>
-			<input
-				type="text"
-				bind:value={searchQuery}
-				placeholder="Search monitors..."
-				class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-900/50 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-gray-100"
-			/>
-		</div>
-		
-		<div class="flex items-center gap-3">
-			<select
-				bind:value={sortField}
-				class="block w-full rounded-lg border border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-900/50 text-slate-900 dark:text-gray-100"
-			>
-				<option value="name">Name</option>
-				<option value="status">Status</option>
-			</select>
-			<button
-				class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-				on:click={() => sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'}
-				title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-			>
-				{#if sortDirection === 'asc'}
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
-					</svg>
-				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
-					</svg>
-				{/if}
-			</button>
-		</div>
-	</div>
-
 	<!-- Grid -->
-	{#if filteredAndSortedMonitors.length === 0}
+	{#if monitors.length === 0}
 		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
 			<div class="flex flex-col items-center justify-center">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4">
@@ -148,7 +80,7 @@
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			{#each filteredAndSortedMonitors as monitor (monitor.id)}
+			{#each monitors as monitor (monitor.id)}
 				<div 
 					role="button"
 					tabindex="0"
@@ -165,11 +97,20 @@
 								<h3 class="font-semibold text-slate-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{monitor.name}</h3>
 								<div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
 									<span class="truncate max-w-[120px]">{monitor.url}</span>
-									<span class="px-1.5 py-0.5 rounded text-xs font-medium 
-										{monitor.type === 'tcp' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'}">
-										{monitor.type === 'tcp' ? 'TCP' : 'HTTP'}
+									<span class="px-1.5 py-0.5 rounded text-xs font-medium {getTypeBadgeClasses(monitor.type)}">
+										{getTypeLabel(monitor.type)}
 									</span>
 								</div>
+								{#if monitor.tags && monitor.tags.length > 0}
+									<div class="flex flex-wrap gap-1 mt-1">
+										{#each monitor.tags.slice(0, 2) as tag}
+											<span class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">{tag}</span>
+										{/each}
+										{#if monitor.tags.length > 2}
+											<span class="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded">+{monitor.tags.length - 2}</span>
+										{/if}
+									</div>
+								{/if}
 							</div>
 						</div>
 						<MonitorStatus status={getMonitorStatus(monitor)} showText={false} />

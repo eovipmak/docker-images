@@ -510,6 +510,13 @@
 							{/if}
 						</a>
 					</div>
+					{#if monitor.tags && monitor.tags.length > 0}
+						<div class="flex flex-wrap gap-1 mt-2">
+							{#each monitor.tags as tag}
+								<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">{tag}</span>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 			

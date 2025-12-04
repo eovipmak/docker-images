@@ -18,6 +18,7 @@
 	let sortField: 'name' | 'status' = 'name';
 	let sortDirection: 'asc' | 'desc' = 'asc';
 	let useTable: boolean = false;
+	let selectedTag: string = '';  // New: for tag filtering
 
 	// Confirm modal state
 	let isConfirmModalOpen = false;
@@ -31,6 +32,9 @@
 
 	// Subscribe to monitor check events
 	let unsubscribe: (() => void) | null = null;
+
+	// Get all unique tags from monitors
+	$: allTags = [...new Set(monitors.flatMap(m => m.tags || []))].sort();
 
 	onMount(() => {
 		loadMonitors();
@@ -193,12 +197,19 @@
 	// Filter and sort monitors (reactive)
 	$: filteredAndSortedMonitors = monitors
 		.filter((monitor) => {
-			if (!searchQuery) return true;
-			const query = searchQuery.toLowerCase();
-			return (
-				monitor.name.toLowerCase().includes(query) ||
-				monitor.url.toLowerCase().includes(query)
-			);
+			// Text search filter
+			if (searchQuery) {
+				const query = searchQuery.toLowerCase();
+				const matchesSearch = monitor.name.toLowerCase().includes(query) ||
+					monitor.url.toLowerCase().includes(query);
+				if (!matchesSearch) return false;
+			}
+			// Tag filter
+			if (selectedTag) {
+				const hasTag = monitor.tags?.includes(selectedTag);
+				if (!hasTag) return false;
+			}
+			return true;
 		})
 		.sort((a, b) => {
 			let aVal: any, bVal: any;
@@ -258,20 +269,43 @@
             {/each}
         </div>
 	{:else}
-		<!-- Toolbar (search & sort) -->
+		<!-- Toolbar (search, tag filter & sort) -->
 		<Card className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-			<div class="relative max-w-md w-full">
-				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-					</svg>
-								  </div>
-				<input
-					type="text"
-					bind:value={searchQuery}
-					placeholder="Search monitors..."
-					class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-white"
-				/>
+			<div class="flex flex-col sm:flex-row gap-3 flex-1">
+				<!-- Search -->
+				<div class="relative max-w-md w-full">
+					<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+						</svg>
+					</div>
+					<input
+						type="text"
+						bind:value={searchQuery}
+						placeholder="Search monitors..."
+						class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-white"
+					/>
+				</div>
+				<!-- Tag filter -->
+				{#if allTags.length > 0}
+					<div class="relative">
+						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-slate-400">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+								<path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+							</svg>
+						</div>
+						<select 
+							bind:value={selectedTag} 
+							class="block w-full pl-9 pr-8 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+						>
+							<option value="">All tags</option>
+							{#each allTags as tag}
+								<option value={tag}>{tag}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
 			</div>
 			<div class="flex items-center gap-3">
 				<select bind:value={sortField} class="block w-full rounded-lg border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
@@ -294,9 +328,9 @@
 					{/if}
 				</button>
 			</div>
-				</Card>
+		</Card>
 
-				<!-- Content: table or grid -->
+		<!-- Content: table or grid -->
 		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4">
 			<div class="flex items-center justify-between">
 				<div class="text-sm text-slate-600 dark:text-slate-400">{filteredAndSortedMonitors.length} monitor{filteredAndSortedMonitors.length !== 1 ? 's' : ''}</div>
@@ -316,14 +350,8 @@
 			</div>
 		</div>
 
-		{#if useTable}
-			<div class="mt-4">
-				<MonitorList {monitors} useTable={true} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
-			</div>
-		{:else}
-		<!-- Grid (using MonitorList) -->
 		{#if filteredAndSortedMonitors.length === 0}
-			<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+			<div class="mt-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
 				<div class="flex flex-col items-center justify-center">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -332,11 +360,15 @@
 					<p class="mt-1 text-slate-500 dark:text-slate-400">Try adjusting your search or add a new monitor.</p>
 				</div>
 			</div>
+		{:else if useTable}
+			<div class="mt-4">
+				<MonitorList monitors={filteredAndSortedMonitors} useTable={true} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
+			</div>
 		{:else}
+			<!-- Grid (using MonitorList) -->
 			<div class="mt-4">
 				<MonitorList monitors={filteredAndSortedMonitors} on:view={handleViewMonitor} on:edit={handleEditMonitor} on:delete={handleDeleteMonitor} />
 			</div>
-		{/if}
 		{/if}
 	{/if}
     </div>

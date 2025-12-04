@@ -9,6 +9,46 @@
 
 	const dispatch = createEventDispatcher();
 
+	// Get monitor type display label
+	function getTypeLabel(type: string): string {
+		switch (type) {
+			case 'tcp': return 'TCP';
+			case 'icmp': 
+			case 'ping': return 'ICMP';
+			default: return 'HTTP';
+		}
+	}
+
+	// Get type badge color classes
+	function getTypeBadgeClasses(type: string): string {
+		switch (type) {
+			case 'tcp': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+			case 'icmp':
+			case 'ping': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+			default: return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+		}
+	}
+
+	// Get type indicator classes for the small badge
+	function getTypeIndicatorClasses(type: string): string {
+		switch (type) {
+			case 'tcp': return 'bg-orange-500 text-white';
+			case 'icmp':
+			case 'ping': return 'bg-purple-500 text-white';
+			default: return 'bg-blue-500 text-white';
+		}
+	}
+
+	// Get type indicator letter
+	function getTypeIndicator(type: string): string {
+		switch (type) {
+			case 'tcp': return 'T';
+			case 'icmp':
+			case 'ping': return 'I';
+			default: return 'H';
+		}
+	}
+
 	function handleClick() {
 		console.debug('[MonitorCard] clicked', monitor?.id);
 		dispatch('view', monitor);
@@ -34,14 +74,28 @@
 				<div class="p-2.5 bg-slate-100 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400 relative">
 					<Favicon url={monitor.url} type={monitor.type} />
 					<!-- Monitor type indicator -->
-					<div class="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-xs font-bold
-						{monitor.type === 'tcp' ? 'bg-orange-500 text-white' : monitor.type === 'icmp' ? 'bg-purple-500 text-white' : 'bg-blue-500 text-white'}">
-						{monitor.type === 'tcp' ? 'T' : monitor.type === 'icmp' ? 'I' : 'H'}
+					<div class="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-xs font-bold {getTypeIndicatorClasses(monitor.type)}">
+						{getTypeIndicator(monitor.type)}
 					</div>
 				</div>
 				<div class="min-w-0">
 					<h3 class="text-sm font-semibold text-slate-900 dark:text-gray-100 truncate">{monitor.name}</h3>
-					<p class="text-xs text-slate-500 dark:text-slate-400 truncate">{monitor.url}</p>
+					<div class="flex items-center gap-1">
+						<p class="text-xs text-slate-500 dark:text-slate-400 truncate">{monitor.url}</p>
+						<span class="px-1.5 py-0.5 rounded text-xs font-medium {getTypeBadgeClasses(monitor.type)}">
+							{getTypeLabel(monitor.type)}
+						</span>
+					</div>
+					{#if monitor.tags && monitor.tags.length > 0}
+						<div class="flex flex-wrap gap-1 mt-1">
+							{#each monitor.tags.slice(0, 3) as tag}
+								<span class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">{tag}</span>
+							{/each}
+							{#if monitor.tags.length > 3}
+								<span class="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded">+{monitor.tags.length - 3}</span>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			</div>		<MonitorStatus status={(monitor.status || (monitor.enabled ? 'up' : 'unknown'))} showText={false} />
 	</div>

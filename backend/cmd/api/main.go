@@ -121,6 +121,7 @@ func main() {
 	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
 	incidentRepo := postgres.NewIncidentRepository(db.DB)
 	statusPageRepo := postgres.NewStatusPageRepository(db.DB)
+	maintenanceWindowRepo := postgres.NewMaintenanceWindowRepository(db.DB)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
@@ -139,6 +140,7 @@ func main() {
 	streamHandler := handlers.NewStreamHandler()
 	statusPageHandler := handlers.NewStatusPageHandler(statusPageService)
 	publicStatusPageHandler := handlers.NewPublicStatusPageHandler(statusPageService)
+	maintenanceWindowHandler := handlers.NewMaintenanceWindowHandler(maintenanceWindowRepo)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
@@ -294,6 +296,13 @@ func main() {
 		protected.GET("/status-pages/:id/monitors", statusPageHandler.GetStatusPageMonitors)
 		protected.POST("/status-pages/:id/monitors/:monitor_id", statusPageHandler.AddMonitorToStatusPage)
 		protected.DELETE("/status-pages/:id/monitors/:monitor_id", statusPageHandler.RemoveMonitorFromStatusPage)
+
+		// Maintenance window endpoints
+		protected.POST("/maintenance-windows", maintenanceWindowHandler.Create)
+		protected.GET("/maintenance-windows", maintenanceWindowHandler.List)
+		protected.GET("/maintenance-windows/:id", maintenanceWindowHandler.GetByID)
+		protected.PUT("/maintenance-windows/:id", maintenanceWindowHandler.Update)
+		protected.DELETE("/maintenance-windows/:id", maintenanceWindowHandler.Delete)
 
 		// SSE Stream endpoint
 		protected.GET("/stream/events", streamHandler.HandleSSE)

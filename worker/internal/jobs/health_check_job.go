@@ -202,8 +202,8 @@ func (j *HealthCheckJob) checkMonitor(ctx context.Context, monitor *entities.Mon
 		if internal.Log != nil {
 			internal.Log.Info("Falling back to HTTP check", zap.String("type", monitor.Type))
 		}
-		// HTTP/HTTPS check
-		httpResult := j.httpChecker.CheckURL(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second, monitor.Keyword)
+		// HTTP/HTTPS check with expected status codes support
+		httpResult := j.httpChecker.CheckURLWithExpectedCodes(ctx, monitor.URL, time.Duration(monitor.Timeout)*time.Second, monitor.Keyword, monitor.ExpectedStatusCodes)
 		success = httpResult.Success
 		responseTime = httpResult.ResponseTime
 		statusCode = httpResult.StatusCode

@@ -6,6 +6,7 @@
 	import IncidentBadge from '$lib/components/IncidentBadge.svelte';
 	import Card from '$lib/components/Card.svelte';
 	import { goto } from '$app/navigation';
+	import type { MaintenanceWindow } from '$lib/types';
 
 	interface MonitorCheck {
 		id: string;
@@ -81,6 +82,7 @@
 	};
 	let recentChecks: MonitorCheckWithMonitor[] = [];
 	let openIncidents: IncidentWithDetails[] = [];
+	let activeMaintenanceWindows: MaintenanceWindow[] = [];
 	let isLoading = true;
 	let error = '';
 
@@ -113,12 +115,34 @@
 		}
 	}
 
+	// Load maintenance windows and filter active ones
+	async function loadMaintenanceWindows() {
+		try {
+			const response = await fetchAPI('/api/v1/maintenance-windows');
+			if (response.ok) {
+				const windows: MaintenanceWindow[] = await response.json();
+				const now = new Date();
+				// Filter to only active maintenance windows (start_time <= now <= end_time)
+				activeMaintenanceWindows = windows.filter(w => {
+					const startTime = new Date(w.start_time);
+					const endTime = new Date(w.end_time);
+					return startTime <= now && now <= endTime;
+				});
+			}
+		} catch (err) {
+			console.error('Error loading maintenance windows:', err);
+		}
+	}
+
 	function handleViewAlert(rule: any) {
 		goto('/alerts');
 	}
 
 	onMount(async () => {
-		await loadDashboardData();
+		await Promise.all([
+			loadDashboardData(),
+			loadMaintenanceWindows()
+		]);
 
 		// Start SSE connection for real-time updates
 		await connectEventStream();
@@ -171,6 +195,23 @@
 	function getIncidentSeverity(triggerValue?: string): 'critical' | 'warning' | 'info' {
 		// For now, treat all as warning, but this can be enhanced
 		return 'warning';
+	}
+
+	// Format time remaining for maintenance window
+	function formatTimeRemaining(endTimeStr: string): string {
+		const endTime = new Date(endTimeStr);
+		const now = new Date();
+		const diffMs = endTime.getTime() - now.getTime();
+		
+		if (diffMs <= 0) return 'Ending soon';
+		
+		const diffMins = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMins / 60);
+		const diffDays = Math.floor(diffHours / 24);
+
+		if (diffDays > 0) return `${diffDays}d ${diffHours % 24}h remaining`;
+		if (diffHours > 0) return `${diffHours}h ${diffMins % 60}m remaining`;
+		return `${diffMins}m remaining`;
 	}
 </script>
 
@@ -296,10 +337,66 @@
 				</Card>
 			</div>
             
-            <!-- Recent Checks (Optional, if we want to show it) -->
-            <!-- For now, leaving empty or adding a placeholder for future widgets -->
+            <!-- Right column: Maintenance Windows -->
+			<div class="space-y-6">
+				<Card>
+					<div slot="header" class="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+						<h2 class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">Active Maintenance</h2>
+						{#if activeMaintenanceWindows.length > 0}
+							<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+								{activeMaintenanceWindows.length} Active
+							</span>
+						{/if}
+					</div>
+
+					{#if activeMaintenanceWindows.length === 0}
+						<div class="p-8 text-center">
+							<div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 mb-3">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+								</svg>
+							</div>
+							<h3 class="text-sm font-medium text-slate-900 dark:text-white">No active maintenance</h3>
+							<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">All systems are running normally.</p>
+						</div>
+					{:else}
+						<div class="divide-y divide-slate-100 dark:divide-slate-700">
+							{#each activeMaintenanceWindows as window}
+								<button 
+									type="button"
+									on:click={() => goto('/settings/maintenance')}
+									class="w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+								>
+									<div class="flex items-start gap-3">
+										<div class="flex-shrink-0 mt-0.5">
+											<div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-amber-600 dark:text-amber-400">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+												</svg>
+											</div>
+										</div>
+										<div class="flex-1 min-w-0">
+											<p class="text-sm font-medium text-slate-900 dark:text-white truncate">{window.name}</p>
+											<p class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{formatTimeRemaining(window.end_time)}</p>
+											{#if window.tags && window.tags.length > 0}
+												<div class="flex flex-wrap gap-1 mt-1.5">
+													{#each window.tags.slice(0, 2) as tag}
+														<span class="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded">{tag}</span>
+													{/each}
+													{#if window.tags.length > 2}
+														<span class="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded">+{window.tags.length - 2}</span>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</Card>
+			</div>
 		</div>
 
 	{/if}
 </div>
-

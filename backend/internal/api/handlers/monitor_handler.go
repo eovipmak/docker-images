@@ -38,28 +38,32 @@ func NewMonitorHandler(monitorRepo repository.MonitorRepository, alertRuleRepo r
 
 // CreateMonitorRequest represents the request body for creating a monitor
 type CreateMonitorRequest struct {
-	Name          string `json:"name" binding:"required"`
-	URL           string `json:"url" binding:"required"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
-	Keyword       *string `json:"keyword" binding:"omitempty"`
-	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
-	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
-	Enabled       *bool  `json:"enabled"`                                        // pointer to allow explicit false
-	CheckSSL      *bool  `json:"check_ssl"`                                      // pointer to allow explicit false
-	SSLAlertDays  int    `json:"ssl_alert_days" binding:"omitempty,min=1"`      // minimum 1 day
+	Name                string  `json:"name" binding:"required"`
+	URL                 string  `json:"url" binding:"required"`
+	Type                string  `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
+	Keyword             *string `json:"keyword" binding:"omitempty"`
+	CheckInterval       int     `json:"check_interval" binding:"omitempty,min=60"`     // minimum 60 seconds
+	Timeout             int     `json:"timeout" binding:"omitempty,min=5,max=120"`     // 5-120 seconds
+	Enabled             *bool   `json:"enabled"`                                        // pointer to allow explicit false
+	CheckSSL            *bool   `json:"check_ssl"`                                      // pointer to allow explicit false
+	SSLAlertDays        int     `json:"ssl_alert_days" binding:"omitempty,min=1"`      // minimum 1 day
+	Tags                []string `json:"tags"`                                          // tags for filtering/organization
+	ExpectedStatusCodes []int64  `json:"expected_status_codes"`                         // expected HTTP status codes
 }
 
 // UpdateMonitorRequest represents the request body for updating a monitor
 type UpdateMonitorRequest struct {
-	Name          string `json:"name" binding:"omitempty"`
-	URL           string `json:"url" binding:"omitempty"`
-	Type          string `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
-	Keyword       *string `json:"keyword" binding:"omitempty"`
-	CheckInterval int    `json:"check_interval" binding:"omitempty,min=60"`
-	Timeout       int    `json:"timeout" binding:"omitempty,min=5,max=120"`
-	Enabled       *bool  `json:"enabled"`
-	CheckSSL      *bool  `json:"check_ssl"`
-	SSLAlertDays  int    `json:"ssl_alert_days" binding:"omitempty,min=1"`
+	Name                string   `json:"name" binding:"omitempty"`
+	URL                 string   `json:"url" binding:"omitempty"`
+	Type                string   `json:"type" binding:"omitempty,oneof=http tcp ping icmp"`
+	Keyword             *string  `json:"keyword" binding:"omitempty"`
+	CheckInterval       int      `json:"check_interval" binding:"omitempty,min=60"`
+	Timeout             int      `json:"timeout" binding:"omitempty,min=5,max=120"`
+	Enabled             *bool    `json:"enabled"`
+	CheckSSL            *bool    `json:"check_ssl"`
+	SSLAlertDays        int      `json:"ssl_alert_days" binding:"omitempty,min=1"`
+	Tags                []string `json:"tags"`                                          // tags for filtering/organization
+	ExpectedStatusCodes []int64  `json:"expected_status_codes"`                         // expected HTTP status codes
 }
 
 // Create godoc
@@ -154,17 +158,25 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		keyword = *req.Keyword
 	}
 
+	// Set default expected status codes if not provided
+	expectedStatusCodes := req.ExpectedStatusCodes
+	if len(expectedStatusCodes) == 0 {
+		expectedStatusCodes = []int64{200} // default to 200 OK
+	}
+
 	monitor := &entities.Monitor{
-		TenantID:      tenantID,
-		Name:          sanitizedName,
-		URL:           req.URL,
-		Type:          monitorType,
-		Keyword:       keyword,
-		CheckInterval: checkInterval,
-		Timeout:       timeout,
-		Enabled:       enabled,
-		CheckSSL:      checkSSL,
-		SSLAlertDays:  sslAlertDays,
+		TenantID:            tenantID,
+		Name:                sanitizedName,
+		URL:                 req.URL,
+		Type:                monitorType,
+		Keyword:             keyword,
+		CheckInterval:       checkInterval,
+		Timeout:             timeout,
+		Enabled:             enabled,
+		CheckSSL:            checkSSL,
+		SSLAlertDays:        sslAlertDays,
+		Tags:                req.Tags,
+		ExpectedStatusCodes: expectedStatusCodes,
 	}
 
 	if err := h.monitorRepo.Create(monitor); err != nil {
@@ -386,6 +398,16 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	}
 	if req.SSLAlertDays > 0 {
 		monitor.SSLAlertDays = req.SSLAlertDays
+	}
+
+	// Update tags if provided
+	if req.Tags != nil {
+		monitor.Tags = req.Tags
+	}
+
+	// Update expected status codes if provided
+	if req.ExpectedStatusCodes != nil && len(req.ExpectedStatusCodes) > 0 {
+		monitor.ExpectedStatusCodes = req.ExpectedStatusCodes
 	}
 
 	if err := h.monitorRepo.Update(monitor); err != nil {

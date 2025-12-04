@@ -40,6 +40,12 @@ func NewHTTPChecker() *HTTPChecker {
 // CheckURL performs an HTTP health check on the given URL
 // Returns status code, response time, and any error encountered
 func (c *HTTPChecker) CheckURL(ctx context.Context, url string, timeout time.Duration, keyword string) HTTPCheckResult {
+	return c.CheckURLWithExpectedCodes(ctx, url, timeout, keyword, nil)
+}
+
+// CheckURLWithExpectedCodes performs an HTTP health check on the given URL with custom expected status codes
+// If expectedCodes is nil or empty, defaults to 2xx and 3xx status codes as successful
+func (c *HTTPChecker) CheckURLWithExpectedCodes(ctx context.Context, url string, timeout time.Duration, keyword string, expectedCodes []int64) HTTPCheckResult {
 	// Create a context with timeout
 	checkCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -73,8 +79,21 @@ func (c *HTTPChecker) CheckURL(ctx context.Context, url string, timeout time.Dur
 	}
 	defer resp.Body.Close()
 
-	// Consider 2xx and 3xx status codes as successful
-	success := resp.StatusCode >= 200 && resp.StatusCode < 400
+	// Determine success based on expected status codes
+	var success bool
+	if len(expectedCodes) > 0 {
+		// Check if status code is in expected list
+		success = false
+		for _, code := range expectedCodes {
+			if int64(resp.StatusCode) == code {
+				success = true
+				break
+			}
+		}
+	} else {
+		// Default: Consider 2xx and 3xx status codes as successful
+		success = resp.StatusCode >= 200 && resp.StatusCode < 400
+	}
 
 	if success && keyword != "" {
 		// Read body and check for keyword (limit to 1MB to prevent OOM)
