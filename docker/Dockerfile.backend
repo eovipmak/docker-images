@@ -12,6 +12,9 @@ COPY backend/go.mod backend/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
+# Fix shared module path for Docker context
+RUN sed -i 's|=> ../shared|=> /shared|g' go.mod
+
 # Sync dependencies
 RUN go mod tidy && go mod download
 
