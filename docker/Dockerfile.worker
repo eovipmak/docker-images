@@ -12,14 +12,12 @@ COPY worker/go.mod worker/go.sum* ./
 # Copy shared module
 COPY shared /shared
 
-# Fix shared module path for Docker context
-RUN sed -i 's|=> ../shared|=> /shared|g' go.mod
-
-# Sync dependencies
-RUN go mod tidy && go mod download
-
-# Copy source code
+# Copy source code first (needed for go mod tidy to detect dependencies)
 COPY worker/ ./
+
+# Fix shared module path for Docker context and sync dependencies
+RUN sed -i 's|=> ../shared|=> /shared|g' go.mod && \
+    go mod tidy && go mod download
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/worker
