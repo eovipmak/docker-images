@@ -8,7 +8,6 @@ const API_BASE = '/api/v1';
 const TEST_USER = {
 	email: `test-${Date.now()}@example.com`,
 	password: 'testpassword123',
-	tenantName: `Test Tenant ${Date.now()}`,
 };
 
 let authToken = '';
@@ -21,7 +20,6 @@ test.describe('Authentication E2E Tests', () => {
 			data: {
 				email: TEST_USER.email,
 				password: TEST_USER.password,
-				tenant_name: TEST_USER.tenantName,
 			},
 		});
 
@@ -102,7 +100,6 @@ test.describe('Authentication E2E Tests', () => {
 			data: {
 				email: 'invalid-email',
 				password: TEST_USER.password,
-				tenant_name: TEST_USER.tenantName,
 			},
 		});
 
@@ -117,7 +114,6 @@ test.describe('Authentication E2E Tests', () => {
 			data: {
 				email: `test-short-pass-${Date.now()}@example.com`,
 				password: '12345',
-				tenant_name: TEST_USER.tenantName,
 			},
 		});
 

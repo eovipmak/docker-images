@@ -7,14 +7,11 @@ test('Monitors grid view renders with cards', async ({ request, page }) => {
   const timestamp = Date.now();
   const email = `monitors-test-${timestamp}@example.com`;
   const password = 'testpassword123';
-  const tenantName = `Monitors Tenant ${timestamp}`;
-
   // Register new user via backend API
   const registerRes = await request.post(`${BACKEND_URL}${API_BASE}/auth/register`, {
     data: {
       email,
       password,
-      tenant_name: tenantName,
     },
   });
 

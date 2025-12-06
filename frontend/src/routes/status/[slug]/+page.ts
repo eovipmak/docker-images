@@ -11,7 +11,7 @@ interface MonitorWithStatus {
 
 interface StatusPage {
 	id: string;
-	tenant_id: number;
+	user_id: number;
 	slug: string;
 	name: string;
 	public_enabled: boolean;

@@ -78,6 +78,48 @@ jobs:
       - name: Run backend tests
         run: cd backend && go test ./... -v -cover -race -timeout 5m
 
+  # Worker tests
+  test-worker:
+    needs: changes
+    if: needs.changes.outputs.worker == 'true' || needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: |
+            backend/go.sum
+            worker/go.sum
+            shared/go.sum
+
+      - name: Run worker tests
+        run: cd worker && go test ./... -v -cover -race -timeout 5m
+
+  # Shared tests
+  test-shared:
+    needs: changes
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.worker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: |
+            backend/go.sum
+            worker/go.sum
+            shared/go.sum
+
+      - name: Run shared tests
+        run: cd shared && go test ./... -v -cover -race -timeout 5m
+
   # Frontend type check - only runs if frontend changed
   test-frontend:
     needs: changes
@@ -165,13 +207,15 @@ jobs:
   # Build & Deploy - matrix strategy for parallel builds
   # Use [build] in commit message to force build and deploy
   build-and-deploy:
-    needs: [changes, test-backend, test-frontend]
+    needs: [changes, test-backend, test-worker, test-shared, test-frontend]
     if: |
       always() &&
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' &&
       (contains(github.event.head_commit.message, '[build]') || needs.changes.outputs.backend == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
+      (needs.test-worker.result == 'success' || needs.test-worker.result == 'skipped') &&
+      (needs.test-shared.result == 'success' || needs.test-shared.result == 'skipped') &&
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped')
     runs-on: ubuntu-latest
     strategy:

@@ -4,7 +4,7 @@ This document is intended to help AI agents (e.g., LLM assistants, CI bots) and 
 
 ## High-level goals for agents
 
-- Provide accurate code changes that follow project conventions and multi-tenant behavior.
+- Provide accurate code changes that follow project conventions and user isolation.
 - Avoid security regressions, secret leaks, or misconfiguration for production environments.
 - Ensure tests pass for any code change; run unit tests and lightweight CI steps locally.
 
@@ -19,7 +19,7 @@ This document is intended to help AI agents (e.g., LLM assistants, CI bots) and 
 
 ## Rules of engagement
 
-- Tenant safety: All data writes or reads must be scoped by `tenant_id`. Verify request handlers and repository calls include this filter.
+- User safety: All data writes or reads must be scoped by `user_id`. Verify request handlers and repository calls include this filter.
 - No CORS middleware: Avoid adding or modifying CORS handling; the proxy is the recommended pattern for browser clients.
 - Secrets: Never hardcode secrets (JWT secrets, DB passwords) in code or commit them to the repo.
 - Migrations: Create both `.up.sql` and `.down.sql` and use the `make migrate-create` helper. Agents should not remove or modify older migrations.
@@ -60,7 +60,7 @@ cd frontend && npx playwright test
 ## Safety and review prompts
 
 - Agents should create well-scoped, small PRs and include test coverage and thorough descriptions.
-- Ask reviewers to validate multi-tenant behavior and verify no sensitive data is exposed.
+- Ask reviewers to validate user isolation behavior and verify no sensitive data is exposed.
 
 ## Where to ask for help
 

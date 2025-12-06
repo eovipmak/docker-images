@@ -21,7 +21,7 @@ func TestAlertRuleRepository_Create(t *testing.T) {
 	repo := NewAlertRuleRepository(sqlxDB)
 
 	rule := &entities.AlertRule{
-		TenantID:       1,
+		UserID:         1,
 		MonitorID:      sql.NullString{String: "monitor-uuid", Valid: true},
 		Name:           "Test Alert Rule",
 		TriggerType:    "down",
@@ -34,7 +34,7 @@ func TestAlertRuleRepository_Create(t *testing.T) {
 		AddRow("rule-uuid", now, now)
 
 	mock.ExpectQuery(`INSERT INTO alert_rules`).
-		WithArgs(rule.TenantID, rule.MonitorID, rule.Name, rule.TriggerType, rule.ThresholdValue, rule.Enabled).
+		WithArgs(rule.UserID, rule.MonitorID, rule.Name, rule.TriggerType, rule.ThresholdValue, rule.Enabled).
 		WillReturnRows(rows)
 
 	err = repo.Create(rule)
@@ -53,7 +53,7 @@ func TestAlertRuleRepository_GetByID(t *testing.T) {
 
 	expectedRule := &entities.AlertRule{
 		ID:             "rule-uuid",
-		TenantID:       1,
+		UserID:         1,
 		MonitorID:      sql.NullString{String: "monitor-uuid", Valid: true},
 		Name:           "Test Alert Rule",
 		TriggerType:    "down",
@@ -62,10 +62,10 @@ func TestAlertRuleRepository_GetByID(t *testing.T) {
 	}
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
-		AddRow(expectedRule.ID, expectedRule.TenantID, "monitor-uuid", expectedRule.Name, expectedRule.TriggerType, expectedRule.ThresholdValue, expectedRule.Enabled, now, now)
+	rows := sqlmock.NewRows([]string{"id", "user_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
+		AddRow(expectedRule.ID, expectedRule.UserID, "monitor-uuid", expectedRule.Name, expectedRule.TriggerType, expectedRule.ThresholdValue, expectedRule.Enabled, now, now)
 
-	mock.ExpectQuery(`SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE`).
+	mock.ExpectQuery(`SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE`).
 		WithArgs(1, "rule-uuid").
 		WillReturnRows(rows)
 
@@ -77,7 +77,7 @@ func TestAlertRuleRepository_GetByID(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAlertRuleRepository_GetByTenantID(t *testing.T) {
+func TestAlertRuleRepository_GetByUserID(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -86,15 +86,15 @@ func TestAlertRuleRepository_GetByTenantID(t *testing.T) {
 	repo := NewAlertRuleRepository(sqlxDB)
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
+	rows := sqlmock.NewRows([]string{"id", "user_id", "monitor_id", "name", "trigger_type", "threshold_value", "enabled", "created_at", "updated_at"}).
 		AddRow("rule-1", 1, nil, "Rule 1", "down", 3, true, now, now).
 		AddRow("rule-2", 1, nil, "Rule 2", "ssl_expiry", 7, true, now, now)
 
-	mock.ExpectQuery(`SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE tenant_id`).
+	mock.ExpectQuery(`SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at FROM alert_rules WHERE user_id`).
 		WithArgs(1).
 		WillReturnRows(rows)
 
-	rules, err := repo.GetByTenantID(1)
+	rules, err := repo.GetByUserID(1)
 	assert.NoError(t, err)
 	assert.Len(t, rules, 2)
 	assert.Equal(t, "Rule 1", rules[0].Name)
@@ -112,7 +112,7 @@ func TestAlertRuleRepository_Update(t *testing.T) {
 
 	rule := &entities.AlertRule{
 		ID:             "rule-uuid",
-		TenantID:       1,
+		UserID:         1,
 		MonitorID:      sql.NullString{String: "monitor-uuid", Valid: true},
 		Name:           "Updated Rule",
 		TriggerType:    "slow_response",
@@ -158,19 +158,19 @@ func TestAlertRuleRepository_AttachChannels(t *testing.T) {
 	repo := NewAlertRuleRepository(sqlxDB)
 
 	ruleID := "rule-uuid"
-	tenantID := 1
+	userID := 1
 	channelIDs := []string{"channel-1", "channel-2"}
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`INSERT INTO alert_rule_channels`).
-		WithArgs(ruleID, channelIDs[0], tenantID).
+		WithArgs(ruleID, channelIDs[0], userID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO alert_rule_channels`).
-		WithArgs(ruleID, channelIDs[1], tenantID).
+		WithArgs(ruleID, channelIDs[1], userID).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 
-	err = repo.AttachChannels(tenantID, ruleID, channelIDs)
+	err = repo.AttachChannels(userID, ruleID, channelIDs)
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

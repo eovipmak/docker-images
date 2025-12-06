@@ -14,7 +14,7 @@ interface MonitorCheck {
 
 interface Monitor {
 	id: string;
-	tenant_id: number;
+	user_id: number;
 	name: string;
 	url: string;
 	check_interval: number;

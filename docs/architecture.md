@@ -13,8 +13,8 @@ The frontend proxies `/api/*` requests to the backend so the browser never perfo
 ## Notes for AI Agents & Automation
 
 - The frontend API proxy is implemented at `frontend/src/routes/api/[...path]/+server.ts`. Do not add CORS middleware — the proxy pattern is intentional.
-- Multi-tenant enforcement is critical: always filter queries and commands by `tenant_id` and validate user access in handlers and services.
-- The backend and worker both rely on shared domain models in `backend/internal/domain` and `backend/internal/service`.
+- User enforcement is critical: always filter queries and commands by `user_id` and validate user access in handlers and services.
+- The backend and worker both rely on shared domain models in `shared/domain` and `shared/repository`.
 - For schema changes, add migrations under `backend/migrations/`; ensure both `.up.sql` and `.down.sql` are present and tested.
 
 ## Worker jobs (schedules)
@@ -31,10 +31,11 @@ The frontend proxies `/api/*` requests to the backend so the browser never perfo
 ├── backend/    # Go backend (API, migrations)
 ├── worker/     # Background jobs
 ├── frontend/   # SvelteKit app + API proxy
+├── shared/     # Shared domain logic and repositories
 ├── docker/     # Dockerfiles
 └── docs/       # Documentation (this folder)
 ```
 
-## Multi-tenant model
+## User Isolation model
 
-All main tables include `tenant_id` for strong data isolation. Handlers and repositories filter by tenant context.
+All main tables include `user_id` for strong data isolation. Handlers and repositories filter by user context.

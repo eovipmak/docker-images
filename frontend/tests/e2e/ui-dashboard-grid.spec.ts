@@ -7,14 +7,11 @@ test('Dashboard monitors & alerts preview grid renders', async ({ request, page 
   const timestamp = Date.now();
   const email = `dashboard-test-${timestamp}@example.com`;
   const password = 'testpassword123';
-  const tenantName = `Dashboard Tenant ${timestamp}`;
-
   // Register new user via backend API
   const registerRes = await request.post(`${BACKEND_URL}${API_BASE}/auth/register`, {
     data: {
       email,
       password,
-      tenant_name: tenantName,
     },
   });
 

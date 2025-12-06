@@ -52,7 +52,7 @@ describe('authStore', () => {
 	describe('login', () => {
 		it('should set token in localStorage and update state', async () => {
 			const token = 'test-auth-token';
-			const userData = { id: 1, email: 'test@example.com', tenant_id: 1 };
+			const userData = { id: 1, email: 'test@example.com', user_id: 1 };
 
 			fetchMock.mockResolvedValueOnce({
 				ok: true,
@@ -132,7 +132,7 @@ describe('authStore', () => {
 	describe('checkAuth', () => {
 		it('should validate token and fetch user data', async () => {
 			const token = 'valid-token';
-			const userData = { id: 1, email: 'test@example.com', tenant_id: 1 };
+			const userData = { id: 1, email: 'test@example.com', user_id: 1 };
 
 			localStorageMock.setItem('auth_token', token);
 

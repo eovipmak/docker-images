@@ -20,9 +20,9 @@ func TestAlertChannelRepository_Create(t *testing.T) {
 	repo := NewAlertChannelRepository(sqlxDB)
 
 	channel := &entities.AlertChannel{
-		TenantID: 1,
-		Type:     "webhook",
-		Name:     "Test Webhook",
+		UserID: 1,
+		Type:   "webhook",
+		Name:   "Test Webhook",
 		Config: entities.ChannelConfig{
 			"url": "https://example.com/webhook",
 		},
@@ -34,7 +34,7 @@ func TestAlertChannelRepository_Create(t *testing.T) {
 		AddRow("channel-uuid", now, now)
 
 	mock.ExpectQuery(`INSERT INTO alert_channels`).
-		WithArgs(channel.TenantID, channel.Type, channel.Name, sqlmock.AnyArg(), channel.Enabled).
+		WithArgs(channel.UserID, channel.Type, channel.Name, sqlmock.AnyArg(), channel.Enabled).
 		WillReturnRows(rows)
 
 	err = repo.Create(channel)
@@ -52,10 +52,10 @@ func TestAlertChannelRepository_GetByID(t *testing.T) {
 	repo := NewAlertChannelRepository(sqlxDB)
 
 	expectedChannel := &entities.AlertChannel{
-		ID:       "channel-uuid",
-		TenantID: 1,
-		Type:     "discord",
-		Name:     "Test Discord",
+		ID:     "channel-uuid",
+		UserID: 1,
+		Type:   "discord",
+		Name:   "Test Discord",
 		Config: entities.ChannelConfig{
 			"webhook_url": "https://discord.com/api/webhooks/xxx",
 		},
@@ -64,10 +64,10 @@ func TestAlertChannelRepository_GetByID(t *testing.T) {
 
 	now := time.Now()
 	configJSON := []byte(`{"webhook_url":"https://discord.com/api/webhooks/xxx"}`)
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "type", "name", "config", "enabled", "created_at", "updated_at"}).
-		AddRow(expectedChannel.ID, expectedChannel.TenantID, expectedChannel.Type, expectedChannel.Name, configJSON, expectedChannel.Enabled, now, now)
+	rows := sqlmock.NewRows([]string{"id", "user_id", "type", "name", "config", "enabled", "created_at", "updated_at"}).
+		AddRow(expectedChannel.ID, expectedChannel.UserID, expectedChannel.Type, expectedChannel.Name, configJSON, expectedChannel.Enabled, now, now)
 
-	mock.ExpectQuery(`SELECT id, tenant_id, type, name, config, enabled, created_at, updated_at FROM alert_channels WHERE id`).
+	mock.ExpectQuery(`SELECT id, user_id, type, name, config, enabled, created_at, updated_at FROM alert_channels WHERE id`).
 		WithArgs("channel-uuid").
 		WillReturnRows(rows)
 
@@ -79,7 +79,7 @@ func TestAlertChannelRepository_GetByID(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestAlertChannelRepository_GetByTenantID(t *testing.T) {
+func TestAlertChannelRepository_GetByUserID(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
@@ -89,15 +89,15 @@ func TestAlertChannelRepository_GetByTenantID(t *testing.T) {
 
 	now := time.Now()
 	configJSON := []byte(`{}`)
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "type", "name", "config", "enabled", "created_at", "updated_at"}).
+	rows := sqlmock.NewRows([]string{"id", "user_id", "type", "name", "config", "enabled", "created_at", "updated_at"}).
 		AddRow("channel-1", 1, "webhook", "Webhook 1", configJSON, true, now, now).
 		AddRow("channel-2", 1, "discord", "Discord 1", configJSON, true, now, now)
 
-	mock.ExpectQuery(`SELECT id, tenant_id, type, name, config, enabled, created_at, updated_at FROM alert_channels WHERE tenant_id`).
+	mock.ExpectQuery(`SELECT id, user_id, type, name, config, enabled, created_at, updated_at FROM alert_channels WHERE user_id`).
 		WithArgs(1).
 		WillReturnRows(rows)
 
-	channels, err := repo.GetByTenantID(1)
+	channels, err := repo.GetByUserID(1)
 	assert.NoError(t, err)
 	assert.Len(t, channels, 2)
 	assert.Equal(t, "Webhook 1", channels[0].Name)
@@ -114,10 +114,10 @@ func TestAlertChannelRepository_Update(t *testing.T) {
 	repo := NewAlertChannelRepository(sqlxDB)
 
 	channel := &entities.AlertChannel{
-		ID:       "channel-uuid",
-		TenantID: 1,
-		Type:     "email",
-		Name:     "Updated Email",
+		ID:     "channel-uuid",
+		UserID: 1,
+		Type:   "email",
+		Name:   "Updated Email",
 		Config: entities.ChannelConfig{
 			"to": "admin@example.com",
 		},

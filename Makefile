@@ -168,4 +168,3 @@ test-frontend:
 ## test-all: Run all tests (backend, worker, frontend)
 test-all: test-backend test-worker test-frontend
 	@echo "All tests completed!"
-

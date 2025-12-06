@@ -22,6 +22,7 @@ func TestUserRepository_Create(t *testing.T) {
 	user := &entities.User{
 		Email:        "test@example.com",
 		PasswordHash: "hashedpassword",
+		Role:         "user",
 	}
 
 	now := time.Now()
@@ -29,7 +30,7 @@ func TestUserRepository_Create(t *testing.T) {
 		AddRow(1, now, now)
 
 	mock.ExpectQuery(`INSERT INTO users`).
-		WithArgs(user.Email, user.PasswordHash).
+		WithArgs(user.Email, user.PasswordHash, user.Role).
 		WillReturnRows(rows)
 
 	err = repo.Create(user)
@@ -50,13 +51,14 @@ func TestUserRepository_GetByID(t *testing.T) {
 		ID:           1,
 		Email:        "test@example.com",
 		PasswordHash: "hashedpassword",
+		Role:         "user",
 	}
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "email", "password_hash", "created_at", "updated_at"}).
-		AddRow(expectedUser.ID, expectedUser.Email, expectedUser.PasswordHash, now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "password_hash", "role", "created_at", "updated_at"}).
+		AddRow(expectedUser.ID, expectedUser.Email, expectedUser.PasswordHash, expectedUser.Role, now, now)
 
-	mock.ExpectQuery(`SELECT id, email, password_hash, created_at, updated_at FROM users WHERE id`).
+	mock.ExpectQuery(`SELECT id, email, password_hash, role, created_at, updated_at FROM users WHERE id`).
 		WithArgs(1).
 		WillReturnRows(rows)
 
@@ -79,13 +81,14 @@ func TestUserRepository_GetByEmail(t *testing.T) {
 		ID:           1,
 		Email:        "test@example.com",
 		PasswordHash: "hashedpassword",
+		Role:         "user",
 	}
 
 	now := time.Now()
-	rows := sqlmock.NewRows([]string{"id", "email", "password_hash", "created_at", "updated_at"}).
-		AddRow(expectedUser.ID, expectedUser.Email, expectedUser.PasswordHash, now, now)
+	rows := sqlmock.NewRows([]string{"id", "email", "password_hash", "role", "created_at", "updated_at"}).
+		AddRow(expectedUser.ID, expectedUser.Email, expectedUser.PasswordHash, expectedUser.Role, now, now)
 
-	mock.ExpectQuery(`SELECT id, email, password_hash, created_at, updated_at FROM users WHERE email`).
+	mock.ExpectQuery(`SELECT id, email, password_hash, role, created_at, updated_at FROM users WHERE email`).
 		WithArgs("test@example.com").
 		WillReturnRows(rows)
 
@@ -108,6 +111,7 @@ func TestUserRepository_Update(t *testing.T) {
 		ID:           1,
 		Email:        "updated@example.com",
 		PasswordHash: "newhashedpassword",
+		Role:         "admin",
 	}
 
 	now := time.Now()
@@ -115,7 +119,7 @@ func TestUserRepository_Update(t *testing.T) {
 		AddRow(now)
 
 	mock.ExpectQuery(`UPDATE users SET email`).
-		WithArgs(user.Email, user.PasswordHash, user.ID).
+		WithArgs(user.Email, user.PasswordHash, user.Role, user.ID).
 		WillReturnRows(rows)
 
 	err = repo.Update(user)
