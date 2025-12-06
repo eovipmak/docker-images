@@ -110,8 +110,8 @@
 		}
 
 		// Try SPA navigation first; fall back to full navigation if it fails
-		goto(`/monitors/${monitor.id}`).catch(() => {
-			window.location.href = `/monitors/${monitor.id}`;
+		goto(`/user/monitors/${monitor.id}`).catch(() => {
+			window.location.href = `/user/monitors/${monitor.id}`;
 		});
 	}
 

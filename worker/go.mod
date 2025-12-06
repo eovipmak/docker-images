@@ -1,8 +1,11 @@
 module github.com/eovipmak/v-insight/worker
 
-go 1.23.0
+go 1.24.0
+
+toolchain go1.24.11
 
 require (
+	github.com/eovipmak/v-insight/shared v0.0.0-00010101000000-000000000000
 	github.com/gofiber/adaptor/v2 v2.2.1
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/jmoiron/sqlx v1.4.0

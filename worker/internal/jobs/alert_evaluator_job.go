@@ -137,8 +137,8 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *entities.MonitorChe
 	incidentsResolved := 0
 
 	for _, rule := range rules {
-		// Skip rules that don't belong to the same tenant as the monitor
-		if rule.TenantID != check.TenantID {
+		// Skip rules that don't belong to the same user as the monitor
+		if rule.UserID != check.UserID {
 			continue
 		}
 
@@ -157,7 +157,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *entities.MonitorChe
 
 		if triggered {
 			// Alert triggered - create incident if not already open
-			created, err := j.createIncidentIfNeeded(check.MonitorID, rule.ID, rule.TenantID, triggerValue)
+			created, err := j.createIncidentIfNeeded(check.MonitorID, rule.ID, rule.UserID, triggerValue)
 			if err != nil {
 				if internal.Log != nil {
 					internal.Log.Error("Failed to create incident",
@@ -179,12 +179,12 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *entities.MonitorChe
 					)
 				}
 				
-				// Get monitor info for tenant ID (already have it)
-				j.broadcastIncidentCreatedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name, triggerValue)
+				// Get monitor info for user ID (already have it)
+				j.broadcastIncidentCreatedEvent(check.MonitorID, rule.ID, rule.UserID, rule.Name, triggerValue)
 			}
 		} else {
 			// Alert not triggered - resolve incident if open
-			resolved, err := j.resolveIncidentIfOpen(check.MonitorID, rule.ID, rule.TenantID, rule.Name)
+			resolved, err := j.resolveIncidentIfOpen(check.MonitorID, rule.ID, rule.UserID, rule.Name)
 			if err != nil {
 				if internal.Log != nil {
 					internal.Log.Error("Failed to resolve incident",
@@ -206,7 +206,7 @@ func (j *AlertEvaluatorJob) evaluateCheckAgainstRules(check *entities.MonitorChe
 				}
 				
 				// Broadcast incident resolved event
-				j.broadcastIncidentResolvedEvent(check.MonitorID, rule.ID, rule.TenantID, rule.Name)
+				j.broadcastIncidentResolvedEvent(check.MonitorID, rule.ID, rule.UserID, rule.Name)
 			}
 		}
 	}
@@ -247,7 +247,7 @@ func (j *AlertEvaluatorJob) evaluateRule(check *entities.MonitorCheck, rule *ent
 }
 
 // createIncidentIfNeeded creates an incident if one doesn't already exist
-func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID string, tenantID int, triggerValue string) (bool, error) {
+func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID string, userID int, triggerValue string) (bool, error) {
 	// Check if there's already an open incident
 	incident, err := j.incidentRepo.GetOpenIncident(monitorID, ruleID)
 	if err != nil {
@@ -263,6 +263,7 @@ func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID string, ten
 	newIncident := &entities.Incident{
 		MonitorID:    monitorID,
 		AlertRuleID:  ruleID,
+		UserID:       userID,
 		StartedAt:    time.Now(),
 		Status:       "open",
 		TriggerValue: triggerValue,
@@ -277,7 +278,7 @@ func (j *AlertEvaluatorJob) createIncidentIfNeeded(monitorID, ruleID string, ten
 }
 
 // resolveIncidentIfOpen resolves an open incident if it exists
-func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string, tenantID int, ruleName string) (bool, error) {
+func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string, userID int, ruleName string) (bool, error) {
 	incident, err := j.incidentRepo.GetOpenIncident(monitorID, ruleID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check for open incident: %w", err)
@@ -296,7 +297,7 @@ func (j *AlertEvaluatorJob) resolveIncidentIfOpen(monitorID, ruleID string, tena
 }
 
 // broadcastIncidentCreatedEvent broadcasts an incident created event
-func (j *AlertEvaluatorJob) broadcastIncidentCreatedEvent(monitorID, ruleID string, tenantID int, ruleName, triggerValue string) {
+func (j *AlertEvaluatorJob) broadcastIncidentCreatedEvent(monitorID, ruleID string, userID int, ruleName, triggerValue string) {
 	data := map[string]interface{}{
 		"monitor_id":    monitorID,
 		"alert_rule_id": ruleID,
@@ -305,11 +306,11 @@ func (j *AlertEvaluatorJob) broadcastIncidentCreatedEvent(monitorID, ruleID stri
 		"status":        "open",
 	}
 
-	broadcastEvent("incident_created", data, tenantID)
+	broadcastEvent("incident_created", data, userID)
 }
 
 // broadcastIncidentResolvedEvent broadcasts an incident resolved event
-func (j *AlertEvaluatorJob) broadcastIncidentResolvedEvent(monitorID, ruleID string, tenantID int, ruleName string) {
+func (j *AlertEvaluatorJob) broadcastIncidentResolvedEvent(monitorID, ruleID string, userID int, ruleName string) {
 	data := map[string]interface{}{
 		"monitor_id":    monitorID,
 		"alert_rule_id": ruleID,
@@ -317,5 +318,5 @@ func (j *AlertEvaluatorJob) broadcastIncidentResolvedEvent(monitorID, ruleID str
 		"status":        "resolved",
 	}
 
-	broadcastEvent("incident_resolved", data, tenantID)
+	broadcastEvent("incident_resolved", data, userID)
 }

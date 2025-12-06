@@ -388,7 +388,7 @@ func (j *HealthCheckJob) broadcastMonitorCheckEvent(monitor *entities.Monitor, c
 	}
 
 	// Send broadcast request to backend
-	broadcastEvent("monitor_check", data, monitor.TenantID)
+	broadcastEvent("monitor_check", data, monitor.UserID)
 }
 
 // parseTCPAddress parses a TCP address string and returns host and port

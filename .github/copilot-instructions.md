@@ -4,7 +4,9 @@
 
 V-Insight is a Docker-based multi-tenant monitoring SaaS platform with automated alerting. **Stack:** Go 1.23 (Gin backend :8080, Fiber worker :8081), SvelteKit/TypeScript frontend (:3000), PostgreSQL 15 (:5432).
 
-**CRITICAL:** Uses CORS-free proxy architecture. Frontend (`src/routes/api/[...path]/+server.ts`) proxies all `/api/*` requests to backend. NEVER add CORS middleware.
+**CRITICAL:** Uses CORS-free proxy architecture. Frontend (`src/routes/api/[...path]/+server.ts`) proxies all `/api/*` requests to backend. Do not add CORS middleware to backend.
+
+**Architecture Refactoring:** The project now uses a **Go Workspace** (`go.work`) with a `shared` module to centralize domain logic and repositories, reducing duplication between Backend and Worker services.
 
 ## Features
 
@@ -66,11 +68,11 @@ make up          # Start all services (wait ~30s for PostgreSQL init)
 
 ## Database Schema
 
-**Multi-tenant tables (all include `tenant_id`):**
-- `tenants`, `users` - Multi-tenant organization and accounts
-- `monitors`, `monitor_checks` - Website/service monitoring and check results
-- `alert_rules`, `alert_channels`, `alert_rule_channels` - Alert configuration
-- `incidents` - Triggered alerts with resolution tracking
+**User-scoped tables (multi-tenant ready):**
+- `tenants`, `users`, `tenant_users` - Multi-tenant organization and accounts (partially implemented)
+- `monitors`, `monitor_checks` - Website/service monitoring and check results (scoped by user_id)
+- `alert_rules`, `alert_channels`, `alert_rule_channels` - Alert configuration (scoped by user_id)
+- `incidents` - Triggered alerts with resolution tracking (scoped by user_id)
 
 **Migrations:** Auto-run on backend startup. Files in `backend/migrations/`. Use `golang-migrate` for manual operations.
 
@@ -123,36 +125,40 @@ git status                             # No tmp/, node_modules/ committed
 
 ## Code Patterns and Conventions
 
-**Multi-tenant enforcement:**
-- All entities include `tenant_id int` field
-- Handlers retrieve tenant from context: `tenantIDValue, _ := c.Get("tenant_id")`
-- Always verify ownership: `if monitor.TenantID != tenantID { return forbidden }`
-- Repositories have `GetByTenantID(tenantID int)` methods
+**User-based isolation (multi-tenant ready):**
+- Entities include `user_id int` field for ownership (tenant tables exist but not fully integrated)
+- Handlers retrieve user from context: `userIDValue, _ := c.Get("user_id")`
+- Always verify ownership: `if monitor.UserID != userID { return forbidden }`
+- Repositories have `GetByUserID(userID int)` methods
 
 **API proxy implementation:**
 - Frontend `src/routes/api/[...path]/+server.ts` forwards all methods to backend
-- Strips headers like 'host', 'connection' to avoid issues
+- Strips problematic headers ('host', 'connection') and adds CORS headers for browser compatibility
 - Uses `BACKEND_API_URL` env var (default: 'http://backend:8080')
 
 **Worker job patterns:**
-- Jobs query monitors directly without tenant filtering (process all tenants)
+- Jobs query monitors directly without user filtering (process all users)
 - Use executor for concurrent processing
 - Store results in `monitor_checks` table with success/error details
 
 **Middleware chain:**
-- AuthRequired → TenantRequired for protected routes
-- TenantRequired validates user access to tenant via `tenantUserRepo.HasAccess()`
+- AuthRequired validates JWT and sets user_id/role in context
+- AdminRequired checks role == "admin" for admin routes
 
 **Database patterns:**
 - Auto-migrations run on backend startup
 - Use `sql.Null*` types for optional fields in structs
 - Timestamps: `created_at`, `updated_at` managed by triggers
 
+**Go Workspace:**
+- Project uses `go.work` with `shared/` module for domain entities and repositories
+- Run `go work sync` to update workspace
+
 ## Critical Architecture Notes
 
-1. **NEVER add CORS middleware** - Proxy eliminates CORS entirely
+1. **CORS handled by proxy** - Frontend proxy adds CORS headers; do not add CORS middleware to backend
 2. **API proxy:** `frontend/src/routes/api/[...path]/+server.ts` handles all API forwarding
-3. **Multi-tenant:** Every query MUST filter by `tenant_id` from JWT
+3. **User isolation:** Every query MUST filter by `user_id` from JWT context
 4. **Docker primary:** Use Docker for development; local builds are fallback only
 5. **Migrations auto-run:** Backend applies migrations on startup automatically
 6. **Worker jobs schedule:**

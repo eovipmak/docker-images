@@ -14,12 +14,12 @@ import (
 type BroadcastRequest struct {
 	Type     string                 `json:"type"`
 	Data     map[string]interface{} `json:"data"`
-	TenantID int                    `json:"tenant_id"`
+	UserID   int                    `json:"user_id"`
 }
 
 // broadcastEvent sends an event to the backend SSE handler
-func broadcastEvent(eventType string, data map[string]interface{}, tenantID int) {
-	log.Printf("[Event] Broadcasting %s event for tenant %d", eventType, tenantID)
+func broadcastEvent(eventType string, data map[string]interface{}, userID int) {
+	log.Printf("[Event] Broadcasting %s event for user %d", eventType, userID)
 
 	// Get backend URL from environment
 	backendURL := os.Getenv("BACKEND_API_URL")
@@ -33,7 +33,7 @@ func broadcastEvent(eventType string, data map[string]interface{}, tenantID int)
 	req := BroadcastRequest{
 		Type:     eventType,
 		Data:     data,
-		TenantID: tenantID,
+		UserID:   userID,
 	}
 
 	jsonData, err := json.Marshal(req)
@@ -67,5 +67,5 @@ func broadcastEvent(eventType string, data map[string]interface{}, tenantID int)
 		return
 	}
 
-	log.Printf("[Event] Successfully broadcasted %s event for tenant %d", eventType, tenantID)
+	log.Printf("[Event] Successfully broadcasted %s event for user %d", eventType, userID)
 }

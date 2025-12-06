@@ -8,6 +8,7 @@
     const navItems = [
 		{ name: 'Dashboard', path: '/user/dashboard' },
 		{ name: 'Monitors', path: '/user/monitors' },
+		{ name: 'Alerts', path: '/user/alerts' },
 		{ name: 'Incidents', path: '/user/incidents' },
         { name: 'Settings', path: '/user/settings' }
 	];

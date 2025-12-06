@@ -162,8 +162,8 @@ func (j *NotificationJob) Run(ctx context.Context) error {
 // processIncidentNotifications processes notifications for a single incident
 func (j *NotificationJob) processIncidentNotifications(incident *entities.Incident) (int, error) {
 	// Get alert channels associated with this incident's alert rule
-	// Note: We need TenantID here, assuming Incident entity has it
-	channels, err := j.alertChannelRepo.GetByAlertRuleID(incident.TenantID, incident.AlertRuleID)
+	// Note: We need UserID here, assuming Incident entity has it
+	channels, err := j.alertChannelRepo.GetByAlertRuleID(incident.UserID, incident.AlertRuleID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get alert channels: %w", err)
 	}
