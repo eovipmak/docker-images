@@ -24,7 +24,7 @@ import (
 
 // @title V-Insight API
 // @version 1.0
-// @description Multi-tenant monitoring SaaS platform API for website health checks, SSL monitoring, and intelligent alerting.
+// @description Monitoring SaaS platform API for website health checks, SSL monitoring, and intelligent alerting.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -114,8 +114,6 @@ func main() {
 
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db.DB)
-	tenantRepo := postgres.NewTenantRepository(db.DB)
-	tenantUserRepo := postgres.NewTenantUserRepository(db.DB)
 	monitorRepo := postgres.NewMonitorRepository(db.DB)
 	alertRuleRepo := postgres.NewAlertRuleRepository(db.DB)
 	alertChannelRepo := postgres.NewAlertChannelRepository(db.DB)
@@ -124,13 +122,14 @@ func main() {
 	maintenanceWindowRepo := postgres.NewMaintenanceWindowRepository(db.DB)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, tenantRepo, tenantUserRepo, cfg.JWT.Secret)
+	authService := service.NewAuthService(userRepo, cfg.JWT.Secret)
 	monitorService := service.NewMonitorService(db)
 	metricsService := service.NewMetricsService(db.DB)
 	statusPageService := service.NewStatusPageService(db, statusPageRepo, monitorRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
+	adminHandler := handlers.NewAdminHandler(userRepo, monitorRepo, alertRuleRepo)
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, alertRuleRepo, alertChannelRepo, monitorService)
 	metricsHandler := handlers.NewMetricsHandler(metricsService, monitorRepo)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
@@ -144,7 +143,6 @@ func main() {
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(authService)
-	tenantMiddleware := middleware.NewTenantMiddleware(tenantUserRepo)
 
 	// Health check endpoint (legacy)
 	healthHandler := func(c *gin.Context) {
@@ -247,9 +245,9 @@ func main() {
 		public.GET("/status/:slug", publicStatusPageHandler.GetPublicStatusPage)
 	}
 
-	// Protected routes requiring authentication and tenant context
+	// Protected routes requiring authentication
 	protected := api.Group("/")
-	protected.Use(authMiddleware.AuthRequired(), tenantMiddleware.TenantRequired())
+	protected.Use(authMiddleware.AuthRequired())
 	{
 		// Monitor endpoints
 		protected.POST("/monitors", monitorHandler.Create)
@@ -306,16 +304,16 @@ func main() {
 
 		// SSE Stream endpoint
 		protected.GET("/stream/events", streamHandler.HandleSSE)
+	}
 
-		// Example protected endpoints - placeholder for future tenant-specific routes
-		protected.GET("/tenant/info", func(c *gin.Context) {
-			// Get tenant ID from context
-			tenantIDValue, _ := c.Get("tenant_id")
-			c.JSON(200, gin.H{
-				"message":   "Tenant context established",
-				"tenant_id": tenantIDValue,
-			})
-		})
+	// Admin routes
+	admin := api.Group("/admin")
+	admin.Use(authMiddleware.AuthRequired(), authMiddleware.AdminRequired())
+	{
+		admin.GET("/users", adminHandler.ListUsers)
+		admin.DELETE("/users/:id", adminHandler.DeleteUser)
+		admin.GET("/monitors", adminHandler.ListMonitors)
+		admin.GET("/alert-rules", adminHandler.ListAlertRules)
 	}
 
 	// Start server

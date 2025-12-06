@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+
 	"github.com/eovipmak/v-insight/shared/domain/entities"
 	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/jmoiron/sqlx"
@@ -23,14 +24,14 @@ func NewAlertRuleRepository(db *sqlx.DB) repository.AlertRuleRepository {
 // Create creates a new alert rule in the database
 func (r *alertRuleRepository) Create(rule *entities.AlertRule) error {
 	query := `
-		INSERT INTO alert_rules (tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at)
+		INSERT INTO alert_rules (user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
 		query,
-		rule.TenantID,
+		rule.UserID,
 		rule.MonitorID,
 		rule.Name,
 		rule.TriggerType,
@@ -45,16 +46,16 @@ func (r *alertRuleRepository) Create(rule *entities.AlertRule) error {
 	return nil
 }
 
-// GetByID retrieves an alert rule by its ID (tenant-scoped)
-func (r *alertRuleRepository) GetByID(tenantID int, id string) (*entities.AlertRule, error) {
+// GetByID retrieves an alert rule by its ID (user-scoped)
+func (r *alertRuleRepository) GetByID(userID int, id string) (*entities.AlertRule, error) {
 	rule := &entities.AlertRule{}
 	query := `
-		SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
 		FROM alert_rules
-		WHERE tenant_id = $1 AND id = $2
+		WHERE user_id = $1 AND id = $2
 	`
 
-	err := r.db.Get(rule, query, tenantID, id)
+	err := r.db.Get(rule, query, userID, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("alert rule not found: %w", err)
@@ -65,19 +66,36 @@ func (r *alertRuleRepository) GetByID(tenantID int, id string) (*entities.AlertR
 	return rule, nil
 }
 
-// GetByTenantID retrieves all alert rules for a specific tenant
-func (r *alertRuleRepository) GetByTenantID(tenantID int) ([]*entities.AlertRule, error) {
+// GetByUserID retrieves all alert rules for a specific user
+func (r *alertRuleRepository) GetByUserID(userID int) ([]*entities.AlertRule, error) {
 	var rules []*entities.AlertRule
 	query := `
-		SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
 		FROM alert_rules
-		WHERE tenant_id = $1
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`
 
-	err := r.db.Select(&rules, query, tenantID)
+	err := r.db.Select(&rules, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get alert rules by tenant: %w", err)
+	}
+
+	return rules, nil
+}
+
+// GetAll retrieves all alert rules across all users (Admin only)
+func (r *alertRuleRepository) GetAll() ([]*entities.AlertRule, error) {
+	var rules []*entities.AlertRule
+	query := `
+		SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		FROM alert_rules
+		ORDER BY created_at DESC
+	`
+
+	err := r.db.Select(&rules, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all alert rules: %w", err)
 	}
 
 	return rules, nil
@@ -112,11 +130,11 @@ func (r *alertRuleRepository) Update(rule *entities.AlertRule) error {
 	return nil
 }
 
-// Delete deletes an alert rule by its ID (tenant-scoped)
-func (r *alertRuleRepository) Delete(tenantID int, id string) error {
-	query := `DELETE FROM alert_rules WHERE tenant_id = $1 AND id = $2`
+// Delete deletes an alert rule by its ID (user-scoped)
+func (r *alertRuleRepository) Delete(userID int, id string) error {
+	query := `DELETE FROM alert_rules WHERE user_id = $1 AND id = $2`
 
-	result, err := r.db.Exec(query, tenantID, id)
+	result, err := r.db.Exec(query, userID, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete alert rule: %w", err)
 	}
@@ -133,17 +151,17 @@ func (r *alertRuleRepository) Delete(tenantID int, id string) error {
 	return nil
 }
 
-// AttachChannels attaches channels to an alert rule (tenant-scoped)
-func (r *alertRuleRepository) AttachChannels(tenantID int, ruleID string, channelIDs []string) error {
+// AttachChannels attaches channels to an alert rule (user-scoped)
+func (r *alertRuleRepository) AttachChannels(userID int, ruleID string, channelIDs []string) error {
 	if len(channelIDs) == 0 {
 		return nil
 	}
 
-	// Verify the rule belongs to the tenant before attaching channels
+	// Verify the rule belongs to the user before attaching channels
 	query := `
 		INSERT INTO alert_rule_channels (alert_rule_id, alert_channel_id)
 		SELECT $1, $2
-		WHERE EXISTS (SELECT 1 FROM alert_rules WHERE id = $1 AND tenant_id = $3)
+		WHERE EXISTS (SELECT 1 FROM alert_rules WHERE id = $1 AND user_id = $3)
 		ON CONFLICT (alert_rule_id, alert_channel_id) DO NOTHING
 	`
 
@@ -154,7 +172,7 @@ func (r *alertRuleRepository) AttachChannels(tenantID int, ruleID string, channe
 	defer tx.Rollback()
 
 	for _, channelID := range channelIDs {
-		if _, err := tx.Exec(query, ruleID, channelID, tenantID); err != nil {
+		if _, err := tx.Exec(query, ruleID, channelID, userID); err != nil {
 			return fmt.Errorf("failed to attach channel %s: %w", channelID, err)
 		}
 	}
@@ -166,8 +184,8 @@ func (r *alertRuleRepository) AttachChannels(tenantID int, ruleID string, channe
 	return nil
 }
 
-// DetachChannels detaches channels from an alert rule (tenant-scoped)
-func (r *alertRuleRepository) DetachChannels(tenantID int, ruleID string, channelIDs []string) error {
+// DetachChannels detaches channels from an alert rule (user-scoped)
+func (r *alertRuleRepository) DetachChannels(userID int, ruleID string, channelIDs []string) error {
 	if len(channelIDs) == 0 {
 		return nil
 	}
@@ -175,10 +193,10 @@ func (r *alertRuleRepository) DetachChannels(tenantID int, ruleID string, channe
 	query := `
 		DELETE FROM alert_rule_channels
 		WHERE alert_rule_id = $1 AND alert_channel_id = ANY($2)
-		AND EXISTS (SELECT 1 FROM alert_rules WHERE id = $1 AND tenant_id = $3)
+		AND EXISTS (SELECT 1 FROM alert_rules WHERE id = $1 AND user_id = $3)
 	`
 
-	_, err := r.db.Exec(query, ruleID, pq.Array(channelIDs), tenantID)
+	_, err := r.db.Exec(query, ruleID, pq.Array(channelIDs), userID)
 	if err != nil {
 		return fmt.Errorf("failed to detach channels: %w", err)
 	}
@@ -186,18 +204,18 @@ func (r *alertRuleRepository) DetachChannels(tenantID int, ruleID string, channe
 	return nil
 }
 
-// GetChannelsByRuleID retrieves all channel IDs associated with an alert rule (tenant-scoped)
-func (r *alertRuleRepository) GetChannelsByRuleID(tenantID int, ruleID string) ([]string, error) {
+// GetChannelsByRuleID retrieves all channel IDs associated with an alert rule (user-scoped)
+func (r *alertRuleRepository) GetChannelsByRuleID(userID int, ruleID string) ([]string, error) {
 	var channelIDs []string
 	query := `
 		SELECT arc.alert_channel_id
 		FROM alert_rule_channels arc
 		INNER JOIN alert_rules ar ON arc.alert_rule_id = ar.id
-		WHERE arc.alert_rule_id = $1 AND ar.tenant_id = $2
+		WHERE arc.alert_rule_id = $1 AND ar.user_id = $2
 		ORDER BY arc.created_at
 	`
 
-	err := r.db.Select(&channelIDs, query, ruleID, tenantID)
+	err := r.db.Select(&channelIDs, query, ruleID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get channels by rule ID: %w", err)
 	}
@@ -205,14 +223,14 @@ func (r *alertRuleRepository) GetChannelsByRuleID(tenantID int, ruleID string) (
 	return channelIDs, nil
 }
 
-// GetWithChannels retrieves an alert rule with its associated channel IDs (tenant-scoped)
-func (r *alertRuleRepository) GetWithChannels(tenantID int, id string) (*entities.AlertRuleWithChannels, error) {
-	rule, err := r.GetByID(tenantID, id)
+// GetWithChannels retrieves an alert rule with its associated channel IDs (user-scoped)
+func (r *alertRuleRepository) GetWithChannels(userID int, id string) (*entities.AlertRuleWithChannels, error) {
+	rule, err := r.GetByID(userID, id)
 	if err != nil {
 		return nil, err
 	}
 
-	channelIDs, err := r.GetChannelsByRuleID(tenantID, id)
+	channelIDs, err := r.GetChannelsByRuleID(userID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -223,16 +241,16 @@ func (r *alertRuleRepository) GetWithChannels(tenantID int, id string) (*entitie
 	}, nil
 }
 
-// GetAllWithChannelsByTenantID retrieves all alert rules with channels for a tenant
-func (r *alertRuleRepository) GetAllWithChannelsByTenantID(tenantID int) ([]*entities.AlertRuleWithChannels, error) {
-	rules, err := r.GetByTenantID(tenantID)
+// GetAllWithChannelsByUserID retrieves all alert rules with channels for a user
+func (r *alertRuleRepository) GetAllWithChannelsByUserID(userID int) ([]*entities.AlertRuleWithChannels, error) {
+	rules, err := r.GetByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	rulesWithChannels := make([]*entities.AlertRuleWithChannels, len(rules))
 	for i, rule := range rules {
-		channelIDs, err := r.GetChannelsByRuleID(tenantID, rule.ID)
+		channelIDs, err := r.GetChannelsByRuleID(userID, rule.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -246,11 +264,11 @@ func (r *alertRuleRepository) GetAllWithChannelsByTenantID(tenantID int) ([]*ent
 	return rulesWithChannels, nil
 }
 
-// GetAllEnabled retrieves all enabled alert rules across all tenants
+// GetAllEnabled retrieves all enabled alert rules across all users
 func (r *alertRuleRepository) GetAllEnabled() ([]*entities.AlertRule, error) {
 	var rules []*entities.AlertRule
 	query := `
-		SELECT id, tenant_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
 		FROM alert_rules
 		WHERE enabled = true
 		ORDER BY created_at DESC
@@ -263,4 +281,3 @@ func (r *alertRuleRepository) GetAllEnabled() ([]*entities.AlertRule, error) {
 
 	return rules, nil
 }
-

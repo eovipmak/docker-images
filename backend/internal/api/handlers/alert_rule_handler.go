@@ -68,13 +68,13 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Validate channel IDs belong to the tenant
 	if len(req.ChannelIDs) > 0 {
@@ -88,7 +88,7 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate channel"})
 				return
 			}
-			if channel.TenantID != tenantID {
+			if channel.UserID != userID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "channel access denied: " + channelID})
 				return
 			}
@@ -107,7 +107,7 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate monitor"})
 			return
 		}
-		if monitor.TenantID != tenantID {
+		if monitor.UserID != userID {
 			c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
 			return
 		}
@@ -135,7 +135,7 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 	}
 
 	rule := &entities.AlertRule{
-		TenantID:       tenantID,
+		UserID:         userID,
 		MonitorID:      monitorID,
 		Name:           sanitizedName,
 		TriggerType:    req.TriggerType,
@@ -150,14 +150,14 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 
 	// Attach channels if provided
 	if len(req.ChannelIDs) > 0 {
-		if err := h.alertRuleRepo.AttachChannels(tenantID, rule.ID, req.ChannelIDs); err != nil {
+		if err := h.alertRuleRepo.AttachChannels(userID, rule.ID, req.ChannelIDs); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to attach channels"})
 			return
 		}
 	}
 
 	// Return rule with channels
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, rule.ID)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(userID, rule.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve created rule"})
 		return
@@ -178,15 +178,15 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /alert-rules [get]
 func (h *AlertRuleHandler) List(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	rules, err := h.alertRuleRepo.GetAllWithChannelsByTenantID(tenantID)
+	rules, err := h.alertRuleRepo.GetAllWithChannelsByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert rules"})
 		return
@@ -221,16 +221,16 @@ func (h *AlertRuleHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	// Get rule with channels (tenant-scoped)
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
+	// Get rule with channels (user-scoped)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(userID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
@@ -272,16 +272,16 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	// Get existing rule (tenant-scoped)
-	rule, err := h.alertRuleRepo.GetByID(tenantID, id)
+	// Get existing rule (user-scoped)
+	rule, err := h.alertRuleRepo.GetByID(userID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
@@ -303,7 +303,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate channel"})
 				return
 			}
-			if channel.TenantID != tenantID {
+			if channel.UserID != userID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "channel access denied: " + channelID})
 				return
 			}
@@ -325,7 +325,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to validate monitor"})
 				return
 			}
-			if monitor.TenantID != tenantID {
+			if monitor.UserID != userID {
 				c.JSON(http.StatusForbidden, gin.H{"error": "monitor access denied"})
 				return
 			}
@@ -364,7 +364,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	// Update channels if provided (replace all)
 	if req.ChannelIDs != nil {
 		// Get current channels
-		currentChannels, err := h.alertRuleRepo.GetChannelsByRuleID(tenantID, id)
+		currentChannels, err := h.alertRuleRepo.GetChannelsByRuleID(userID, id)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get current channels"})
 			return
@@ -372,7 +372,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 
 		// Detach all current channels
 		if len(currentChannels) > 0 {
-			if err := h.alertRuleRepo.DetachChannels(tenantID, id, currentChannels); err != nil {
+			if err := h.alertRuleRepo.DetachChannels(userID, id, currentChannels); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to detach channels"})
 				return
 			}
@@ -380,7 +380,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 
 		// Attach new channels
 		if len(req.ChannelIDs) > 0 {
-			if err := h.alertRuleRepo.AttachChannels(tenantID, id, req.ChannelIDs); err != nil {
+			if err := h.alertRuleRepo.AttachChannels(userID, id, req.ChannelIDs); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to attach channels"})
 				return
 			}
@@ -388,7 +388,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	}
 
 	// Return updated rule with channels
-	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
+	ruleWithChannels, err := h.alertRuleRepo.GetWithChannels(userID, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve updated rule"})
 		return
@@ -418,16 +418,16 @@ func (h *AlertRuleHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	// Delete rule (tenant-scoped)
-	if err := h.alertRuleRepo.Delete(tenantID, id); err != nil {
+	// Delete rule (user-scoped)
+	if err := h.alertRuleRepo.Delete(userID, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
 			return
@@ -460,16 +460,16 @@ func (h *AlertRuleHandler) Test(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing rule
-	rule, err := h.alertRuleRepo.GetWithChannels(tenantID, id)
+	rule, err := h.alertRuleRepo.GetWithChannels(userID, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})

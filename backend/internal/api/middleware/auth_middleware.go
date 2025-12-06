@@ -48,22 +48,42 @@ func (m *AuthMiddleware) AuthRequired() gin.HandlerFunc {
 		}
 
 		// Validate token
-		userID, tenantID, err := m.authService.ValidateToken(token)
+		userID, role, err := m.authService.ValidateToken(token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			c.Abort()
 			return
 		}
 
-		// Set user ID and tenant ID in Gin context for handlers to use
+		// Set user ID and role in Gin context for handlers to use
 		c.Set("user_id", userID)
-		c.Set("tenant_id", tenantID)
+		c.Set("role", role)
 
 		// Also set in request context using context utilities
 		ctx := c.Request.Context()
 		ctx = utils.SetUserID(ctx, userID)
-		ctx = utils.SetTenantID(ctx, tenantID)
+		ctx = utils.SetRole(ctx, role)
 		c.Request = c.Request.WithContext(ctx)
+
+		c.Next()
+	}
+}
+
+// AdminRequired is a middleware that ensures the user has admin role
+func (m *AuthMiddleware) AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "role not found in context"})
+			c.Abort()
+			return
+		}
+
+		if role.(string) != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "admin privileges required"})
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}

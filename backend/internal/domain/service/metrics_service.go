@@ -206,8 +206,8 @@ func (s *MetricsService) GetAverageResponseTime(monitorID string, period string)
 	return avgResponseTime, nil
 }
 
-// GetGlobalAverageResponseTime calculates average response time across all monitors for a tenant
-func (s *MetricsService) GetGlobalAverageResponseTime(tenantID int, period string) (float64, error) {
+// GetGlobalAverageResponseTime calculates average response time across all monitors for a user
+func (s *MetricsService) GetGlobalAverageResponseTime(userID int, period string) (float64, error) {
 	duration, err := parsePeriodToDuration(period)
 	if err != nil {
 		return 0, err
@@ -219,14 +219,14 @@ func (s *MetricsService) GetGlobalAverageResponseTime(tenantID int, period strin
 		SELECT COALESCE(AVG(mc.response_time_ms), 0) as avg_response_time
 		FROM monitor_checks mc
 		INNER JOIN monitors m ON mc.monitor_id = m.id
-		WHERE m.tenant_id = $1
+		WHERE m.user_id = $1
 		  AND mc.checked_at >= $2
 		  AND mc.response_time_ms IS NOT NULL
 		  AND mc.success = true
 	`
 
 	var avgResponseTime float64
-	err = s.db.QueryRow(query, tenantID, startTime).Scan(&avgResponseTime)
+	err = s.db.QueryRow(query, userID, startTime).Scan(&avgResponseTime)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get global average response time: %w", err)
 	}
@@ -234,8 +234,8 @@ func (s *MetricsService) GetGlobalAverageResponseTime(tenantID int, period strin
 	return avgResponseTime, nil
 }
 
-// GetGlobalUptime calculates overall uptime across all monitors for a tenant
-func (s *MetricsService) GetGlobalUptime(tenantID int, period string) (*UptimeMetrics, error) {
+// GetGlobalUptime calculates overall uptime across all monitors for a user
+func (s *MetricsService) GetGlobalUptime(userID int, period string) (*UptimeMetrics, error) {
 	duration, err := parsePeriodToDuration(period)
 	if err != nil {
 		return nil, err
@@ -250,12 +250,12 @@ func (s *MetricsService) GetGlobalUptime(tenantID int, period string) (*UptimeMe
 			COALESCE(SUM(CASE WHEN mc.success = false THEN 1 ELSE 0 END), 0) as failed_checks
 		FROM monitor_checks mc
 		INNER JOIN monitors m ON mc.monitor_id = m.id
-		WHERE m.tenant_id = $1
+		WHERE m.user_id = $1
 		  AND mc.checked_at >= $2
 	`
 
 	var totalChecks, successChecks, failedChecks int
-	err = s.db.QueryRow(query, tenantID, startTime).Scan(&totalChecks, &successChecks, &failedChecks)
+	err = s.db.QueryRow(query, userID, startTime).Scan(&totalChecks, &successChecks, &failedChecks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate global uptime: %w", err)
 	}

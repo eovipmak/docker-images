@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/eovipmak/v-insight/backend/internal/auth"
 	"github.com/eovipmak/v-insight/shared/domain/entities"
@@ -13,32 +12,26 @@ import (
 
 // AuthService handles authentication business logic
 type AuthService struct {
-	userRepo       repository.UserRepository
-	tenantRepo     repository.TenantRepository
-	tenantUserRepo repository.TenantUserRepository
-	jwtSecret      string
+	userRepo  repository.UserRepository
+	jwtSecret string
 }
 
 // NewAuthService creates a new authentication service
 func NewAuthService(
 	userRepo repository.UserRepository,
-	tenantRepo repository.TenantRepository,
-	tenantUserRepo repository.TenantUserRepository,
 	jwtSecret string,
 ) *AuthService {
 	return &AuthService{
-		userRepo:       userRepo,
-		tenantRepo:     tenantRepo,
-		tenantUserRepo: tenantUserRepo,
-		jwtSecret:      jwtSecret,
+		userRepo:  userRepo,
+		jwtSecret: jwtSecret,
 	}
 }
 
-// Register creates a new user and default tenant, returns JWT token
-func (s *AuthService) Register(email, password, tenantName string) (string, error) {
+// Register creates a new user, returns JWT token
+func (s *AuthService) Register(email, password string) (string, error) {
 	// Validate inputs
-	if email == "" || password == "" || tenantName == "" {
-		return "", errors.New("email, password, and tenant name are required")
+	if email == "" || password == "" {
+		return "", errors.New("email and password are required")
 	}
 
 	// Check if user already exists
@@ -57,36 +50,14 @@ func (s *AuthService) Register(email, password, tenantName string) (string, erro
 	user := &entities.User{
 		Email:        email,
 		PasswordHash: hashedPassword,
+		Role:         "user", // Default role
 	}
 	if err := s.userRepo.Create(user); err != nil {
 		return "", fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Create tenant slug from name (simple slug generation)
-	slug := generateSlug(tenantName)
-
-	// Create tenant
-	tenant := &entities.Tenant{
-		Name:    tenantName,
-		Slug:    slug,
-		OwnerID: user.ID,
-	}
-	if err := s.tenantRepo.Create(tenant); err != nil {
-		return "", fmt.Errorf("failed to create tenant: %w", err)
-	}
-
-	// Add user to tenant as owner
-	tenantUser := &entities.TenantUser{
-		TenantID: tenant.ID,
-		UserID:   user.ID,
-		Role:     "owner",
-	}
-	if err := s.tenantUserRepo.AddUserToTenant(tenantUser); err != nil {
-		return "", fmt.Errorf("failed to add user to tenant: %w", err)
-	}
-
 	// Generate JWT token
-	token, err := auth.GenerateToken(user.ID, tenant.ID, s.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, user.Role, s.jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -115,21 +86,8 @@ func (s *AuthService) Login(email, password string) (string, error) {
 		return "", errors.New("invalid email or password")
 	}
 
-	// Get user's tenants to get the first tenant ID for the token
-	tenants, err := s.tenantRepo.GetUserTenants(user.ID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get user tenants: %w", err)
-	}
-
-	if len(tenants) == 0 {
-		return "", errors.New("user has no associated tenants")
-	}
-
-	// Use the first tenant for the token
-	tenantID := tenants[0].ID
-
 	// Generate JWT token
-	token, err := auth.GenerateToken(user.ID, tenantID, s.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, user.Role, s.jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -137,27 +95,14 @@ func (s *AuthService) Login(email, password string) (string, error) {
 	return token, nil
 }
 
-// ValidateToken validates a JWT token and returns user ID and tenant ID
-func (s *AuthService) ValidateToken(tokenString string) (int, int, error) {
+// ValidateToken validates a JWT token and returns user ID and role
+func (s *AuthService) ValidateToken(tokenString string) (int, string, error) {
 	claims, err := auth.ValidateToken(tokenString, s.jwtSecret)
 	if err != nil {
-		return 0, 0, fmt.Errorf("invalid token: %w", err)
+		return 0, "", fmt.Errorf("invalid token: %w", err)
 	}
 
-	return claims.UserID, claims.TenantID, nil
+	return claims.UserID, claims.Role, nil
 }
 
-// generateSlug creates a URL-friendly slug from a string
-func generateSlug(s string) string {
-	// Convert to lowercase and replace spaces with hyphens
-	slug := strings.ToLower(s)
-	slug = strings.ReplaceAll(slug, " ", "-")
-	// Remove special characters (keep only alphanumeric and hyphens)
-	var result strings.Builder
-	for _, char := range slug {
-		if (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9') || char == '-' {
-			result.WriteRune(char)
-		}
-	}
-	return result.String()
-}
+

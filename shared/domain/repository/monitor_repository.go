@@ -14,8 +14,8 @@ type MonitorRepository interface {
 	// GetByID retrieves a monitor by its ID
 	GetByID(id string) (*entities.Monitor, error)
 
-	// GetByTenantID retrieves all monitors for a specific tenant
-	GetByTenantID(tenantID int) ([]*entities.Monitor, error)
+	// GetByUserID retrieves all monitors for a specific user
+	GetByUserID(userID int) ([]*entities.Monitor, error)
 
 	// Update updates an existing monitor
 	Update(monitor *entities.Monitor) error
@@ -40,4 +40,7 @@ type MonitorRepository interface {
 
 	// GetLatestMonitorChecks retrieves the latest check for each monitor within the given duration
 	GetLatestMonitorChecks(duration time.Duration) ([]*entities.MonitorCheck, error)
+
+	// GetAll retrieves all monitors across all users (Admin only)
+	GetAll() ([]*entities.Monitor, error)
 }

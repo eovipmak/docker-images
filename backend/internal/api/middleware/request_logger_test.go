@@ -31,13 +31,13 @@ func TestRequestLogger(t *testing.T) {
 		assert.Equal(t, 200, w.Code)
 	})
 
-	t.Run("logs request with tenant and user context", func(t *testing.T) {
+	t.Run("logs request with user and role context", func(t *testing.T) {
 		router := gin.New()
 		router.Use(RequestID())
 		router.Use(RequestLogger())
 		router.GET("/test", func(c *gin.Context) {
-			c.Set("tenant_id", 123)
 			c.Set("user_id", 456)
+			c.Set("role", "admin")
 			c.String(200, "OK")
 		})
 

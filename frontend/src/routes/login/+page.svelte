@@ -33,7 +33,7 @@
 			if (data.token) {
 				await isAuthenticated.login(data.token);
 				// Redirect to dashboard
-				window.location.href = '/dashboard';
+				window.location.href = '/user/dashboard';
 			}
 		} catch (err) {
 			error = 'An error occurred. Please try again.';

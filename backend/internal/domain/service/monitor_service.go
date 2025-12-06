@@ -107,7 +107,7 @@ func (s *MonitorService) GetMonitorWithSSLStatus(monitorID string) (*entities.Mo
 	// Get monitor
 	var monitor entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, check_interval, timeout, enabled,
+		SELECT id, user_id, name, url, check_interval, timeout, enabled,
 		       check_ssl, ssl_alert_days, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE id = $1
@@ -115,7 +115,7 @@ func (s *MonitorService) GetMonitorWithSSLStatus(monitorID string) (*entities.Mo
 
 	err := s.db.QueryRow(query, monitorID).Scan(
 		&monitor.ID,
-		&monitor.TenantID,
+		&monitor.UserID,
 		&monitor.Name,
 		&monitor.URL,
 		&monitor.CheckInterval,

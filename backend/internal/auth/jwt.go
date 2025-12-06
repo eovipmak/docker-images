@@ -9,20 +9,20 @@ import (
 
 // Claims represents the JWT claims structure
 type Claims struct {
-	UserID   int `json:"user_id"`
-	TenantID int `json:"tenant_id"`
+	UserID   int    `json:"user_id"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken generates a new JWT token for a user
-func GenerateToken(userID, tenantID int, secret string) (string, error) {
+func GenerateToken(userID int, role string, secret string) (string, error) {
 	// Set token expiration to 24 hours, use a single 'now' timestamp to avoid timing differences
 	now := time.Now()
 	expirationTime := now.Add(24 * time.Hour)
 
 	claims := &Claims{
-		UserID:   userID,
-		TenantID: tenantID,
+		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(now),

@@ -22,14 +22,14 @@ func NewStatusPageRepository(db *sqlx.DB) repository.StatusPageRepository {
 // Create creates a new status page in the database
 func (r *statusPageRepository) Create(statusPage *entities.StatusPage) error {
 	query := `
-		INSERT INTO status_pages (tenant_id, slug, name, public_enabled, created_at, updated_at)
+		INSERT INTO status_pages (user_id, slug, name, public_enabled, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
 		query,
-		statusPage.TenantID,
+		statusPage.UserID,
 		statusPage.Slug,
 		statusPage.Name,
 		statusPage.PublicEnabled,
@@ -46,7 +46,7 @@ func (r *statusPageRepository) Create(statusPage *entities.StatusPage) error {
 func (r *statusPageRepository) GetByID(id string) (*entities.StatusPage, error) {
 	statusPage := &entities.StatusPage{}
 	query := `
-		SELECT id, tenant_id, slug, name, public_enabled, created_at, updated_at
+		SELECT id, user_id, slug, name, public_enabled, created_at, updated_at
 		FROM status_pages
 		WHERE id = $1
 	`
@@ -66,7 +66,7 @@ func (r *statusPageRepository) GetByID(id string) (*entities.StatusPage, error) 
 func (r *statusPageRepository) GetBySlug(slug string) (*entities.StatusPage, error) {
 	statusPage := &entities.StatusPage{}
 	query := `
-		SELECT id, tenant_id, slug, name, public_enabled, created_at, updated_at
+		SELECT id, user_id, slug, name, public_enabled, created_at, updated_at
 		FROM status_pages
 		WHERE slug = $1
 	`
@@ -82,17 +82,17 @@ func (r *statusPageRepository) GetBySlug(slug string) (*entities.StatusPage, err
 	return statusPage, nil
 }
 
-// GetByTenantID retrieves all status pages for a specific tenant
-func (r *statusPageRepository) GetByTenantID(tenantID int) ([]*entities.StatusPage, error) {
+// GetByUserID retrieves all status pages for a specific user
+func (r *statusPageRepository) GetByUserID(userID int) ([]*entities.StatusPage, error) {
 	var statusPages []*entities.StatusPage
 	query := `
-		SELECT id, tenant_id, slug, name, public_enabled, created_at, updated_at
+		SELECT id, user_id, slug, name, public_enabled, created_at, updated_at
 		FROM status_pages
-		WHERE tenant_id = $1
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`
 
-	err := r.db.Select(&statusPages, query, tenantID)
+	err := r.db.Select(&statusPages, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status pages by tenant: %w", err)
 	}
@@ -177,7 +177,7 @@ func (r *statusPageRepository) RemoveMonitor(statusPageID, monitorID string) err
 func (r *statusPageRepository) GetMonitors(statusPageID string) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT m.id, m.tenant_id, m.name, m.url, m.type, m.check_interval, m.timeout, m.enabled,
+		SELECT m.id, m.user_id, m.name, m.url, m.type, m.check_interval, m.timeout, m.enabled,
 		       m.check_ssl, m.ssl_alert_days, m.last_checked_at, m.created_at, m.updated_at
 		FROM monitors m
 		INNER JOIN status_page_monitors spm ON m.id = spm.monitor_id

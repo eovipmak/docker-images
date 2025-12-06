@@ -22,9 +22,9 @@ func RequestLogger() gin.HandlerFunc {
 		// Get request ID from context
 		requestID, _ := c.Get("request_id")
 
-		// Get tenant ID and user ID if available
-		tenantID, _ := c.Get("tenant_id")
+		// Get user ID and role if available
 		userID, _ := c.Get("user_id")
+		role, _ := c.Get("role")
 
 		// Build log fields
 		fields := []zap.Field{
@@ -40,9 +40,9 @@ func RequestLogger() gin.HandlerFunc {
 			fields = append(fields, zap.String("request_id", reqID))
 		}
 
-		// Add tenant ID if present
-		if tID, ok := tenantID.(int); ok {
-			fields = append(fields, zap.Int("tenant_id", tID))
+		// Add role if present
+		if r, ok := role.(string); ok {
+			fields = append(fields, zap.String("role", r))
 		}
 
 		// Add user ID if present

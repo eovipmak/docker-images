@@ -9,7 +9,7 @@ import (
 // Monitor represents a domain monitoring configuration
 type Monitor struct {
 	ID                  string         `db:"id" json:"id"`
-	TenantID            int            `db:"tenant_id" json:"tenant_id"`
+	UserID              int            `db:"user_id" json:"user_id"`
 	Name                string         `db:"name" json:"name"`
 	URL                 string         `db:"url" json:"url"`
 	Type                string         `db:"type" json:"type"`

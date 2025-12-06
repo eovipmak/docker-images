@@ -35,12 +35,12 @@ type UpdateStatusPageRequest struct {
 
 // CreateStatusPage creates a new status page
 func (h *StatusPageHandler) CreateStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	var req CreateStatusPageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -53,7 +53,7 @@ func (h *StatusPageHandler) CreateStatusPage(c *gin.Context) {
 		publicEnabled = *req.PublicEnabled
 	}
 
-	statusPage, err := h.statusPageService.CreateStatusPage(tenantID, req.Slug, req.Name, publicEnabled)
+	statusPage, err := h.statusPageService.CreateStatusPage(userID, req.Slug, req.Name, publicEnabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -64,14 +64,14 @@ func (h *StatusPageHandler) CreateStatusPage(c *gin.Context) {
 
 // GetStatusPages retrieves all status pages for the tenant
 func (h *StatusPageHandler) GetStatusPages(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	statusPages, err := h.statusPageService.GetStatusPagesByTenant(tenantID)
+	statusPages, err := h.statusPageService.GetStatusPagesByUser(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,22 +82,22 @@ func (h *StatusPageHandler) GetStatusPages(c *gin.Context) {
 
 // GetStatusPage retrieves a specific status page
 func (h *StatusPageHandler) GetStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	id := c.Param("id")
 
-	statusPage, err := h.statusPageService.GetStatusPageByID(id, tenantID)
+	statusPage, err := h.statusPageService.GetStatusPageByID(id, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Status page not found"})
 		return
 	}
 
-	monitors, err := h.statusPageService.GetStatusPageMonitors(id, tenantID)
+	monitors, err := h.statusPageService.GetStatusPageMonitors(id, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -111,12 +111,12 @@ func (h *StatusPageHandler) GetStatusPage(c *gin.Context) {
 
 // UpdateStatusPage updates an existing status page
 func (h *StatusPageHandler) UpdateStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	id := c.Param("id")
 
@@ -131,7 +131,7 @@ func (h *StatusPageHandler) UpdateStatusPage(c *gin.Context) {
 		publicEnabled = *req.PublicEnabled
 	}
 
-	statusPage, err := h.statusPageService.UpdateStatusPage(id, tenantID, req.Slug, req.Name, publicEnabled)
+	statusPage, err := h.statusPageService.UpdateStatusPage(id, userID, req.Slug, req.Name, publicEnabled)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -142,16 +142,16 @@ func (h *StatusPageHandler) UpdateStatusPage(c *gin.Context) {
 
 // DeleteStatusPage deletes a status page
 func (h *StatusPageHandler) DeleteStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	id := c.Param("id")
 
-	err := h.statusPageService.DeleteStatusPage(id, tenantID)
+	err := h.statusPageService.DeleteStatusPage(id, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Status page not found"})
 		return
@@ -162,16 +162,16 @@ func (h *StatusPageHandler) DeleteStatusPage(c *gin.Context) {
 
 // GetStatusPageMonitors retrieves monitors for a status page
 func (h *StatusPageHandler) GetStatusPageMonitors(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	statusPageID := c.Param("id")
 
-	monitors, err := h.statusPageService.GetStatusPageMonitors(statusPageID, tenantID)
+	monitors, err := h.statusPageService.GetStatusPageMonitors(statusPageID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -182,17 +182,17 @@ func (h *StatusPageHandler) GetStatusPageMonitors(c *gin.Context) {
 
 // AddMonitorToStatusPage adds a monitor to a status page
 func (h *StatusPageHandler) AddMonitorToStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	statusPageID := c.Param("id")
 	monitorID := c.Param("monitor_id")
 
-	err := h.statusPageService.AddMonitorToStatusPage(statusPageID, monitorID, tenantID)
+	err := h.statusPageService.AddMonitorToStatusPage(statusPageID, monitorID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -203,17 +203,17 @@ func (h *StatusPageHandler) AddMonitorToStatusPage(c *gin.Context) {
 
 // RemoveMonitorFromStatusPage removes a monitor from a status page
 func (h *StatusPageHandler) RemoveMonitorFromStatusPage(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	statusPageID := c.Param("id")
 	monitorID := c.Param("monitor_id")
 
-	err := h.statusPageService.RemoveMonitorFromStatusPage(statusPageID, monitorID, tenantID)
+	err := h.statusPageService.RemoveMonitorFromStatusPage(statusPageID, monitorID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

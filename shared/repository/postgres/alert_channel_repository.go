@@ -22,14 +22,14 @@ func NewAlertChannelRepository(db *sqlx.DB) repository.AlertChannelRepository {
 // Create creates a new alert channel in the database
 func (r *alertChannelRepository) Create(channel *entities.AlertChannel) error {
 	query := `
-		INSERT INTO alert_channels (tenant_id, type, name, config, enabled, created_at, updated_at)
+		INSERT INTO alert_channels (user_id, type, name, config, enabled, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
 		query,
-		channel.TenantID,
+		channel.UserID,
 		channel.Type,
 		channel.Name,
 		channel.Config,
@@ -47,7 +47,7 @@ func (r *alertChannelRepository) Create(channel *entities.AlertChannel) error {
 func (r *alertChannelRepository) GetByID(id string) (*entities.AlertChannel, error) {
 	channel := &entities.AlertChannel{}
 	query := `
-		SELECT id, tenant_id, type, name, config, enabled, created_at, updated_at
+		SELECT id, user_id, type, name, config, enabled, created_at, updated_at
 		FROM alert_channels
 		WHERE id = $1
 	`
@@ -63,17 +63,17 @@ func (r *alertChannelRepository) GetByID(id string) (*entities.AlertChannel, err
 	return channel, nil
 }
 
-// GetByTenantID retrieves all alert channels for a specific tenant
-func (r *alertChannelRepository) GetByTenantID(tenantID int) ([]*entities.AlertChannel, error) {
+// GetByUserID retrieves all alert channels for a specific user
+func (r *alertChannelRepository) GetByUserID(userID int) ([]*entities.AlertChannel, error) {
 	var channels []*entities.AlertChannel
 	query := `
-		SELECT id, tenant_id, type, name, config, enabled, created_at, updated_at
+		SELECT id, user_id, type, name, config, enabled, created_at, updated_at
 		FROM alert_channels
-		WHERE tenant_id = $1
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`
 
-	err := r.db.Select(&channels, query, tenantID)
+	err := r.db.Select(&channels, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get alert channels by tenant: %w", err)
 	}
@@ -131,17 +131,17 @@ func (r *alertChannelRepository) Delete(id string) error {
 }
 
 // GetByAlertRuleID retrieves all alert channels associated with a specific alert rule
-func (r *alertChannelRepository) GetByAlertRuleID(tenantID int, alertRuleID string) ([]*entities.AlertChannel, error) {
+func (r *alertChannelRepository) GetByAlertRuleID(userID int, alertRuleID string) ([]*entities.AlertChannel, error) {
 	var channels []*entities.AlertChannel
 	query := `
-		SELECT ac.id, ac.tenant_id, ac.type, ac.name, ac.config, ac.enabled, ac.created_at, ac.updated_at
+		SELECT ac.id, ac.user_id, ac.type, ac.name, ac.config, ac.enabled, ac.created_at, ac.updated_at
 		FROM alert_channels ac
 		JOIN alert_rule_channels arc ON ac.id = arc.alert_channel_id
-		WHERE ac.tenant_id = $1 AND arc.alert_rule_id = $2
+		WHERE ac.user_id = $1 AND arc.alert_rule_id = $2
 		ORDER BY ac.created_at ASC
 	`
 
-	err := r.db.Select(&channels, query, tenantID, alertRuleID)
+	err := r.db.Select(&channels, query, userID, alertRuleID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get alert channels by alert rule: %w", err)
 	}

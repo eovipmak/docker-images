@@ -44,12 +44,12 @@ func (h *MaintenanceWindowHandler) Create(c *gin.Context) {
 		return
 	}
 
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
 	if !valid {
@@ -63,7 +63,7 @@ func (h *MaintenanceWindowHandler) Create(c *gin.Context) {
 	}
 
 	window := &entities.MaintenanceWindow{
-		TenantID:       tenantID,
+		UserID:         userID,
 		Name:           sanitizedName,
 		StartTime:      req.StartTime,
 		EndTime:        req.EndTime,
@@ -81,14 +81,14 @@ func (h *MaintenanceWindowHandler) Create(c *gin.Context) {
 }
 
 func (h *MaintenanceWindowHandler) List(c *gin.Context) {
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	windows, err := h.repo.GetByTenantID(tenantID)
+	windows, err := h.repo.GetByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve maintenance windows"})
 		return
@@ -108,12 +108,12 @@ func (h *MaintenanceWindowHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	window, err := h.repo.GetByID(id)
 	if err != nil {
@@ -125,7 +125,7 @@ func (h *MaintenanceWindowHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	if window.TenantID != tenantID {
+	if window.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -146,12 +146,12 @@ func (h *MaintenanceWindowHandler) Update(c *gin.Context) {
 		return
 	}
 
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	window, err := h.repo.GetByID(id)
 	if err != nil {
@@ -163,7 +163,7 @@ func (h *MaintenanceWindowHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if window.TenantID != tenantID {
+	if window.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -214,12 +214,12 @@ func (h *MaintenanceWindowHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	window, err := h.repo.GetByID(id)
 	if err != nil {
@@ -231,7 +231,7 @@ func (h *MaintenanceWindowHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if window.TenantID != tenantID {
+	if window.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}

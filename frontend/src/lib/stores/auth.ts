@@ -4,7 +4,7 @@ import { browser } from '$app/environment';
 interface User {
 	id: number;
 	email: string;
-	tenant_id: number;
+	role: string;
 }
 
 interface AuthState {
@@ -18,7 +18,7 @@ function createAuthStore() {
 		isAuthenticated: browser ? !!localStorage.getItem('auth_token') : false,
 		currentUser: null
 	};
-	
+
 	const { subscribe, set, update } = writable<AuthState>(initialState);
 
 	return {
@@ -27,7 +27,7 @@ function createAuthStore() {
 			if (browser) {
 				localStorage.setItem('auth_token', token);
 			}
-			
+
 			// Update state immediately
 			update(state => ({
 				...state,
@@ -41,7 +41,7 @@ function createAuthStore() {
 						'Authorization': `Bearer ${token}`
 					}
 				});
-				
+
 				if (response.ok) {
 					const userData = await response.json();
 					update(state => ({
@@ -70,7 +70,7 @@ function createAuthStore() {
 								'Authorization': `Bearer ${token}`
 							}
 						});
-						
+
 						if (response.ok) {
 							const userData = await response.json();
 							update(state => ({

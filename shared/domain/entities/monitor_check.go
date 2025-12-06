@@ -9,7 +9,7 @@ import (
 type MonitorCheck struct {
 	ID             string         `db:"id" json:"id"`
 	MonitorID      string         `db:"monitor_id" json:"monitor_id"`
-	TenantID       int            `db:"tenant_id" json:"tenant_id,omitempty"`     // Populated in some queries (joins)
+	UserID         int            `db:"user_id" json:"user_id,omitempty"`     // Populated in some queries (joins)
 	MonitorType    string         `db:"monitor_type" json:"monitor_type,omitempty"` // Populated in some queries (joins)
 	CheckedAt      time.Time      `db:"checked_at" json:"checked_at"`
 	StatusCode     sql.NullInt64  `db:"status_code" json:"status_code,omitempty" swaggertype:"integer"`

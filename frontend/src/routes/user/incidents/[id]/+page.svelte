@@ -137,7 +137,7 @@
 	}
 
 	function handleBack() {
-		goto('/incidents');
+		goto('/user/incidents');
 	}
 </script>
 

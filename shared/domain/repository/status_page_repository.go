@@ -15,8 +15,8 @@ type StatusPageRepository interface {
 	// GetBySlug retrieves a status page by its slug
 	GetBySlug(slug string) (*entities.StatusPage, error)
 
-	// GetByTenantID retrieves all status pages for a specific tenant
-	GetByTenantID(tenantID int) ([]*entities.StatusPage, error)
+	// GetByUserID retrieves all status pages for a specific user
+	GetByUserID(userID int) ([]*entities.StatusPage, error)
 
 	// Update updates an existing status page
 	Update(statusPage *entities.StatusPage) error

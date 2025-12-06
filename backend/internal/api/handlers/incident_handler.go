@@ -66,18 +66,18 @@ type ChannelInfo struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /incidents [get]
 func (h *IncidentHandler) List(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Parse query parameters
 	filters := repository.IncidentFilters{
-		TenantID: tenantID,
-		Status:   c.Query("status"),
+		UserID: userID,
+		Status: c.Query("status"),
 		MonitorID: c.Query("monitor_id"),
 		Limit:    50, // Default limit
 		Offset:   0,
@@ -149,8 +149,8 @@ func (h *IncidentHandler) List(c *gin.Context) {
 			incidentResp.MonitorName = monitor.Name
 			incidentResp.MonitorURL = monitor.URL
 
-			// Get alert rule details (requires tenant ID)
-			alertRule, err := h.alertRuleRepo.GetByID(monitor.TenantID, incident.AlertRuleID)
+			// Get alert rule details (requires user ID)
+			alertRule, err := h.alertRuleRepo.GetByID(userID, incident.AlertRuleID)
 			if err == nil {
 				incidentResp.AlertRuleName = alertRule.Name
 			}
@@ -187,13 +187,13 @@ func (h *IncidentHandler) List(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /incidents/{id} [get]
 func (h *IncidentHandler) GetByID(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	id := c.Param("id")
 
@@ -208,14 +208,14 @@ func (h *IncidentHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Verify tenant ownership through monitor
+	// Verify ownership
 	monitor, err := h.monitorRepo.GetByID(incident.MonitorID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify access"})
 		return
 	}
 
-	if monitor.TenantID != tenantID {
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -228,12 +228,12 @@ func (h *IncidentHandler) GetByID(c *gin.Context) {
 	}
 
 	// Get alert rule details
-	alertRule, err := h.alertRuleRepo.GetByID(monitor.TenantID, incident.AlertRuleID)
+	alertRule, err := h.alertRuleRepo.GetByID(userID, incident.AlertRuleID)
 	if err == nil {
 		response.AlertRuleName = alertRule.Name
 		
 		// Get associated channels
-		channels, err := h.alertChannelRepo.GetByAlertRuleID(monitor.TenantID, incident.AlertRuleID)
+		channels, err := h.alertChannelRepo.GetByAlertRuleID(userID, incident.AlertRuleID)
 		if err == nil {
 			response.Channels = make([]ChannelInfo, len(channels))
 			for i, ch := range channels {
@@ -273,13 +273,13 @@ func (h *IncidentHandler) GetByID(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /incidents/{id}/resolve [post]
 func (h *IncidentHandler) Resolve(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	id := c.Param("id")
 
@@ -294,14 +294,14 @@ func (h *IncidentHandler) Resolve(c *gin.Context) {
 		return
 	}
 
-	// Verify tenant ownership through monitor
+	// Verify ownership
 	monitor, err := h.monitorRepo.GetByID(incident.MonitorID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify access"})
 		return
 	}
 
-	if monitor.TenantID != tenantID {
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}

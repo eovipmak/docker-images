@@ -49,13 +49,13 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Verify monitor ownership
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -68,7 +68,7 @@ func (h *MetricsHandler) GetMonitorMetrics(c *gin.Context) {
 		return
 	}
 
-	if monitor.TenantID != tenantID {
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}

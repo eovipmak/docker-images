@@ -34,7 +34,7 @@ func NewStatusPageService(db *database.DB, repo repository.StatusPageRepository,
 }
 
 // CreateStatusPage creates a new status page
-func (s *StatusPageService) CreateStatusPage(tenantID int, slug, name string, publicEnabled bool) (*entities.StatusPage, error) {
+func (s *StatusPageService) CreateStatusPage(userID int, slug, name string, publicEnabled bool) (*entities.StatusPage, error) {
 	// Validate slug format
 	if !isValidSlug(slug) {
 		return nil, fmt.Errorf("invalid slug format")
@@ -47,7 +47,7 @@ func (s *StatusPageService) CreateStatusPage(tenantID int, slug, name string, pu
 	}
 
 	statusPage := &entities.StatusPage{
-		TenantID:      tenantID,
+		UserID:        userID,
 		Slug:          slug,
 		Name:          name,
 		PublicEnabled: publicEnabled,
@@ -62,22 +62,22 @@ func (s *StatusPageService) CreateStatusPage(tenantID int, slug, name string, pu
 }
 
 // GetStatusPageByID retrieves a status page by ID
-func (s *StatusPageService) GetStatusPageByID(id string, tenantID int) (*entities.StatusPage, error) {
+func (s *StatusPageService) GetStatusPageByID(id string, userID int) (*entities.StatusPage, error) {
 	statusPage, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status page: %w", err)
 	}
 
-	if statusPage.TenantID != tenantID {
+	if statusPage.UserID != userID {
 		return nil, fmt.Errorf("status page not found")
 	}
 
 	return statusPage, nil
 }
 
-// GetStatusPagesByTenant retrieves all status pages for a tenant
-func (s *StatusPageService) GetStatusPagesByTenant(tenantID int) ([]*entities.StatusPage, error) {
-	statusPages, err := s.repo.GetByTenantID(tenantID)
+// GetStatusPagesByUser retrieves all status pages for a user
+func (s *StatusPageService) GetStatusPagesByUser(userID int) ([]*entities.StatusPage, error) {
+	statusPages, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status pages: %w", err)
 	}
@@ -86,8 +86,8 @@ func (s *StatusPageService) GetStatusPagesByTenant(tenantID int) ([]*entities.St
 }
 
 // UpdateStatusPage updates an existing status page
-func (s *StatusPageService) UpdateStatusPage(id string, tenantID int, slug, name string, publicEnabled bool) (*entities.StatusPage, error) {
-	statusPage, err := s.GetStatusPageByID(id, tenantID)
+func (s *StatusPageService) UpdateStatusPage(id string, userID int, slug, name string, publicEnabled bool) (*entities.StatusPage, error) {
+	statusPage, err := s.GetStatusPageByID(id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,8 +116,8 @@ func (s *StatusPageService) UpdateStatusPage(id string, tenantID int, slug, name
 }
 
 // DeleteStatusPage deletes a status page
-func (s *StatusPageService) DeleteStatusPage(id string, tenantID int) error {
-	_, err := s.GetStatusPageByID(id, tenantID)
+func (s *StatusPageService) DeleteStatusPage(id string, userID int) error {
+	_, err := s.GetStatusPageByID(id, userID)
 	if err != nil {
 		return err
 	}
@@ -126,19 +126,19 @@ func (s *StatusPageService) DeleteStatusPage(id string, tenantID int) error {
 }
 
 // AddMonitorToStatusPage adds a monitor to a status page
-func (s *StatusPageService) AddMonitorToStatusPage(statusPageID, monitorID string, tenantID int) error {
-	// Verify status page belongs to tenant
-	_, err := s.GetStatusPageByID(statusPageID, tenantID)
+func (s *StatusPageService) AddMonitorToStatusPage(statusPageID, monitorID string, userID int) error {
+	// Verify status page belongs to user
+	_, err := s.GetStatusPageByID(statusPageID, userID)
 	if err != nil {
 		return err
 	}
 
-	// Verify monitor belongs to tenant
+	// Verify monitor belongs to user
 	monitor, err := s.monitorRepo.GetByID(monitorID)
 	if err != nil {
 		return fmt.Errorf("monitor not found: %w", err)
 	}
-	if monitor.TenantID != tenantID {
+	if monitor.UserID != userID {
 		return fmt.Errorf("monitor not found")
 	}
 
@@ -146,9 +146,9 @@ func (s *StatusPageService) AddMonitorToStatusPage(statusPageID, monitorID strin
 }
 
 // RemoveMonitorFromStatusPage removes a monitor from a status page
-func (s *StatusPageService) RemoveMonitorFromStatusPage(statusPageID, monitorID string, tenantID int) error {
-	// Verify status page belongs to tenant
-	_, err := s.GetStatusPageByID(statusPageID, tenantID)
+func (s *StatusPageService) RemoveMonitorFromStatusPage(statusPageID, monitorID string, userID int) error {
+	// Verify status page belongs to user
+	_, err := s.GetStatusPageByID(statusPageID, userID)
 	if err != nil {
 		return err
 	}
@@ -157,9 +157,9 @@ func (s *StatusPageService) RemoveMonitorFromStatusPage(statusPageID, monitorID 
 }
 
 // GetStatusPageMonitors retrieves monitors for a status page
-func (s *StatusPageService) GetStatusPageMonitors(statusPageID string, tenantID int) ([]*entities.Monitor, error) {
-	// Verify status page belongs to tenant
-	_, err := s.GetStatusPageByID(statusPageID, tenantID)
+func (s *StatusPageService) GetStatusPageMonitors(statusPageID string, userID int) ([]*entities.Monitor, error) {
+	// Verify status page belongs to user
+	_, err := s.GetStatusPageByID(statusPageID, userID)
 	if err != nil {
 		return nil, err
 	}

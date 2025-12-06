@@ -4,7 +4,6 @@
 	let email = '';
 	let password = '';
 	let confirmPassword = '';
-	let tenantName = '';
 	let error = '';
 	let isLoading = false;
 
@@ -35,7 +34,6 @@
 				body: JSON.stringify({
 					email,
 					password,
-					tenant_name: tenantName
 				})
 			});
 
@@ -50,7 +48,7 @@
 			if (data.token) {
 				await isAuthenticated.login(data.token);
 				// Redirect to dashboard
-				window.location.href = '/dashboard';
+				window.location.href = '/user/dashboard';
 			} else {
 				error = 'Registration failed - no token received';
 			}
@@ -113,25 +111,7 @@
                             bind:value={email}
                             disabled={isLoading}
 							class="appearance-none block w-full px-4 py-3 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-brand-blue sm:text-sm transition-all shadow-inner"
-                            placeholder="you@example.com"
-						/>
-					</div>
-				</div>
-
-				<div>
-					<label for="tenantName" class="block text-xs font-bold uppercase tracking-wider text-brand-blue mb-2">
-						Organization Name
-					</label>
-					<div class="mt-1">
-						<input
-							id="tenantName"
-							name="tenantName"
-							type="text"
-							required
-                            bind:value={tenantName}
-                            disabled={isLoading}
-							class="appearance-none block w-full px-4 py-3 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-brand-blue sm:text-sm transition-all shadow-inner"
-                            placeholder="Acme Corp"
+							placeholder="you@example.com"
 						/>
 					</div>
 				</div>
@@ -150,7 +130,7 @@
                             bind:value={password}
                             disabled={isLoading}
 							class="appearance-none block w-full px-4 py-3 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-brand-blue sm:text-sm transition-all shadow-inner"
-                            placeholder="••••••••"
+							placeholder="••••••••"
 						/>
 					</div>
 				</div>
@@ -169,7 +149,7 @@
                             bind:value={confirmPassword}
                             disabled={isLoading}
 							class="appearance-none block w-full px-4 py-3 bg-dark-900 border border-white/10 rounded-lg text-white placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-brand-blue sm:text-sm transition-all shadow-inner"
-                            placeholder="••••••••"
+							placeholder="••••••••"
 						/>
 					</div>
 				</div>

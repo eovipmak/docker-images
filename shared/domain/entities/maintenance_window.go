@@ -9,7 +9,7 @@ import (
 // MaintenanceWindow represents a scheduled maintenance period
 type MaintenanceWindow struct {
 	ID        string    `db:"id" json:"id"`
-	TenantID  int       `db:"tenant_id" json:"tenant_id"`
+	UserID    int       `db:"user_id" json:"user_id"`
 	Name      string    `db:"name" json:"name"`
 	StartTime time.Time `db:"start_time" json:"start_time"`
 	EndTime   time.Time `db:"end_time" json:"end_time"`

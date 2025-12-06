@@ -12,9 +12,9 @@ const testSecret = "test-secret-key-for-testing"
 
 func TestGenerateToken_Success(t *testing.T) {
 	userID := 123
-	tenantID := 456
+	role := "user"
 
-	token, err := GenerateToken(userID, tenantID, testSecret)
+	token, err := GenerateToken(userID, role, testSecret)
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -25,14 +25,14 @@ func TestGenerateToken_Success(t *testing.T) {
 }
 
 func TestGenerateToken_ZeroIDs(t *testing.T) {
-	token, err := GenerateToken(0, 0, testSecret)
+	token, err := GenerateToken(0, "", testSecret)
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 }
 
 func TestGenerateToken_EmptySecret(t *testing.T) {
-	token, err := GenerateToken(1, 1, "")
+	token, err := GenerateToken(1, "user", "")
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -40,9 +40,9 @@ func TestGenerateToken_EmptySecret(t *testing.T) {
 
 func TestValidateToken_Success(t *testing.T) {
 	userID := 123
-	tenantID := 456
+	role := "user"
 
-	token, err := GenerateToken(userID, tenantID, testSecret)
+	token, err := GenerateToken(userID, role, testSecret)
 	assert.NoError(t, err)
 
 	claims, err := ValidateToken(token, testSecret)
@@ -50,7 +50,7 @@ func TestValidateToken_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, claims)
 	assert.Equal(t, userID, claims.UserID)
-	assert.Equal(t, tenantID, claims.TenantID)
+	assert.Equal(t, role, claims.Role)
 }
 
 func TestValidateToken_InvalidToken(t *testing.T) {
@@ -64,9 +64,9 @@ func TestValidateToken_InvalidToken(t *testing.T) {
 
 func TestValidateToken_WrongSecret(t *testing.T) {
 	userID := 123
-	tenantID := 456
+	role := "user"
 
-	token, err := GenerateToken(userID, tenantID, testSecret)
+	token, err := GenerateToken(userID, role, testSecret)
 	assert.NoError(t, err)
 
 	wrongSecret := "wrong-secret"
@@ -104,8 +104,8 @@ func TestValidateToken_MalformedToken(t *testing.T) {
 func TestValidateToken_ExpiredToken(t *testing.T) {
 	// Create a token with past expiration
 	claims := &Claims{
-		UserID:   123,
-		TenantID: 456,
+		UserID: 123,
+		Role:   "user",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Hour)), // Expired 1 hour ago
 			IssuedAt:  jwt.NewNumericDate(time.Now().Add(-2 * time.Hour)),
@@ -124,19 +124,18 @@ func TestValidateToken_ExpiredToken(t *testing.T) {
 
 func TestTokenRoundTrip(t *testing.T) {
 	testCases := []struct {
-		name     string
-		userID   int
-		tenantID int
+		name   string
+		userID int
+		role   string
 	}{
-		{"positive IDs", 123, 456},
-		{"zero IDs", 0, 0},
-		{"large IDs", 999999, 888888},
-		{"negative IDs", -1, -2},
+		{"normal user", 123, "user"},
+		{"admin user", 456, "admin"},
+		{"zero id", 0, ""},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			token, err := GenerateToken(tc.userID, tc.tenantID, testSecret)
+			token, err := GenerateToken(tc.userID, tc.role, testSecret)
 			assert.NoError(t, err)
 			assert.NotEmpty(t, token)
 
@@ -144,17 +143,17 @@ func TestTokenRoundTrip(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, claims)
 			assert.Equal(t, tc.userID, claims.UserID)
-			assert.Equal(t, tc.tenantID, claims.TenantID)
+			assert.Equal(t, tc.role, claims.Role)
 		})
 	}
 }
 
 func TestClaims_ExpirationTime(t *testing.T) {
 	userID := 123
-	tenantID := 456
+	role := "user"
 
 	beforeGeneration := time.Now().UTC().Truncate(time.Second).Add(-1 * time.Second)
-	token, err := GenerateToken(userID, tenantID, testSecret)
+	token, err := GenerateToken(userID, role, testSecret)
 	assert.NoError(t, err)
 
 	claims, err := ValidateToken(token, testSecret)
@@ -171,10 +170,10 @@ func TestClaims_ExpirationTime(t *testing.T) {
 
 func TestClaims_IssuedAt(t *testing.T) {
 	userID := 123
-	tenantID := 456
+	role := "user"
 
 	beforeGeneration := time.Now().UTC().Truncate(time.Second).Add(-1 * time.Second)
-	token, err := GenerateToken(userID, tenantID, testSecret)
+	token, err := GenerateToken(userID, role, testSecret)
 	afterGeneration := time.Now().UTC().Truncate(time.Second).Add(1 * time.Second)
 	assert.NoError(t, err)
 
@@ -190,8 +189,8 @@ func TestClaims_IssuedAt(t *testing.T) {
 func TestValidateToken_InvalidSigningMethod(t *testing.T) {
 	// Create a token with RS256 instead of HS256
 	claims := &Claims{
-		UserID:   123,
-		TenantID: 456,
+		UserID: 123,
+		Role:   "user",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -38,7 +38,7 @@ type IncidentRepository interface {
 
 // IncidentFilters defines filtering options for incident queries
 type IncidentFilters struct {
-	TenantID  int
+	UserID    int
 	Status    string // 'open', 'resolved', or empty for all
 	MonitorID string
 	From      *time.Time

@@ -23,14 +23,14 @@ func NewMonitorRepository(db *sqlx.DB) repository.MonitorRepository {
 // Create creates a new monitor in the database
 func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 	query := `
-		INSERT INTO monitors (tenant_id, name, url, type, keyword, check_interval, timeout, enabled, check_ssl, ssl_alert_days, tags, expected_status_codes, created_at, updated_at)
+		INSERT INTO monitors (user_id, name, url, type, keyword, check_interval, timeout, enabled, check_ssl, ssl_alert_days, tags, expected_status_codes, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
 		query,
-		monitor.TenantID,
+		monitor.UserID,
 		monitor.Name,
 		monitor.URL,
 		monitor.Type,
@@ -55,7 +55,7 @@ func (r *monitorRepository) Create(monitor *entities.Monitor) error {
 func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 	monitor := &entities.Monitor{}
 	query := `
-		SELECT id, tenant_id, name, url, type, keyword, check_interval, timeout, enabled,
+		SELECT id, user_id, name, url, type, keyword, check_interval, timeout, enabled,
 		       check_ssl, ssl_alert_days, tags, expected_status_codes, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE id = $1
@@ -72,20 +72,38 @@ func (r *monitorRepository) GetByID(id string) (*entities.Monitor, error) {
 	return monitor, nil
 }
 
-// GetByTenantID retrieves all monitors for a specific tenant
-func (r *monitorRepository) GetByTenantID(tenantID int) ([]*entities.Monitor, error) {
+// GetByUserID retrieves all monitors for a specific user
+func (r *monitorRepository) GetByUserID(userID int) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, type, keyword, check_interval, timeout, enabled,
+		SELECT id, user_id, name, url, type, keyword, check_interval, timeout, enabled,
 		       check_ssl, ssl_alert_days, tags, expected_status_codes, last_checked_at, created_at, updated_at
 		FROM monitors
-		WHERE tenant_id = $1
+		WHERE user_id = $1
 		ORDER BY created_at DESC
 	`
 
-	err := r.db.Select(&monitors, query, tenantID)
+	err := r.db.Select(&monitors, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitors by tenant: %w", err)
+	}
+
+	return monitors, nil
+}
+
+// GetAll retrieves all monitors across all users (Admin only)
+func (r *monitorRepository) GetAll() ([]*entities.Monitor, error) {
+	var monitors []*entities.Monitor
+	query := `
+		SELECT id, user_id, name, url, type, keyword, check_interval, timeout, enabled,
+		       check_ssl, ssl_alert_days, tags, expected_status_codes, last_checked_at, created_at, updated_at
+		FROM monitors
+		ORDER BY created_at DESC
+	`
+
+	err := r.db.Select(&monitors, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all monitors: %w", err)
 	}
 
 	return monitors, nil
@@ -182,7 +200,7 @@ func (r *monitorRepository) GetChecksByMonitorID(monitorID string, limit int) ([
 func (r *monitorRepository) GetMonitorsNeedingCheck(now time.Time) ([]*entities.Monitor, error) {
 	var monitors []*entities.Monitor
 	query := `
-		SELECT id, tenant_id, name, url, type, keyword, check_interval, timeout, enabled,
+		SELECT id, user_id, name, url, type, keyword, check_interval, timeout, enabled,
 		       check_ssl, ssl_alert_days, tags, expected_status_codes, last_checked_at, created_at, updated_at
 		FROM monitors
 		WHERE enabled = true
@@ -286,7 +304,7 @@ func (r *monitorRepository) GetLatestMonitorChecks(duration time.Duration) ([]*e
 	var checks []*entities.MonitorCheck
 	query := `
 		SELECT DISTINCT ON (mc.monitor_id)
-			mc.id, mc.monitor_id, m.tenant_id, m.type as monitor_type, mc.checked_at, mc.status_code, mc.response_time_ms,
+			mc.id, mc.monitor_id, m.user_id, m.type as monitor_type, mc.checked_at, mc.status_code, mc.response_time_ms,
 			mc.ssl_valid, mc.ssl_expires_at, mc.error_message, mc.success
 		FROM monitor_checks mc
 		JOIN monitors m ON mc.monitor_id = m.id

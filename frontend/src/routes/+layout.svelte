@@ -31,9 +31,9 @@ $: if (browser && authInitialized && !$authStore.isAuthenticated && !isPublicRou
 // Redirect authenticated users away from public routes (landing, login, register)
 $: if (browser && authInitialized && $authStore.isAuthenticated && isPublicRoute($page.url.pathname)) {
 	// If user is authenticated and on a public route, send them to the dashboard
-	// Avoid causing a redirect loop if they're already on /dashboard
-	if ($page.url.pathname !== '/dashboard') {
-		window.location.href = '/dashboard';
+	// Avoid causing a redirect loop if they're already on /user/dashboard
+	if ($page.url.pathname !== '/user/dashboard') {
+		window.location.href = '/user/dashboard';
 	}
 }
 
@@ -45,9 +45,7 @@ $: if (browser && authInitialized && $authStore.isAuthenticated && isPublicRoute
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-[#0b0c15] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300 selection:bg-indigo-500/30">
-	{#if $authStore.isAuthenticated || !isPublicRoute($page.url.pathname)}
-		<Navbar />
-	{/if}
+
 	
 	<main class="w-full">
 		<slot />

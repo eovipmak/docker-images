@@ -10,7 +10,7 @@ import (
 // AlertChannel represents an alert channel configuration
 type AlertChannel struct {
 	ID        string         `db:"id" json:"id"`
-	TenantID  int            `db:"tenant_id" json:"tenant_id"`
+	UserID    int            `db:"user_id" json:"user_id"`
 	Type      string         `db:"type" json:"type"` // 'webhook', 'discord', 'email'
 	Name      string         `db:"name" json:"name"`
 	Config    ChannelConfig  `db:"config" json:"config"`

@@ -86,13 +86,12 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Validate URL based on monitor type
 	monitorType := req.Type
@@ -165,7 +164,7 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	}
 
 	monitor := &entities.Monitor{
-		TenantID:            tenantID,
+		UserID:              userID,
 		Name:                sanitizedName,
 		URL:                 req.URL,
 		Type:                monitorType,
@@ -187,7 +186,7 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 	// Auto-create SSL expiry alert rule if SSL checking is enabled
 	// (Only for HTTP)
 	if monitorType == "http" && monitor.CheckSSL && monitor.SSLAlertDays > 0 {
-		if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
+		if err := h.createOrUpdateSSLAlertRule(userID, monitor); err != nil {
 			// Log error but don't fail the monitor creation
 			fmt.Printf("Warning: Failed to create SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 		}
@@ -208,15 +207,15 @@ func (h *MonitorHandler) Create(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /monitors [get]
 func (h *MonitorHandler) List(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	monitors, err := h.monitorRepo.GetByTenantID(tenantID)
+	monitors, err := h.monitorRepo.GetByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve monitors"})
 		return
@@ -252,13 +251,13 @@ func (h *MonitorHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	monitor, err := h.monitorRepo.GetByID(id)
 	if err != nil {
@@ -270,8 +269,8 @@ func (h *MonitorHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -308,13 +307,13 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing monitor
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -327,8 +326,8 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -419,12 +418,12 @@ func (h *MonitorHandler) Update(c *gin.Context) {
 	// (Only if type is HTTP)
 	if monitorType == "http" && (req.CheckSSL != nil || req.SSLAlertDays > 0) {
 		if monitor.CheckSSL && monitor.SSLAlertDays > 0 {
-			if err := h.createOrUpdateSSLAlertRule(tenantID, monitor); err != nil {
+			if err := h.createOrUpdateSSLAlertRule(userID, monitor); err != nil {
 				fmt.Printf("Warning: Failed to update SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 			}
 		} else {
 			// Disable SSL alert rule if SSL checking is disabled
-			if err := h.disableSSLAlertRule(tenantID, monitor.ID); err != nil {
+			if err := h.disableSSLAlertRule(userID, monitor.ID); err != nil {
 				fmt.Printf("Warning: Failed to disable SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 			}
 		}
@@ -435,7 +434,7 @@ func (h *MonitorHandler) Update(c *gin.Context) {
         // But simplifying: just leave it for now or disable if type changed.
         // If we switched away from HTTP, we should probably disable SSL monitoring rules.
         if req.Type != "" && req.Type != "http" {
-             if err := h.disableSSLAlertRule(tenantID, monitor.ID); err != nil {
+             if err := h.disableSSLAlertRule(userID, monitor.ID); err != nil {
 				fmt.Printf("Warning: Failed to disable SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 			}
         }
@@ -466,13 +465,13 @@ func (h *MonitorHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing monitor to verify ownership
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -485,14 +484,14 @@ func (h *MonitorHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 
 	// Delete associated SSL alert rule first
-	if err := h.disableSSLAlertRule(tenantID, id); err != nil {
+	if err := h.disableSSLAlertRule(userID, id); err != nil {
 		fmt.Printf("Warning: Failed to delete SSL alert rule for monitor %s: %v\n", monitor.Name, err)
 	}
 
@@ -526,13 +525,13 @@ func (h *MonitorHandler) GetChecks(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing monitor to verify ownership
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -545,8 +544,8 @@ func (h *MonitorHandler) GetChecks(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -598,13 +597,13 @@ func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing monitor to verify ownership
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -617,8 +616,8 @@ func (h *MonitorHandler) GetSSLStatus(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -679,13 +678,13 @@ func (h *MonitorHandler) GetStats(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing monitor to verify ownership
 	monitor, err := h.monitorRepo.GetByID(id)
@@ -698,8 +697,8 @@ func (h *MonitorHandler) GetStats(c *gin.Context) {
 		return
 	}
 
-	// Verify that the monitor belongs to the current tenant
-	if monitor.TenantID != tenantID {
+	// Verify that the monitor belongs to the current user
+	if monitor.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -719,11 +718,11 @@ func (h *MonitorHandler) GetStats(c *gin.Context) {
 }
 
 // createOrUpdateSSLAlertRule creates or updates an SSL expiry alert rule for a monitor
-func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entities.Monitor) error {
+func (h *MonitorHandler) createOrUpdateSSLAlertRule(userID int, monitor *entities.Monitor) error {
 	ruleName := fmt.Sprintf("SSL Expiry Alert - %s (%d days)", monitor.Name, monitor.SSLAlertDays)
 
 	// Check if alert rule already exists for this monitor
-	existingRules, err := h.alertRuleRepo.GetAllWithChannelsByTenantID(tenantID)
+	existingRules, err := h.alertRuleRepo.GetAllWithChannelsByUserID(userID)
 	if err != nil {
 		return fmt.Errorf("failed to check existing alert rules: %w", err)
 	}
@@ -747,7 +746,7 @@ func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entit
 
 		alertRule := &entities.AlertRule{
 			ID:             existingRule.ID,
-			TenantID:       existingRule.TenantID,
+			UserID:         existingRule.UserID,
 			MonitorID:      existingRule.MonitorID,
 			Name:           existingRule.Name,
 			TriggerType:    existingRule.TriggerType,
@@ -759,7 +758,7 @@ func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entit
 	} else {
 		// Create new rule
 		alertRule := &entities.AlertRule{
-			TenantID:       tenantID,
+			UserID:         userID,
 			MonitorID:      sql.NullString{String: monitor.ID, Valid: true},
 			Name:           ruleName,
 			TriggerType:    "ssl_expiry",
@@ -776,9 +775,9 @@ func (h *MonitorHandler) createOrUpdateSSLAlertRule(tenantID int, monitor *entit
 }
 
 // disableSSLAlertRule disables SSL alert rules for a monitor
-func (h *MonitorHandler) disableSSLAlertRule(tenantID int, monitorID string) error {
+func (h *MonitorHandler) disableSSLAlertRule(userID int, monitorID string) error {
 	// Find and disable all auto-generated SSL expiry rules for this monitor
-	rules, err := h.alertRuleRepo.GetAllWithChannelsByTenantID(tenantID)
+	rules, err := h.alertRuleRepo.GetAllWithChannelsByUserID(userID)
 	if err != nil {
 		return fmt.Errorf("failed to get alert rules: %w", err)
 	}
@@ -791,7 +790,7 @@ func (h *MonitorHandler) disableSSLAlertRule(tenantID int, monitorID string) err
 			rule.Enabled = false
 			alertRule := &entities.AlertRule{
 				ID:             rule.ID,
-				TenantID:       rule.TenantID,
+				UserID:         rule.UserID,
 				MonitorID:      rule.MonitorID,
 				Name:           rule.Name,
 				TriggerType:    rule.TriggerType,

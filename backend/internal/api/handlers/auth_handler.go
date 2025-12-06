@@ -28,7 +28,6 @@ func NewAuthHandler(authService *service.AuthService, userRepo repository.UserRe
 type RegisterRequest struct {
 	Email      string `json:"email" binding:"required,email"`
 	Password   string `json:"password" binding:"required,min=6"`
-	TenantName string `json:"tenant_name" binding:"required"`
 }
 
 // LoginRequest represents the login request body
@@ -62,11 +61,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if internal.Log != nil {
 		internal.Log.Info("User registration attempt",
 			zap.String("email", req.Email),
-			zap.String("tenant_name", req.TenantName),
 		)
 	}
 
-	token, err := h.authService.Register(req.Email, req.Password, req.TenantName)
+	token, err := h.authService.Register(req.Email, req.Password)
 	if err != nil {
 		if internal.Log != nil {
 			internal.Log.Warn("User registration failed",
@@ -158,12 +156,9 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		return
 	}
 
-	// Also get tenant_id from context if available
-	tenantID, _ := c.Get("tenant_id")
-
 	c.JSON(http.StatusOK, gin.H{
-		"id":        user.ID,
-		"email":     user.Email,
-		"tenant_id": tenantID,
+		"id":    user.ID,
+		"email": user.Email,
+		"role":  user.Role,
 	})
 }

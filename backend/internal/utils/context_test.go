@@ -38,34 +38,34 @@ func TestGetUserID(t *testing.T) {
 	}
 }
 
-func TestGetTenantID(t *testing.T) {
+func TestGetRole(t *testing.T) {
 	tests := []struct {
 		name     string
 		ctx      context.Context
-		expected int
+		expected string
 	}{
 		{
-			name:     "Tenant ID exists",
-			ctx:      SetTenantID(context.Background(), 456),
-			expected: 456,
+			name:     "Role exists",
+			ctx:      SetRole(context.Background(), "admin"),
+			expected: "admin",
 		},
 		{
-			name:     "Tenant ID does not exist",
+			name:     "Role does not exist",
 			ctx:      context.Background(),
-			expected: 0,
+			expected: "",
 		},
 		{
 			name:     "Wrong type in context",
-			ctx:      context.WithValue(context.Background(), tenantIDKey, "not-an-int"),
-			expected: 0,
+			ctx:      context.WithValue(context.Background(), roleKey, 123),
+			expected: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := GetTenantID(tt.ctx)
+			result := GetRole(tt.ctx)
 			if result != tt.expected {
-				t.Errorf("GetTenantID() = %v, expected %v", result, tt.expected)
+				t.Errorf("GetRole() = %v, expected %v", result, tt.expected)
 			}
 		})
 	}
@@ -83,31 +83,31 @@ func TestSetUserID(t *testing.T) {
 	}
 }
 
-func TestSetTenantID(t *testing.T) {
+func TestSetRole(t *testing.T) {
 	ctx := context.Background()
-	tenantID := 101
+	role := "user"
 
-	ctx = SetTenantID(ctx, tenantID)
-	result := GetTenantID(ctx)
+	ctx = SetRole(ctx, role)
+	result := GetRole(ctx)
 
-	if result != tenantID {
-		t.Errorf("SetTenantID/GetTenantID = %v, expected %v", result, tenantID)
+	if result != role {
+		t.Errorf("SetRole/GetRole = %v, expected %v", result, role)
 	}
 }
 
-func TestBothIDsInContext(t *testing.T) {
+func TestUserAndRoleInContext(t *testing.T) {
 	ctx := context.Background()
 	userID := 111
-	tenantID := 222
+	role := "admin"
 
 	ctx = SetUserID(ctx, userID)
-	ctx = SetTenantID(ctx, tenantID)
+	ctx = SetRole(ctx, role)
 
 	if GetUserID(ctx) != userID {
 		t.Errorf("GetUserID() = %v, expected %v", GetUserID(ctx), userID)
 	}
 
-	if GetTenantID(ctx) != tenantID {
-		t.Errorf("GetTenantID() = %v, expected %v", GetTenantID(ctx), tenantID)
+	if GetRole(ctx) != role {
+		t.Errorf("GetRole() = %v, expected %v", GetRole(ctx), role)
 	}
 }

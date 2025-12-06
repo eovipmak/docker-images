@@ -328,7 +328,7 @@
 					{#if monitors.length === 0}
 						<div class="text-sm text-slate-500 dark:text-slate-400">
 							<p class="mb-2">No monitors available.</p>
-							<p><a href="/monitors" class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline">Create monitors first</a> to associate them with this status page.</p>
+							<p><a href="/user/monitors" class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline">Create monitors first</a> to associate them with this status page.</p>
 						</div>
 					{:else}
 						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50">

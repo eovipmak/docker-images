@@ -77,7 +77,7 @@
 	}
 
 	function handleBack() {
-		goto('/domains');
+		goto('/user/domains');
 	}
 </script>
 

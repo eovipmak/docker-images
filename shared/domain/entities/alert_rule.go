@@ -8,7 +8,7 @@ import (
 // AlertRule represents an alert rule configuration
 type AlertRule struct {
 	ID             string         `db:"id" json:"id"`
-	TenantID       int            `db:"tenant_id" json:"tenant_id"`
+	UserID         int            `db:"user_id" json:"user_id"`
 	MonitorID      sql.NullString `db:"monitor_id" json:"monitor_id,omitempty" swaggertype:"string"`
 	Name           string         `db:"name" json:"name"`
 	TriggerType    string         `db:"trigger_type" json:"trigger_type"` // 'down', 'ssl_expiry', 'slow_response'

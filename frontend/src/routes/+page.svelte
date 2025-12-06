@@ -77,7 +77,7 @@
                     <span class="w-2 h-2 rounded-full {apiStatus === 'Connected' ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-red-500'} animate-pulse"></span>
                     <span class="text-gray-400">{apiStatus}</span>
                 </div>
-                <a href="/dashboard" class="text-sm font-medium text-white hover:text-brand-orange transition-colors">LOGIN</a>
+                <a href="/user/dashboard" class="text-sm font-medium text-white hover:text-brand-orange transition-colors">LOGIN</a>
             </div>
         </nav>
     </header>

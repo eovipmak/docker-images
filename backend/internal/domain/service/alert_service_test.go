@@ -90,15 +90,16 @@ func (m *mockIncidentRepository) MarkAsNotified(id string) error {
 type mockAlertRuleRepository struct{}
 
 func (m *mockAlertRuleRepository) Create(rule *entities.AlertRule) error                       { return nil }
-func (m *mockAlertRuleRepository) GetByID(tenantID int, id string) (*entities.AlertRule, error) { return nil, nil }
-func (m *mockAlertRuleRepository) GetByTenantID(tenantID int) ([]*entities.AlertRule, error)    { return nil, nil }
+func (m *mockAlertRuleRepository) GetByID(userID int, id string) (*entities.AlertRule, error) { return nil, nil }
+func (m *mockAlertRuleRepository) GetByUserID(userID int) ([]*entities.AlertRule, error)    { return nil, nil }
 func (m *mockAlertRuleRepository) Update(rule *entities.AlertRule) error                        { return nil }
-func (m *mockAlertRuleRepository) Delete(tenantID int, id string) error                         { return nil }
-func (m *mockAlertRuleRepository) AttachChannels(tenantID int, ruleID string, channelIDs []string) error { return nil }
-func (m *mockAlertRuleRepository) DetachChannels(tenantID int, ruleID string, channelIDs []string) error { return nil }
-func (m *mockAlertRuleRepository) GetChannelsByRuleID(tenantID int, ruleID string) ([]string, error) { return nil, nil }
-func (m *mockAlertRuleRepository) GetWithChannels(tenantID int, id string) (*entities.AlertRuleWithChannels, error) { return nil, nil }
-func (m *mockAlertRuleRepository) GetAllWithChannelsByTenantID(tenantID int) ([]*entities.AlertRuleWithChannels, error) { return nil, nil }
+func (m *mockAlertRuleRepository) Delete(userID int, id string) error                         { return nil }
+func (m *mockAlertRuleRepository) AttachChannels(userID int, ruleID string, channelIDs []string) error { return nil }
+func (m *mockAlertRuleRepository) DetachChannels(userID int, ruleID string, channelIDs []string) error { return nil }
+func (m *mockAlertRuleRepository) GetChannelsByRuleID(userID int, ruleID string) ([]string, error) { return nil, nil }
+func (m *mockAlertRuleRepository) GetWithChannels(userID int, id string) (*entities.AlertRuleWithChannels, error) { return nil, nil }
+func (m *mockAlertRuleRepository) GetAllWithChannelsByUserID(userID int) ([]*entities.AlertRuleWithChannels, error) { return nil, nil }
+func (m *mockAlertRuleRepository) GetAll() ([]*entities.AlertRule, error) { return nil, nil }
 func (m *mockAlertRuleRepository) GetAllEnabled() ([]*entities.AlertRule, error) { return nil, nil }
 
 func TestAlertService_EvaluateCheck_Down(t *testing.T) {

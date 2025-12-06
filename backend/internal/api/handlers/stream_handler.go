@@ -16,23 +16,23 @@ import (
 type Event struct {
 	Type      string                 `json:"type"`
 	Data      map[string]interface{} `json:"data"`
-	TenantID  int                    `json:"tenant_id"`
+	UserID    int                    `json:"user_id"`
 	Timestamp time.Time              `json:"timestamp"`
 }
 
 // BroadcastRequest represents a request to broadcast an event
 type BroadcastRequest struct {
-	Type     string                 `json:"type" binding:"required"`
-	Data     map[string]interface{} `json:"data" binding:"required"`
-	TenantID int                    `json:"tenant_id" binding:"required"`
+	Type   string                 `json:"type" binding:"required"`
+	Data   map[string]interface{} `json:"data" binding:"required"`
+	UserID int                    `json:"user_id" binding:"required"`
 }
 
 // Client represents a connected SSE client
 type Client struct {
-	ID       string
-	TenantID int
-	Channel  chan Event
-	Context  context.Context
+	ID      string
+	UserID  int
+	Channel chan Event
+	Context context.Context
 }
 
 // StreamHandler handles Server-Sent Events
@@ -51,13 +51,13 @@ func NewStreamHandler() *StreamHandler {
 // HandleSSE handles Server-Sent Events endpoint
 // GET /api/stream/events
 func (h *StreamHandler) HandleSSE(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Set CORS headers for SSE
 	// When credentials are included, we must specify the exact origin, not wildcard
@@ -83,12 +83,12 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 	c.Header("X-Accel-Buffering", "no") // Disable buffering for nginx
 
 	// Create client
-	clientID := fmt.Sprintf("%d-%d", tenantID, time.Now().UnixNano())
+	clientID := fmt.Sprintf("%d-%d", userID, time.Now().UnixNano())
 	client := &Client{
-		ID:       clientID,
-		TenantID: tenantID,
-		Channel:  make(chan Event, 10),
-		Context:  c.Request.Context(),
+		ID:      clientID,
+		UserID:  userID,
+		Channel: make(chan Event, 10),
+		Context: c.Request.Context(),
 	}
 
 	// Register client
@@ -96,7 +96,7 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 	h.clients[clientID] = client
 	h.mu.Unlock()
 
-	log.Printf("Client %s connected (tenant: %d)", clientID, tenantID)
+	log.Printf("Client %s connected (user: %d)", clientID, userID)
 
 	// Remove client on disconnect
 	defer func() {
@@ -133,12 +133,12 @@ func (h *StreamHandler) HandleSSE(c *gin.Context) {
 	}
 }
 
-// BroadcastEvent broadcasts an event to all connected clients for a specific tenant
-func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interface{}, tenantID int) {
+// BroadcastEvent broadcasts an event to all connected clients for a specific user
+func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interface{}, userID int) {
 	event := Event{
 		Type:      eventType,
 		Data:      data,
-		TenantID:  tenantID,
+		UserID:    userID,
 		Timestamp: time.Now(),
 	}
 
@@ -147,20 +147,20 @@ func (h *StreamHandler) BroadcastEvent(eventType string, data map[string]interfa
 
 	count := 0
 	for _, client := range h.clients {
-		// Only send to clients of the same tenant
-		if client.TenantID == tenantID {
+		// Only send to clients of the same user
+		if client.UserID == userID {
 			select {
 			case client.Channel <- event:
 				count++
-				log.Printf("Sent %s event to client %s (tenant: %d)", eventType, client.ID, tenantID)
+				log.Printf("Sent %s event to client %s (user: %d)", eventType, client.ID, userID)
 			default:
 				// Channel full, skip this client
-				log.Printf("Warning: Client %s channel full, dropping event %s (tenant: %d)", client.ID, eventType, tenantID)
+				log.Printf("Warning: Client %s channel full, dropping event %s (user: %d)", client.ID, eventType, userID)
 			}
 		}
 	}
 
-	log.Printf("Broadcasted %s event to %d/%d clients (tenant: %d)", eventType, count, len(h.clients), tenantID)
+	log.Printf("Broadcasted %s event to %d/%d clients (user: %d)", eventType, count, len(h.clients), userID)
 }
 
 // HandleBroadcast handles HTTP POST requests to broadcast events
@@ -173,13 +173,13 @@ func (h *StreamHandler) HandleBroadcast(c *gin.Context) {
 		return
 	}
 
-	log.Printf("Received broadcast request: type=%s, tenant=%d", req.Type, req.TenantID)
+	log.Printf("Received broadcast request: type=%s, user=%d", req.Type, req.UserID)
 
-	h.BroadcastEvent(req.Type, req.Data, req.TenantID)
+	h.BroadcastEvent(req.Type, req.Data, req.UserID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Event broadcasted",
-		"clients": h.GetConnectedClientsForTenant(req.TenantID),
+		"clients": h.GetConnectedClientsForUser(req.UserID),
 	})
 }
 
@@ -190,14 +190,14 @@ func (h *StreamHandler) GetConnectedClients() int {
 	return len(h.clients)
 }
 
-// GetConnectedClientsForTenant returns the number of connected clients for a specific tenant
-func (h *StreamHandler) GetConnectedClientsForTenant(tenantID int) int {
+// GetConnectedClientsForUser returns the number of connected clients for a specific user
+func (h *StreamHandler) GetConnectedClientsForUser(userID int) int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
 	count := 0
 	for _, client := range h.clients {
-		if client.TenantID == tenantID {
+		if client.UserID == userID {
 			count++
 		}
 	}

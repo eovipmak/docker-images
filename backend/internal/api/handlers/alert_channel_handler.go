@@ -70,13 +70,12 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Sanitize name to prevent XSS
 	sanitizedName, valid := utils.SanitizeAndValidate(req.Name, 1, 255)
@@ -92,7 +91,7 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 	}
 
 	channel := &entities.AlertChannel{
-		TenantID: tenantID,
+		UserID:   userID,
 		Type:     req.Type,
 		Name:     sanitizedName,
 		Config:   req.Config,
@@ -119,15 +118,15 @@ func (h *AlertChannelHandler) Create(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /alert-channels [get]
 func (h *AlertChannelHandler) List(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	channels, err := h.alertChannelRepo.GetByTenantID(tenantID)
+	channels, err := h.alertChannelRepo.GetByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve alert channels"})
 		return
@@ -163,13 +162,13 @@ func (h *AlertChannelHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	channel, err := h.alertChannelRepo.GetByID(id)
 	if err != nil {
@@ -181,8 +180,8 @@ func (h *AlertChannelHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Verify that the alert channel belongs to the current tenant
-	if channel.TenantID != tenantID {
+	// Verify that the alert channel belongs to the current user
+	if channel.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -219,13 +218,13 @@ func (h *AlertChannelHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing channel
 	channel, err := h.alertChannelRepo.GetByID(id)
@@ -238,8 +237,8 @@ func (h *AlertChannelHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Verify that the alert channel belongs to the current tenant
-	if channel.TenantID != tenantID {
+	// Verify that the alert channel belongs to the current user
+	if channel.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -288,13 +287,13 @@ func (h *AlertChannelHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing channel to verify ownership
 	channel, err := h.alertChannelRepo.GetByID(id)
@@ -307,8 +306,8 @@ func (h *AlertChannelHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	// Verify that the alert channel belongs to the current tenant
-	if channel.TenantID != tenantID {
+	// Verify that the alert channel belongs to the current user
+	if channel.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
@@ -350,13 +349,13 @@ func (h *AlertChannelHandler) Test(c *gin.Context) {
 		return
 	}
 
-	// Get tenant ID from context for authorization check
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context for authorization check
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
 	// Get existing channel
 	channel, err := h.alertChannelRepo.GetByID(id)
@@ -369,8 +368,8 @@ func (h *AlertChannelHandler) Test(c *gin.Context) {
 		return
 	}
 
-	// Verify that the alert channel belongs to the current tenant
-	if channel.TenantID != tenantID {
+	// Verify that the alert channel belongs to the current user
+	if channel.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}

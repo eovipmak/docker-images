@@ -10,7 +10,7 @@ import (
 type MaintenanceWindowRepository interface {
 	Create(window *entities.MaintenanceWindow) error
 	GetByID(id string) (*entities.MaintenanceWindow, error)
-	GetByTenantID(tenantID int) ([]*entities.MaintenanceWindow, error)
+	GetByUserID(userID int) ([]*entities.MaintenanceWindow, error)
 	GetActiveWindows(now time.Time) ([]*entities.MaintenanceWindow, error)
 	Update(window *entities.MaintenanceWindow) error
 	Delete(id string) error

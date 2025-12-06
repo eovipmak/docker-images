@@ -332,7 +332,7 @@
 	}
 
 	function handleBack() {
-		goto('/monitors');
+		goto('/user/monitors');
 	}
 
 	function getResponseTimeSeriesFromTimes(times: number[], period: '1h' | '6h' | '12h' | '24h' | '1w') {

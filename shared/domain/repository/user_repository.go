@@ -15,4 +15,10 @@ type UserRepository interface {
 
 	// Update updates an existing user
 	Update(user *entities.User) error
+
+	// Delete deletes a user by their ID
+	Delete(id int) error
+
+	// List retrieves all users
+	List() ([]*entities.User, error)
 }

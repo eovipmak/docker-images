@@ -7,12 +7,13 @@
 	let isMenuOpen = false;
     let isProfileOpen = false;
 
-	const navItems = [
-		{ name: 'Dashboard', path: '/dashboard' },
-		{ name: 'Monitors', path: '/monitors' },
-		{ name: 'Incidents', path: '/incidents' },
-        { name: 'Settings', path: '/settings' }
+	export let navItems = [
+		{ name: 'Dashboard', path: '/user/dashboard' },
+		{ name: 'Monitors', path: '/user/monitors' },
+		{ name: 'Incidents', path: '/user/incidents' },
+        { name: 'Settings', path: '/user/settings' }
 	];
+	export let homeLink = '/user/dashboard';
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -45,7 +46,7 @@
 		<div class="flex items-center justify-between h-16 sm:h-20">
 			<!-- Logo -->
 			<div class="flex-shrink-0 flex items-center">
-				<a href="/dashboard" class="flex items-center gap-2 group">
+				<a href={homeLink} class="flex items-center gap-2 group">
                     <div class="relative w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/10 dark:bg-cyan-500/10 group-hover:scale-110 transition-transform duration-300">
                         <svg class="w-5 h-5 text-indigo-600 dark:text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -80,12 +81,12 @@
                 <button 
                     on:click={toggleTheme}
                     class="p-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95
-                           {$themeStore === 'dark' 
+                           {$themeStore 
                                ? 'bg-white/10 text-yellow-400 hover:bg-white/20' 
                                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shadow-sm'}"
                     aria-label="Toggle Dark Mode"
                 >
-                    {#if $themeStore === 'dark'}
+                    {#if $themeStore}
                         <!-- Moon Icon (Solid) for Dark Mode -->
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd" />
@@ -104,9 +105,9 @@
                         on:click={toggleProfile}
                         class="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-gray-200 dark:border-indigo-500/30 bg-gray-50 dark:bg-[#1a1c2e] hover:border-indigo-300 dark:hover:border-cyan-500/50 transition-colors"
                     >
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{$authStore.user?.username || 'User'}</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{$authStore.currentUser?.email || 'User'}</span>
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                            {($authStore.user?.username || 'U').charAt(0).toUpperCase()}
+                            {($authStore.currentUser?.email || 'U').charAt(0).toUpperCase()}
                         </div>
                     </button>
 

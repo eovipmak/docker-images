@@ -66,16 +66,16 @@ type DashboardData struct {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /dashboard/stats [get]
 func (h *DashboardHandler) GetStats(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	// Get all monitors for tenant
-	monitors, err := h.monitorRepo.GetByTenantID(tenantID)
+	// Get all monitors for user
+	monitors, err := h.monitorRepo.GetByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get monitors"})
 		return
@@ -127,13 +127,13 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 	}
 
 	// Get global average response time (24h period)
-	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(tenantID, "24h")
+	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(userID, "24h")
 	if err == nil {
 		stats.AverageResponseTime = avgResponseTime
 	}
 
 	// Get overall uptime (24h period)
-	uptime, err := h.metricsService.GetGlobalUptime(tenantID, "24h")
+	uptime, err := h.metricsService.GetGlobalUptime(userID, "24h")
 	if err == nil && uptime != nil {
 		stats.OverallUptime = uptime.Percentage
 	}
@@ -153,16 +153,16 @@ func (h *DashboardHandler) GetStats(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /dashboard [get]
 func (h *DashboardHandler) GetDashboard(c *gin.Context) {
-	// Get tenant ID from context (set by middleware)
-	tenantIDValue, exists := c.Get("tenant_id")
+	// Get user ID from context (set by middleware)
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "tenant context not found"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context not found"})
 		return
 	}
-	tenantID := tenantIDValue.(int)
+	userID := userIDValue.(int)
 
-	// Get all monitors for tenant
-	monitors, err := h.monitorRepo.GetByTenantID(tenantID)
+	// Get all monitors for user
+	monitors, err := h.monitorRepo.GetByUserID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get monitors"})
 		return
@@ -238,13 +238,13 @@ func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 	}
 
 	// Get global average response time (24h period)
-	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(tenantID, "24h")
+	avgResponseTime, err := h.metricsService.GetGlobalAverageResponseTime(userID, "24h")
 	if err == nil {
 		stats.AverageResponseTime = avgResponseTime
 	}
 
 	// Get overall uptime (24h period)
-	uptime, err := h.metricsService.GetGlobalUptime(tenantID, "24h")
+	uptime, err := h.metricsService.GetGlobalUptime(userID, "24h")
 	if err == nil && uptime != nil {
 		stats.OverallUptime = uptime.Percentage
 	}

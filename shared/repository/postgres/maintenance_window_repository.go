@@ -21,14 +21,14 @@ func NewMaintenanceWindowRepository(db *sqlx.DB) repository.MaintenanceWindowRep
 
 func (r *maintenanceWindowRepository) Create(window *entities.MaintenanceWindow) error {
 	query := `
-		INSERT INTO maintenance_windows (tenant_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at)
+		INSERT INTO maintenance_windows (user_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 
 	err := r.db.QueryRow(
 		query,
-		window.TenantID,
+		window.UserID,
 		window.Name,
 		window.StartTime,
 		window.EndTime,
@@ -47,7 +47,7 @@ func (r *maintenanceWindowRepository) Create(window *entities.MaintenanceWindow)
 func (r *maintenanceWindowRepository) GetByID(id string) (*entities.MaintenanceWindow, error) {
 	window := &entities.MaintenanceWindow{}
 	query := `
-		SELECT id, tenant_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
+		SELECT id, user_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
 		FROM maintenance_windows
 		WHERE id = $1
 	`
@@ -63,16 +63,16 @@ func (r *maintenanceWindowRepository) GetByID(id string) (*entities.MaintenanceW
 	return window, nil
 }
 
-func (r *maintenanceWindowRepository) GetByTenantID(tenantID int) ([]*entities.MaintenanceWindow, error) {
+func (r *maintenanceWindowRepository) GetByUserID(userID int) ([]*entities.MaintenanceWindow, error) {
 	var windows []*entities.MaintenanceWindow
 	query := `
-		SELECT id, tenant_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
+		SELECT id, user_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
 		FROM maintenance_windows
-		WHERE tenant_id = $1
+		WHERE user_id = $1
 		ORDER BY start_time DESC
 	`
 
-	err := r.db.Select(&windows, query, tenantID)
+	err := r.db.Select(&windows, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get maintenance windows: %w", err)
 	}
@@ -87,7 +87,7 @@ func (r *maintenanceWindowRepository) GetActiveWindows(now time.Time) ([]*entiti
 	// For now, let's just fetch windows where now is between start and end.
 
 	query := `
-		SELECT id, tenant_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
+		SELECT id, user_id, name, start_time, end_time, repeat_interval, monitor_ids, tags, created_at, updated_at
 		FROM maintenance_windows
 		WHERE start_time <= $1 AND ((end_time >= $1) OR (repeat_interval > 0))
 	`

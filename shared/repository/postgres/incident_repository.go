@@ -23,8 +23,8 @@ func NewIncidentRepository(db *sqlx.DB) repository.IncidentRepository {
 // Create creates a new incident in the database
 func (r *incidentRepository) Create(incident *entities.Incident) error {
 	query := `
-		INSERT INTO incidents (monitor_id, alert_rule_id, started_at, status, trigger_value, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
+		INSERT INTO incidents (monitor_id, alert_rule_id, user_id, started_at, status, trigger_value, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
 		RETURNING id, created_at
 	`
 
@@ -32,6 +32,7 @@ func (r *incidentRepository) Create(incident *entities.Incident) error {
 		query,
 		incident.MonitorID,
 		incident.AlertRuleID,
+		incident.UserID,
 		incident.StartedAt,
 		incident.Status,
 		incident.TriggerValue,
@@ -172,10 +173,10 @@ func (r *incidentRepository) List(filters repository.IncidentFilters) ([]*entiti
 		FROM incidents i
 		INNER JOIN monitors m ON i.monitor_id = m.id
 		LEFT JOIN alert_rules ar ON i.alert_rule_id = ar.id
-		WHERE m.tenant_id = $1
+		WHERE m.user_id = $1
 	`
 	
-	args := []interface{}{filters.TenantID}
+	args := []interface{}{filters.UserID}
 	argCount := 1
 
 	// Add status filter
@@ -237,7 +238,7 @@ func (r *incidentRepository) GetUnnotifiedIncidents() ([]*entities.Incident, err
 		SELECT
 			i.id,
 			i.monitor_id,
-			m.tenant_id,
+			m.user_id,
 			m.name as monitor_name,
 			m.url as monitor_url,
 			i.alert_rule_id,
