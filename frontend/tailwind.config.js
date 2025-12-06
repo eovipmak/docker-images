@@ -16,8 +16,15 @@ export default {
 					700: '#374151',
 					800: '#1f2937',
 					900: '#111827',
-					950: '#0f172a'
+					950: '#050505' // Darker background
+				},
+				brand: {
+					orange: '#FF6B00',
+					blue: '#00C2FF'
 				}
+			},
+			fontFamily: {
+				sans: ['Outfit', 'sans-serif'],
 			}
 		}
 	},

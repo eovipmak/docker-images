@@ -97,10 +97,11 @@
 							text: 'Count'
 						},
 						grid: {
-							color: '#E5E7EB'
+							color: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
 						},
 						ticks: {
-							precision: 0
+							precision: 0,
+                            color: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? '#9ca3af' : '#6b7280'
 						}
 					}
 				}

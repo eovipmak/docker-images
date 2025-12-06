@@ -36,6 +36,7 @@ export let timeUnit: 'minute' | 'hour' | 'day' | undefined = undefined;
 export let spanGapsProp: boolean | undefined = undefined; // allow caller to request spanning gaps
 	export let suggestedMax: number | undefined = undefined;
 	export let fillOpacity: number = 0.2; // Opacity for area fill (0-1)
+    export let dark: boolean = false;
 
 	let canvas: HTMLCanvasElement;
 	let chart: any = null;
@@ -130,6 +131,11 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 		updateChart();
 	}
 
+    // Update chart when theme changes
+    $: if (chart && (dark !== undefined)) {
+        updateTheme();
+    }
+
 	function createChart() {
 		if (!canvas) return;
 
@@ -138,8 +144,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 
 		const datasets = getDatasets();
 		// Chart.js typings are strict about dataset generics; cast to any here to avoid complex generic plumbing
-		// Detect dark mode
-		const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
 		chart = new Chart(ctx as any, {
 			type: 'line',
 			data: {
@@ -183,7 +188,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 							display: false
 						},
 						ticks: {
-							color: isDark ? color : '#334155', // Use main chart color for darkmode ticks
+							color: dark ? color : '#334155', // Use main chart color for darkmode ticks
 							font: {
 								weight: '600',
 								size: 13
@@ -200,7 +205,7 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 							text: yAxisLabel
 						},
 						grid: {
-							color: '#E5E7EB'
+							color: dark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB'
 						}
 					}
 				},
@@ -212,6 +217,18 @@ export let spanGapsProp: boolean | undefined = undefined; // allow caller to req
 			}
 		} as any);
 	}
+
+	function updateTheme() {
+        if (!chart) return;
+        
+        if (chart.options.scales.x) {
+            chart.options.scales.x.ticks.color = dark ? color : '#334155';
+        }
+        if (chart.options.scales.y) {
+            chart.options.scales.y.grid.color = dark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB';
+        }
+        chart.update();
+    }
 
 	function updateChart() {
 		if (!chart) return;
