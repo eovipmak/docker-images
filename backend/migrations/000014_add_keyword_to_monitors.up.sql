@@ -1,1 +1,0 @@
-ALTER TABLE monitors ADD COLUMN keyword TEXT NOT NULL DEFAULT '';

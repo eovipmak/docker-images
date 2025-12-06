@@ -137,7 +137,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} map[string]interface{} "User information including id, email, and tenant_id"
+// @Success 200 {object} map[string]interface{} "User information including id and email"
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "User not found"
 // @Router /auth/me [get]

@@ -7,7 +7,7 @@ describe('MonitorCard', () => {
   it('renders monitor content and link', () => {
     const monitor: Monitor = {
       id: 'mon-1',
-      tenant_id: 1,
+      user_id: 1,
       name: 'Example Monitor',
       url: 'https://example.com',
       type: 'http',

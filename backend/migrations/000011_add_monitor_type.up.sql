@@ -1,1 +1,0 @@
-ALTER TABLE monitors ADD COLUMN type VARCHAR(10) DEFAULT 'http';

@@ -23,7 +23,6 @@ test.describe('UI Authentication Tests', () => {
     
     // Check for required form elements
     await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('input[name="tenantName"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
     await expect(page.locator('input[name="confirmPassword"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -53,14 +52,12 @@ test.describe('UI Authentication Tests', () => {
     const timestamp = Date.now();
     const email = `ui-auth-test-${timestamp}@example.com`;
     const password = 'testpassword123';
-    const tenantName = `UI Auth Tenant ${timestamp}`;
 
     // Register new user via backend API first
     const registerRes = await request.post(`${BACKEND_URL}${API_BASE}/auth/register`, {
       data: {
         email,
         password,
-        tenant_name: tenantName,
       },
     });
     expect(registerRes.ok()).toBeTruthy();
@@ -87,14 +84,12 @@ test.describe('UI Authentication Tests', () => {
     const timestamp = Date.now();
     const email = `ui-register-test-${timestamp}@example.com`;
     const password = 'testpassword123';
-    const tenantName = `UI Register Tenant ${timestamp}`;
 
     await page.goto('/register');
     await page.waitForLoadState('networkidle');
     
     // Fill in registration form
     await page.locator('input[name="email"]').fill(email);
-    await page.locator('input[name="tenantName"]').fill(tenantName);
     await page.locator('input[name="password"]').fill(password);
     await page.locator('input[name="confirmPassword"]').fill(password);
     
@@ -116,7 +111,6 @@ test.describe('UI Authentication Tests', () => {
     
     // Fill in registration form with mismatched passwords
     await page.locator('input[name="email"]').fill(`mismatch-${timestamp}@example.com`);
-    await page.locator('input[name="tenantName"]').fill(`Mismatch Tenant ${timestamp}`);
     await page.locator('input[name="password"]').fill('password123');
     await page.locator('input[name="confirmPassword"]').fill('differentpassword');
     

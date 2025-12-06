@@ -1,6 +1,6 @@
-# V-Insight — Multi-tenant Monitoring SaaS
+# V-Insight — Monitoring SaaS
 
-V-Insight is a Docker-based multi-tenant monitoring platform with a focus on reliability and observability. It includes an API backend, background worker jobs, and a SvelteKit frontend with a CORS-free API proxy.
+V-Insight is a Docker-based monitoring platform with a focus on reliability and observability. It includes an API backend, background worker jobs, and a SvelteKit frontend with a CORS-free API proxy.
 
 - Backend: Go, Gin (port 8080)
 - Worker: Go (port 8081)
@@ -14,7 +14,7 @@ V-Insight is a Docker-based multi-tenant monitoring platform with a focus on rel
 
 V-Insight performs automated health checks (HTTP/HTTPS) and SSL expiry monitoring, evaluates alert rules, creates incidents, and notifies configured channels (webhook, Discord, email-ready).
 
-It supports multi-tenant isolation via `tenant_id` on all main tables and enforces tenant-scoped queries consistently in handlers and repositories.
+It supports user isolation via `user_id` on all main tables and enforces user-scoped queries consistently in handlers and repositories.
 
 **Architecture Refactoring:** The project now uses a **Go Workspace** (`go.work`) with a `shared` module to centralize domain logic and repositories, reducing duplication between Backend and Worker services.
 
@@ -80,7 +80,7 @@ Tips:
 To make it easier for LLMs, bots, or automation agents to work in this repo, see `docs/ai_agents.md`. Key notes:
 
 - API proxy: `frontend/src/routes/api/[...path]/+server.ts` — **do NOT** add CORS middleware.
-- Multi-tenant: Always include and verify `tenant_id` context when querying or modifying tenant-scoped resources.
+- User Isolation: Always include and verify `user_id` context when querying or modifying user-scoped resources.
 - Migrations: Located in `backend/migrations/` — use `make migrate-create` then edit up/down SQL files; run `make migrate-up`.
 - Tests: Backend/Worker use Go tests. Ensure tests pass before opening PRs.
 

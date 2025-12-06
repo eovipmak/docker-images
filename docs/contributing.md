@@ -14,7 +14,7 @@ Thank you for your interest in contributing to v-insight! This document explains
 ### When submitting PRs via automation / AI agents
 
 - Keep changes small and well-scoped — larger changes should be broken up into multiple PRs.
-- Include tests that validate the change and the multi-tenant behavior if relevant.
+- Include tests that validate the change and the user isolation behavior if relevant.
 - Verify the change locally:
    - Backend: `cd backend && go test ./...`
    - Frontend: `cd frontend && npm run check`

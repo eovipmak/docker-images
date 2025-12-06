@@ -1,6 +1,6 @@
 export interface Monitor {
     id: string;
-    tenant_id: number;
+    user_id: number;
     name: string;
     url: string;
     type: 'http' | 'tcp' | 'ping' | 'icmp';
@@ -36,7 +36,7 @@ export interface MonitorCheck {
 
 export interface MaintenanceWindow {
     id: string;
-    tenant_id: number;
+    user_id: number;
     name: string;
     start_time: string;
     end_time: string;

@@ -86,7 +86,7 @@ The project has a suite of tests for each component.
 
 ## Development Conventions
 
-*   **Multi-tenancy:** The backend enforces multi-tenant behavior. All persisted objects include a `tenant_id`.
+*   **User Isolation:** The backend enforces user isolation. All persisted objects include a `user_id`.
 *   **CORS:** The frontend uses a server-side proxy to handle API requests, so there is no need to configure CORS in the backend.
 *   **Database Migrations:** Database migrations are located in the `backend/migrations` directory and are run automatically at startup. New migrations should be created using the `make migrate-create` command.
 *   **API Documentation:** The backend API is documented using Swagger. The documentation is available at `/swagger/` in the development environment.

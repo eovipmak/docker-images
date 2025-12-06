@@ -8,7 +8,7 @@ describe('MonitorList', () => {
     const monitors: Monitor[] = [
       {
         id: '1',
-        tenant_id: 1,
+        user_id: 1,
         name: 'A',
         url: 'https://a.example',
         type: 'http',
@@ -24,7 +24,7 @@ describe('MonitorList', () => {
       },
       {
         id: '2',
-        tenant_id: 1,
+        user_id: 1,
         name: 'B',
         url: 'https://b.example',
         type: 'http',

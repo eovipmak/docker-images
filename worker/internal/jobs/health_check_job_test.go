@@ -14,7 +14,7 @@ func TestMonitor_StructFields(t *testing.T) {
 	now := time.Now()
 	monitor := entities.Monitor{
 		ID:            "test-id",
-		TenantID:      1,
+		UserID:        1,
 		Name:          "Test Monitor",
 		URL:           "https://example.com",
 		CheckInterval: 300,
@@ -28,8 +28,8 @@ func TestMonitor_StructFields(t *testing.T) {
 	if monitor.ID != "test-id" {
 		t.Errorf("Expected ID 'test-id', got '%s'", monitor.ID)
 	}
-	if monitor.TenantID != 1 {
-		t.Errorf("Expected TenantID 1, got %d", monitor.TenantID)
+	if monitor.UserID != 1 {
+		t.Errorf("Expected UserID 1, got %d", monitor.UserID)
 	}
 	if monitor.Name != "Test Monitor" {
 		t.Errorf("Expected Name 'Test Monitor', got '%s'", monitor.Name)
