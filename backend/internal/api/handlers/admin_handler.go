@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/eovipmak/v-insight/backend/internal/auth"
+	"github.com/eovipmak/v-insight/shared/domain/entities"
 	"github.com/eovipmak/v-insight/shared/domain/repository"
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +24,20 @@ func NewAdminHandler(userRepo repository.UserRepository, monitorRepo repository.
 		monitorRepo:   monitorRepo,
 		alertRuleRepo: alertRuleRepo,
 	}
+}
+
+// CreateUserRequest represents the create user request body
+type CreateUserRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
+	Role     string `json:"role" binding:"required,oneof=user admin"`
+}
+
+// UpdateUserRequest represents the update user request body
+type UpdateUserRequest struct {
+	Email    string `json:"email,omitempty" binding:"omitempty,email"`
+	Password string `json:"password,omitempty" binding:"omitempty,min=6"`
+	Role     string `json:"role,omitempty" binding:"omitempty,oneof=user admin"`
 }
 
 // ListUsers godoc
@@ -43,6 +59,88 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, users)
+}
+
+// CreateUser godoc
+// @Summary Create a new user
+// @Description Create a new user account (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body CreateUserRequest true "User creation details"
+// @Success 201 {object} entities.User "User created successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 409 {object} map[string]string "User already exists"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/users [post]
+func (h *AdminHandler) CreateUser(c *gin.Context) {
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if user already exists
+	existingUser, err := h.userRepo.GetByEmail(req.Email)
+	if err == nil && existingUser != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "user with this email already exists"})
+		return
+	}
+
+	// Hash password
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	// Create user
+	user := &entities.User{
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		Role:         req.Role,
+	}
+	if err := h.userRepo.Create(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
+// GetUser godoc
+// @Summary Get a user by ID
+// @Description Get details of a specific user (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Success 200 {object} entities.User "User details"
+// @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/users/{id} [get]
+func (h *AdminHandler) GetUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	user, err := h.userRepo.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
 // DeleteUser godoc
@@ -75,6 +173,78 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "user deleted successfully"})
+}
+
+// UpdateUser godoc
+// @Summary Update a user
+// @Description Update a user's details including password (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "User ID"
+// @Param request body UpdateUserRequest true "User update details"
+// @Success 200 {object} entities.User "User updated successfully"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 409 {object} map[string]string "Email already in use"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/users/{id} [put]
+func (h *AdminHandler) UpdateUser(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get existing user
+	user, err := h.userRepo.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	// Check if email is being changed and if it's already in use
+	if req.Email != "" && req.Email != user.Email {
+		existingUser, err := h.userRepo.GetByEmail(req.Email)
+		if err == nil && existingUser != nil && existingUser.ID != id {
+			c.JSON(http.StatusConflict, gin.H{"error": "email already in use"})
+			return
+		}
+		user.Email = req.Email
+	}
+
+	// Update role if provided
+	if req.Role != "" {
+		user.Role = req.Role
+	}
+
+	// Update password if provided
+	if req.Password != "" {
+		hashedPassword, err := auth.HashPassword(req.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+			return
+		}
+		user.PasswordHash = hashedPassword
+	}
+
+	// Update user
+	if err := h.userRepo.Update(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }
 
 // ListMonitors godoc

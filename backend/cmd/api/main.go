@@ -311,6 +311,9 @@ func main() {
 	admin.Use(authMiddleware.AuthRequired(), authMiddleware.AdminRequired())
 	{
 		admin.GET("/users", adminHandler.ListUsers)
+		admin.POST("/users", adminHandler.CreateUser)
+		admin.GET("/users/:id", adminHandler.GetUser)
+		admin.PUT("/users/:id", adminHandler.UpdateUser)
 		admin.DELETE("/users/:id", adminHandler.DeleteUser)
 		admin.GET("/monitors", adminHandler.ListMonitors)
 		admin.GET("/alert-rules", adminHandler.ListAlertRules)

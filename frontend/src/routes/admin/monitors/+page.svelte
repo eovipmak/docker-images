@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
     import MonitorStatus from '$lib/components/MonitorStatus.svelte';
 
@@ -95,7 +96,11 @@
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-white">{monitor.name}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate" title={monitor.url}>{monitor.url}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300 uppercase">{monitor.type}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{monitor.user_id}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                    <a href="/admin/view-user/{monitor.user_id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                        {monitor.user_id}
+                                    </a>
+                                </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
                                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {monitor.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}">
                                         {monitor.enabled ? 'Enabled' : 'Disabled'}

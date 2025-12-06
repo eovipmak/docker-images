@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { fetchAPI } from '$lib/api/client';
     import { authStore } from '$lib/stores/auth';
     import ConfirmModal from '$lib/components/ConfirmModal.svelte';
@@ -72,9 +73,20 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
             <p class="text-gray-500 dark:text-gray-400">View and manage system users.</p>
         </div>
-        <button on:click={loadUsers} class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        </button>
+        <div class="flex space-x-3">
+            <button on:click={loadUsers} class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+            <button
+                on:click={() => goto('/admin/create-user')}
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create User
+            </button>
+        </div>
     </div>
 
     {#if error}
@@ -114,7 +126,7 @@
                         </tr>
                     {:else}
                         {#each users as user}
-                            <tr>
+                            <tr class="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700" on:click={() => goto(`/admin/view-user/${user.id}`)}>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">{user.id}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">{user.email}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
@@ -126,7 +138,7 @@
                                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                     {#if user.id !== $authStore.currentUser?.id}
                                         <button 
-                                            on:click={() => handleDelete(user)}
+                                            on:click|stopPropagation={() => handleDelete(user)}
                                             class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                                             disabled={isDeleting}
                                         >
