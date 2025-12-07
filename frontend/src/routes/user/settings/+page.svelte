@@ -9,7 +9,7 @@
 	<title>Settings - V-Insight</title>
 </svelte:head>
 
-<div class="px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	<div class="sm:flex sm:items-center">
 		<div class="sm:flex-auto">
 			<h1 class="text-2xl font-semibold leading-6 text-slate-900 dark:text-white">Settings</h1>

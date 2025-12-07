@@ -27,6 +27,37 @@ func NewAuthService(
 	}
 }
 
+// ChangePassword verifies the current password and updates it with the new one
+func (s *AuthService) ChangePassword(userID int, currentPassword, newPassword string) error {
+	if newPassword == "" {
+		return errors.New("new password is required")
+	}
+
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	// Verify current password before updating
+	if err := auth.VerifyPassword(user.PasswordHash, currentPassword); err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Hash new password
+	hashedPassword, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash new password: %w", err)
+	}
+
+	user.PasswordHash = hashedPassword
+
+	if err := s.userRepo.Update(user); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
+}
+
 // Register creates a new user, returns JWT token
 func (s *AuthService) Register(email, password string) (string, error) {
 	// Validate inputs
@@ -104,5 +135,3 @@ func (s *AuthService) ValidateToken(tokenString string) (int, string, error) {
 
 	return claims.UserID, claims.Role, nil
 }
-
-

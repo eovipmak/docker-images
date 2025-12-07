@@ -4,6 +4,7 @@
     import AlertRuleModal from '$lib/components/AlertRuleModal.svelte';
     import AlertChannelModal from '$lib/components/AlertChannelModal.svelte';
     import AlertCard from '$lib/components/AlertCard.svelte';
+    import Card from '$lib/components/Card.svelte';
     import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
     type Tab = 'rules' | 'channels';
@@ -20,11 +21,36 @@
     let selectedRule: any = null;
     let selectedChannel: any = null;
 
+    // Search and sort
+    let searchQuery = '';
+    let sortBy = 'name';
+    let sortDirection: 'asc' | 'desc' = 'asc';
+
     // Confirm modal state
     let isConfirmModalOpen = false;
     let confirmTitle = '';
     let confirmMessage = '';
     let onConfirmCallback: (() => void) | null = null;
+
+    function applySort(a: any, b: any) {
+        let cmp = 0;
+        if (sortBy === 'name') {
+            cmp = a.name.localeCompare(b.name);
+        } else if (sortBy === 'status') {
+            cmp = (a.enabled ? 1 : 0) - (b.enabled ? 1 : 0);
+        }
+        return sortDirection === 'asc' ? cmp : -cmp;
+    }
+
+    $: filteredRules = alertRules
+        .filter(rule => rule.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        getTriggerTypeLabel(rule.trigger_type).toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort(applySort);
+
+    $: filteredChannels = alertChannels
+        .filter(channel => channel.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           getChannelTypeLabel(channel.type).toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort(applySort);
 
     onMount(() => {
         loadData();
@@ -253,35 +279,78 @@
     <title>Alerts - V-Insight</title>
 </svelte:head>
 
-<div class="px-4 sm:px-6 lg:px-8 py-8">
-    <div class="sm:flex sm:items-center">
-        <div class="sm:flex-auto">
-            <h1 class="text-2xl font-semibold leading-6 text-slate-900 dark:text-slate-100">Alerts</h1>
-            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Manage alert rules and notification channels to stay informed about your infrastructure.</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Alerts</h1>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Manage alert rules and notification channels to stay informed about your infrastructure.</p>
         </div>
-    </div>
-
-    <!-- Tabs -->
-    <div class="mt-6 border-b border-slate-200">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <div class="flex items-center gap-3">
             <button
                 on:click={() => (activeTab = 'rules')}
-                class="{activeTab === 'rules'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors"
+                class={`px-3 py-2 text-sm font-medium rounded-lg border ${activeTab === 'rules' ? 'border-blue-200 text-blue-700 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-900/20' : 'border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700'}`}
             >
-                Alert Rules
+                Rules
             </button>
             <button
                 on:click={() => (activeTab = 'channels')}
-                class="{activeTab === 'channels'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'} whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors"
+                class={`px-3 py-2 text-sm font-medium rounded-lg border ${activeTab === 'channels' ? 'border-blue-200 text-blue-700 bg-blue-50 dark:border-blue-900/50 dark:bg-blue-900/20' : 'border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700'}`}
             >
-                Alert Channels
+                Channels
             </button>
-        </nav>
+            <button
+                on:click={activeTab === 'rules' ? handleCreateRule : handleCreateChannel}
+                class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                {activeTab === 'rules' ? 'Add Rule' : 'Add Channel'}
+            </button>
+        </div>
     </div>
+
+    <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row gap-3 flex-1">
+            <div class="relative max-w-md w-full">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path>
+                    </svg>
+                </div>
+                <input 
+                    bind:value={searchQuery}
+                    type="text" 
+                    placeholder={`Search ${activeTab}...`} 
+                    class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-white"
+                >
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <select 
+                bind:value={sortBy}
+                class="block w-full rounded-lg border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+            >
+                <option value="name">Name</option>
+                <option value="status">Status</option>
+            </select>
+            <button
+                class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                on:click={() => (sortDirection = sortDirection === 'asc' ? 'desc' : 'asc')}
+                title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            >
+                {#if sortDirection === 'asc'}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25"></path>
+                    </svg>
+                {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-8.25L17.25 9m0 0L21 12.75M17.25 9v12"></path>
+                    </svg>
+                {/if}
+            </button>
+        </div>
+    </Card>
 
     {#if isLoading}
         <div class="flex items-center justify-center py-12">
@@ -306,23 +375,14 @@
     {:else if activeTab === 'rules'}
         <!-- Alert Rules Tab -->
         <div class="mt-6">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center mb-4">
                 <p class="text-sm text-slate-600">
-                    {alertRules.length} rule{alertRules.length !== 1 ? 's' : ''} configured
+                    {filteredRules.length} rule{filteredRules.length !== 1 ? 's' : ''} configured
                 </p>
-                <button
-                    on:click={handleCreateRule}
-                    class="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
-                >
-                    <svg class="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clip-rule="evenodd" />
-                    </svg>
-                    Create Rule
-                </button>
             </div>
 
             <div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden">
-                {#if alertRules.length === 0}
+                {#if filteredRules.length === 0}
                     <div class="text-center py-12 px-4">
                         <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -344,7 +404,7 @@
                 {:else}
                     <div class="p-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {#each alertRules as rule (rule.id)}
+                            {#each filteredRules as rule (rule.id)}
                                 <div class="group">
                                     <AlertCard {rule} on:edit={() => handleEditRule(rule)} on:delete={() => handleDeleteRule(rule)} />
                                 </div>
@@ -359,7 +419,7 @@
         <div class="mt-6">
             <div class="flex justify-between items-center mb-4">
                 <p class="text-sm text-slate-600 dark:text-slate-400">
-                    {alertChannels.length} channel{alertChannels.length !== 1 ? 's' : ''} configured
+                    {filteredChannels.length} channel{filteredChannels.length !== 1 ? 's' : ''} configured
                 </p>
                 <button
                     on:click={handleCreateChannel}
@@ -373,7 +433,7 @@
             </div>
 
             <div class="bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg overflow-hidden">
-                {#if alertChannels.length === 0}
+                {#if filteredChannels.length === 0}
                     <div class="text-center py-12 px-4">
                         <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -395,7 +455,7 @@
                 {:else}
                     <!-- Mobile Card View -->
                     <div class="block md:hidden divide-y divide-slate-200 dark:divide-slate-700">
-                        {#each alertChannels as channel (channel.id)}
+                        {#each filteredChannels as channel (channel.id)}
                             <div class="p-4">
                                 <div class="flex items-start justify-between mb-2">
                                     <div>
@@ -461,7 +521,7 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                                {#each alertChannels as channel (channel.id)}
+                                {#each filteredChannels as channel (channel.id)}
                                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                                         <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{channel.name}</td>
                                         <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">

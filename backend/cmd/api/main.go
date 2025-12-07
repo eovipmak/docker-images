@@ -92,10 +92,10 @@ func main() {
 	// Apply global middleware
 	// Request logging (structured JSON logs)
 	router.Use(middleware.RequestLogger())
-	
+
 	// Recovery middleware
 	router.Use(gin.Recovery())
-	
+
 	// Security headers (all routes)
 	router.Use(middleware.SecurityHeaders(middleware.SecurityConfig{
 		HSTSMaxAge:            cfg.Security.HSTSMaxAge,
@@ -249,6 +249,9 @@ func main() {
 	protected := api.Group("/")
 	protected.Use(authMiddleware.AuthRequired())
 	{
+		// Auth endpoints (protected)
+		protected.POST("/auth/change-password", authHandler.ChangePassword)
+
 		// Monitor endpoints
 		protected.POST("/monitors", monitorHandler.Create)
 		protected.GET("/monitors", monitorHandler.List)

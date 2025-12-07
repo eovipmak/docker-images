@@ -26,7 +26,7 @@
 </script>
 
 {#if $authStore.isAuthenticated}
-    <div class="min-h-screen bg-gray-50 dark:bg-[#0b0c15]">
+    <div class="min-h-screen bg-slate-100 dark:bg-[#0b0c15]">
         <Navbar {navItems} homeLink="/user/dashboard" />
         <main class="w-full">
             <slot />

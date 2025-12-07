@@ -259,5 +259,5 @@ CREATE TRIGGER trigger_maintenance_windows_updated_at
 
 -- Seed demo user (optional, can be removed if not needed)
 INSERT INTO users (email, password_hash, role)
-VALUES ('test@gmail.com', '$2a$10$3XjX/./././././././././', 'admin')
+VALUES ('test@gmail.com', '$2a$10$HnStfiQq0siSL9fn7/DIDeV/6WxLzsK1r9/AxRgCzamqSnWi6CPza', 'admin')
 ON CONFLICT (email) DO NOTHING;

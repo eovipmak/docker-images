@@ -217,8 +217,8 @@
 	<title>Maintenance Windows - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto">
-	<div class="flex justify-between items-center mb-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
 			<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Maintenance Windows</h1>
 			<p class="text-slate-600 dark:text-slate-400 mt-1">
@@ -227,7 +227,7 @@
 		</div>
 		<button
 			on:click={openCreateModal}
-			class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+			class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -278,7 +278,7 @@
 				</p>
 				<button
 					on:click={openCreateModal}
-					class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 				>
 					Schedule Your First Maintenance
 				</button>
@@ -350,7 +350,7 @@
 						<div class="flex gap-2 ml-4">
 							<button
 								on:click={() => openEditModal(window)}
-								class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+								class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
 								title="Edit"
 							>
 								<svg
@@ -370,7 +370,7 @@
 							</button>
 							<button
 								on:click={() => confirmDelete(window)}
-								class="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+								class="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
 								title="Delete"
 							>
 								<svg

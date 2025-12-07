@@ -85,7 +85,7 @@
 	<title>{monitor?.name || 'Monitor Details'} - V-Insight</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
 	{#if isLoading}
 		<div class="flex items-center justify-center py-12">
 			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>

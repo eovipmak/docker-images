@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fetchAPI } from '$lib/api/client';
+	import Card from '$lib/components/Card.svelte';
 	import IncidentTable from '$lib/components/IncidentTable.svelte';
 
 	let incidents: any[] = [];
@@ -84,16 +85,16 @@
 	<title>Incidents - V-Insight</title>
 </svelte:head>
 
-<div class="px-4 sm:px-6 lg:px-8 py-8">
-	<div class="sm:flex sm:items-center">
-		<div class="sm:flex-auto">
-			<h1 class="text-2xl font-semibold leading-6 text-slate-900 dark:text-white">Incidents</h1>
-			<p class="mt-2 text-sm text-slate-600 dark:text-slate-400">View and manage incidents detected by your monitors.</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+		<div>
+			<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Incidents</h1>
+			<p class="mt-1 text-sm text-slate-600 dark:text-slate-400">View and manage incidents detected by your monitors.</p>
 		</div>
 	</div>
 
 	<!-- Filters -->
-	<div class="mt-8 bg-white dark:bg-slate-800 shadow-sm ring-1 ring-slate-900/5 dark:ring-slate-700 sm:rounded-lg p-6">
+	<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-none">
 		<form on:submit|preventDefault={handleFilterSubmit} class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
 			<div class="sm:col-span-2">
 				<label for="status" class="block text-sm font-medium leading-6 text-slate-900 dark:text-white">Status</label>
@@ -101,7 +102,7 @@
 					<select
 						id="status"
 						bind:value={statusFilter}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-lg border border-slate-500 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 px-3 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="">All Statuses</option>
 						<option value="open">Open</option>
@@ -116,7 +117,7 @@
 					<select
 						id="monitor"
 						bind:value={monitorFilter}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-lg border border-slate-500 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 px-3 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="">All Monitors</option>
 						{#each monitors as monitor}
@@ -133,7 +134,7 @@
 						type="date"
 						id="from-date"
 						bind:value={fromDate}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-lg border border-slate-500 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 px-3 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 			</div>
@@ -145,7 +146,7 @@
 						type="date"
 						id="to-date"
 						bind:value={toDate}
-						class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-white dark:bg-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						class="block w-full rounded-lg border border-slate-500 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 px-3 text-sm text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
 					/>
 				</div>
 			</div>
@@ -154,13 +155,13 @@
 				<button
 					type="button"
 					on:click={handleResetFilters}
-					class="rounded-md bg-white dark:bg-slate-700 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
+					class="inline-flex items-center justify-center px-4 py-2 border border-slate-200 dark:border-slate-700 text-sm font-medium rounded-lg text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
 				>
 					Reset
 				</button>
 				<button
 					type="submit"
-					class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+					class="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
 				>
 					Apply Filters
 				</button>

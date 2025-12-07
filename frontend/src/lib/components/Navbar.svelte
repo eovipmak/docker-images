@@ -116,7 +116,7 @@
                             transition:slide={{ duration: 200 }}
                             class="absolute right-0 mt-2 w-48 rounded-xl shadow-lg py-1 bg-white dark:bg-[#1a1c2e] ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-100 dark:border-indigo-500/20"
                         >
-                            <a href="/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5">Your Profile</a>
+                            <a href="/user/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5">Your Profile</a>
                             <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5">Settings</a>
                             <button on:click={authStore.logout} class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10">Sign out</button>
                         </div>
