@@ -129,7 +129,7 @@ func main() {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
-	adminHandler := handlers.NewAdminHandler(userRepo, monitorRepo, alertRuleRepo)
+	adminHandler := handlers.NewAdminHandler(userRepo, monitorRepo, alertRuleRepo, alertChannelRepo)
 	monitorHandler := handlers.NewMonitorHandler(monitorRepo, alertRuleRepo, alertChannelRepo, monitorService)
 	metricsHandler := handlers.NewMetricsHandler(metricsService, monitorRepo)
 	alertRuleHandler := handlers.NewAlertRuleHandler(alertRuleRepo, alertChannelRepo, monitorRepo)
@@ -319,7 +319,11 @@ func main() {
 		admin.PUT("/users/:id", adminHandler.UpdateUser)
 		admin.DELETE("/users/:id", adminHandler.DeleteUser)
 		admin.GET("/monitors", adminHandler.ListMonitors)
+		admin.GET("/monitors/:id", adminHandler.GetMonitor)
 		admin.GET("/alert-rules", adminHandler.ListAlertRules)
+		admin.GET("/alert-rules/:id", adminHandler.GetAlertRule)
+		admin.GET("/alert-channels", adminHandler.ListAlertChannels)
+		admin.GET("/alert-channels/:id", adminHandler.GetAlertChannel)
 	}
 
 	// Start server

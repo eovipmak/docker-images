@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -9,7 +8,7 @@ import (
 type AlertRule struct {
 	ID             string         `db:"id" json:"id"`
 	UserID         int            `db:"user_id" json:"user_id"`
-	MonitorID      sql.NullString `db:"monitor_id" json:"monitor_id,omitempty" swaggertype:"string"`
+	MonitorID      *string        `db:"monitor_id" json:"monitor_id,omitempty"`
 	Name           string         `db:"name" json:"name"`
 	TriggerType    string         `db:"trigger_type" json:"trigger_type"` // 'down', 'ssl_expiry', 'slow_response'
 	ThresholdValue int            `db:"threshold_value" json:"threshold_value"`

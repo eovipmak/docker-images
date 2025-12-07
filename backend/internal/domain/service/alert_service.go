@@ -39,7 +39,7 @@ func (s *AlertService) EvaluateCheck(check *entities.MonitorCheck, rules []*enti
 		}
 
 		// Skip if rule is monitor-specific and doesn't match this check's monitor
-		if rule.MonitorID.Valid && rule.MonitorID.String != check.MonitorID {
+		if rule.MonitorID != nil && *rule.MonitorID != check.MonitorID {
 			continue
 		}
 

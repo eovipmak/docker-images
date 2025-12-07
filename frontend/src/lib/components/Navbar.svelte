@@ -14,6 +14,7 @@
         { name: 'Settings', path: '/user/settings' }
 	];
 	export let homeLink = '/user/dashboard';
+    export let isAdmin = false;
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -66,7 +67,9 @@
 							href={item.path}
 							class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 
                                 {$page.url.pathname === item.path 
-                                    ? 'text-indigo-600 dark:text-cyan-400 bg-indigo-50 dark:bg-cyan-900/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]' 
+                                    ? isAdmin 
+                                        ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 shadow-[0_0_10px_rgba(220,38,38,0.2)]'
+                                        : 'text-indigo-600 dark:text-cyan-400 bg-indigo-50 dark:bg-cyan-900/10 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
                                     : 'text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-cyan-300 hover:bg-gray-50 dark:hover:bg-white/5'}"
 						>
 							{item.name}
@@ -103,12 +106,22 @@
                 <div class="relative" use:clickOutside>
                     <button 
                         on:click={toggleProfile}
-                        class="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-gray-200 dark:border-indigo-500/30 bg-gray-50 dark:bg-[#1a1c2e] hover:border-indigo-300 dark:hover:border-cyan-500/50 transition-colors"
+                        class="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border transition-colors
+                               {isAdmin 
+                                   ? 'border-red-500 bg-red-50 dark:bg-red-900/20 hover:border-red-400' 
+                                   : 'border-gray-200 dark:border-indigo-500/30 bg-gray-50 dark:bg-[#1a1c2e] hover:border-indigo-300 dark:hover:border-cyan-500/50'}"
                     >
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{$authStore.currentUser?.email || 'User'}</span>
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                            {($authStore.currentUser?.email || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        {#if isAdmin}
+                              <span class="text-sm font-bold text-red-600 dark:text-red-400">ADMIN</span>
+                              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                                  A
+                              </div>
+                        {:else}
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{$authStore.currentUser?.email || 'User'}</span>
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                                {($authStore.currentUser?.email || 'U').charAt(0).toUpperCase()}
+                            </div>
+                        {/if}
                     </button>
 
                     {#if isProfileOpen}
@@ -116,9 +129,31 @@
                             transition:slide={{ duration: 200 }}
                             class="absolute right-0 mt-2 w-48 rounded-xl shadow-lg py-1 bg-white dark:bg-[#1a1c2e] ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-100 dark:border-indigo-500/20"
                         >
-                            <a href="/user/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5">Your Profile</a>
-                            <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5">Settings</a>
-                            <button on:click={authStore.logout} class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10">Sign out</button>
+                            <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
+                                {#if !isAdmin}
+                                    <a
+                                        href="/user/profile"
+                                        class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                        role="menuitem"
+                                        tabindex="-1"
+                                        id="user-menu-item-0"
+                                        on:click={() => (isProfileOpen = false)}
+                                    >
+                                        Your Profile
+                                    </a>
+                                    <a
+                                        href="/user/settings"
+                                        class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                                        role="menuitem"
+                                        tabindex="-1"
+                                        id="user-menu-item-1"
+                                        on:click={() => (isProfileOpen = false)}
+                                    >
+                                        Settings
+                                    </a>
+                                {/if}
+                                <button on:click={authStore.logout} class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10">Sign out</button>
+                            </div>
                         </div>
                     {/if}
                 </div>

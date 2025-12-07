@@ -96,7 +96,7 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 	}
 
 	// Validate monitor ID belongs to the tenant if provided
-	var monitorID sql.NullString
+	var monitorID *string
 	if req.MonitorID != nil && *req.MonitorID != "" {
 		monitor, err := h.monitorRepo.GetByID(*req.MonitorID)
 		if err != nil {
@@ -118,7 +118,7 @@ func (h *AlertRuleHandler) Create(c *gin.Context) {
 			return
 		}
 		
-		monitorID = sql.NullString{String: *req.MonitorID, Valid: true}
+		monitorID = req.MonitorID
 	}
 
 	// Set defaults
@@ -313,7 +313,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 	// Update fields if provided
 	if req.MonitorID != nil {
 		if *req.MonitorID == "" {
-			rule.MonitorID = sql.NullString{Valid: false}
+			rule.MonitorID = nil
 		} else {
 			// Validate monitor ID belongs to the tenant
 			monitor, err := h.monitorRepo.GetByID(*req.MonitorID)
@@ -340,7 +340,7 @@ func (h *AlertRuleHandler) Update(c *gin.Context) {
 				return
 			}
 			
-			rule.MonitorID = sql.NullString{String: *req.MonitorID, Valid: true}
+			rule.MonitorID = req.MonitorID
 		}
 	}
 	if req.Name != "" {
@@ -507,8 +507,8 @@ func (h *AlertRuleHandler) validateRuleConfiguration(rule *entities.AlertRuleWit
 	}
 
 	// Check if monitor exists (if monitor-specific)
-	if rule.MonitorID.Valid {
-		_, err := h.monitorRepo.GetByID(rule.MonitorID.String)
+	if rule.MonitorID != nil {
+		_, err := h.monitorRepo.GetByID(*rule.MonitorID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				issues = append(issues, "associated monitor not found")
@@ -521,9 +521,9 @@ func (h *AlertRuleHandler) validateRuleConfiguration(rule *entities.AlertRuleWit
 	// Validate trigger-specific logic
 	switch rule.TriggerType {
 	case "ssl_expiry":
-		if rule.MonitorID.Valid {
+		if rule.MonitorID != nil {
 			// Check if monitor has SSL checking enabled
-			monitor, err := h.monitorRepo.GetByID(rule.MonitorID.String)
+			monitor, err := h.monitorRepo.GetByID(*rule.MonitorID)
 			if err == nil && !monitor.CheckSSL {
 				issues = append(issues, "monitor does not have SSL checking enabled")
 			}

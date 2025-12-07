@@ -82,18 +82,18 @@
                         </tr>
                     {:else}
                         {#each alertRules as rule}
-                            <tr>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer" on:click={() => window.location.href = `/admin/alert-rules/${rule.id}`}>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">{rule.id}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-white">{rule.name}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    {rule.monitor_type} {rule.condition_type}
+                                    {rule.trigger_type}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    {rule.threshold}
+                                    {rule.threshold_value}
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    <a href="/admin/view-user/{rule.user_id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                        {rule.user_id}
+                                    <a href="/admin/view-user/{rule.user_id}" on:click|stopPropagation class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                        #{rule.user_id}
                                     </a>
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">

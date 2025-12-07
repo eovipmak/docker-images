@@ -39,4 +39,7 @@ type AlertRuleRepository interface {
 
 	// GetAll retrieves all alert rules across all users (Admin only)
 	GetAll() ([]*entities.AlertRule, error)
+
+	// GetByIDAdmin retrieves an alert rule by its ID ignoring user scope (Admin only)
+	GetByIDAdmin(id string) (*entities.AlertRule, error)
 }

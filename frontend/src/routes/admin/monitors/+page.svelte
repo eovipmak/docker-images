@@ -91,13 +91,21 @@
                         </tr>
                     {:else}
                         {#each monitors as monitor}
-                            <tr>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer" on:click={() => goto(`/admin/monitors/${monitor.id}`)}>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">{monitor.id}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-white">{monitor.name}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs truncate" title={monitor.url}>{monitor.url}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300 uppercase">{monitor.type}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                    <a href="/admin/view-user/{monitor.user_id}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                    <a href="{monitor.url}" target="_blank" rel="noopener noreferrer" on:click|stopPropagation class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-xs block">
+                                        {monitor.url}
+                                    </a>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                    <span class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                        {monitor.type}
+                                    </span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                    <a href="/admin/view-user/{monitor.user_id}" on:click|stopPropagation class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                                         {monitor.user_id}
                                     </a>
                                 </td>

@@ -148,3 +148,20 @@ func (r *alertChannelRepository) GetByAlertRuleID(userID int, alertRuleID string
 
 	return channels, nil
 }
+
+// GetAll retrieves all alert channels across all users (Admin only)
+func (r *alertChannelRepository) GetAll() ([]*entities.AlertChannel, error) {
+	channels := make([]*entities.AlertChannel, 0)
+	query := `
+		SELECT id, user_id, type, name, config, enabled, created_at, updated_at
+		FROM alert_channels
+		ORDER BY created_at DESC
+	`
+
+	err := r.db.Select(&channels, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all alert channels: %w", err)
+	}
+
+	return channels, nil
+}

@@ -1,0 +1,800 @@
+
+> v-insight-frontend@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+
+====================================
+Loading svelte-check in workspace: /root/v-insight/frontend
+Getting Svelte diagnostics...
+
+2:43:47 PM [vite-plugin-svelte] hmr and emitCss are enabled but compilerOptions.css is injected, forcing it to external
+/root/v-insight/frontend/src/lib/components/MonitorTable.svelte:10:13
+Warn: Component has unused export property 'hideToolbar'. If it is for external reference only, please consider using `export const hideToolbar` (svelte)
+	// Hide internal toolbar when controlled by parent
+	export let hideToolbar: boolean = false;
+
+
+
+/root/v-insight/frontend/src/lib/components/AlertRuleModal.svelte:310:2
+Warn: A11y: Non-interactive element <div> should not be assigned mouse or keyboard event listeners. (svelte)
+{#if isOpen}
+	<div
+		class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+		on:click={handleBackdropClick}
+		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-title"
+		tabindex="-1"
+	>
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5 dark:ring-slate-700">
+			<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/40">
+				<h2 id="modal-title" class="text-lg font-semibold text-slate-900 dark:text-gray-100">
+					{isEditMode ? 'Edit Alert Rule' : 'Create Alert Rule'}
+				</h2>
+				<button
+					type="button"
+					on:click={closeModal}
+					class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
+					aria-label="Close modal"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
+				{#if errors.submit}
+					<div class="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+						<div class="flex">
+							<div class="flex-shrink-0">
+								<svg class="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<div class="ml-3">
+								<h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+								<div class="mt-2 text-sm text-red-700 dark:text-red-300">
+									<p>{errors.submit}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Name -->
+				<div>
+					<label for="name" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+						Name <span class="text-red-500">*</span>
+					</label>
+					<div class="mt-2">
+						<input
+							type="text"
+							id="name"
+							bind:value={formData.name}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							placeholder="e.g., Website Down Alert"
+						/>
+					</div>
+					{#if errors.name}
+						<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+					{/if}
+				</div>
+
+				<!-- Monitor -->
+				<div>
+					<label for="monitor_id" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+						Monitor
+					</label>
+					<div class="mt-2">
+						<select
+							id="monitor_id"
+							bind:value={formData.monitor_id}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+						>
+							<option value="">All monitors</option>
+							{#each monitors as monitor}
+								<option value={monitor.id}>{monitor.name}</option>
+							{/each}
+						</select>
+					</div>
+					<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Leave empty to apply to all monitors.</p>
+				</div>
+
+				<div class="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
+					<!-- Trigger Type -->
+					<div>
+						<label for="trigger_type" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+							Trigger Type <span class="text-red-500">*</span>
+						</label>
+						<div class="mt-2">
+							<select
+								id="trigger_type"
+								bind:value={formData.trigger_type}
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+								on:change={() => {
+									formData.threshold_value = getDefaultThreshold(formData.trigger_type);
+								}}
+							>
+								{#each availableTriggerTypes as triggerType}
+									<option value={triggerType}>
+										{triggerType === 'down' ? 'Down' : 
+										 triggerType === 'slow_response' ? 'Slow Response' : 
+										 triggerType === 'ssl_expiry' ? 'SSL Expiry' : triggerType}
+									</option>
+								{/each}
+							</select>
+						</div>
+						{#if errors.trigger_type}
+							<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.trigger_type}</p>
+						{/if}
+					</div>
+
+					<!-- Threshold Value -->
+					<div>
+						<label for="threshold_value" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+							{thresholdLabel} <span class="text-red-500">*</span>
+						</label>
+						<div class="mt-2">
+							<input
+								type="number"
+								id="threshold_value"
+								bind:value={formData.threshold_value}
+								min="0"
+								class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							/>
+						</div>
+						{#if errors.threshold_value}
+							<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.threshold_value}</p>
+						{:else if thresholdHelp}
+							<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{thresholdHelp}</p>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Alert Channels -->
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+					<h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-slate-100 mb-4">Alert Channels</h3>
+					{#if channels.length === 0}
+						<p class="text-sm text-slate-500 dark:text-slate-400">No alert channels configured yet.</p>
+					{:else}
+						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50">
+							{#each channels as channel}
+								<div class="relative flex items-start">
+									<div class="flex h-6 items-center">
+										<input
+											id="channel-{channel.id}"
+											type="checkbox"
+											checked={formData.channel_ids.includes(channel.id)}
+											on:change={() => toggleChannel(channel.id)}
+											class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
+										/>
+									</div>
+									<div class="ml-3 text-sm leading-6">
+										<label for="channel-{channel.id}" class="font-medium text-slate-900 dark:text-slate-200">
+											{channel.name}
+											<span class="font-normal text-slate-500 dark:text-slate-400">({channel.type})</span>
+										</label>
+									</div>
+								</div>
+							{/each}
+						</div>
+						<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+							Selected: {formData.channel_ids.length} channel{formData.channel_ids.length !== 1 ? 's' : ''}
+						</p>
+					{/if}
+				</div>
+
+				<!-- Enabled -->
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+					<div class="relative flex gap-x-3">
+						<div class="flex h-6 items-center">
+							<input
+								id="enabled"
+								name="enabled"
+								type="checkbox"
+								bind:checked={formData.enabled}
+								class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
+							/>
+						</div>
+						<div class="text-sm leading-6">
+							<label for="enabled" class="font-medium text-slate-900 dark:text-slate-200">Enable this alert rule</label>
+							<p class="text-slate-500 dark:text-slate-400">If disabled, this rule will not trigger any alerts.</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Actions -->
+				<div class="mt-6 flex items-center justify-end gap-x-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+					<button
+						type="button"
+						on:click={closeModal}
+						class="text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 hover:text-slate-700 dark:hover:text-slate-400"
+						disabled={isSubmitting}
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? 'Saving...' : isEditMode ? 'Update Rule' : 'Create Rule'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+
+/root/v-insight/frontend/src/lib/components/MonitorModal.svelte:400:10
+Warn: A11y: A form label must be associated with a control. (svelte)
+								<div>
+									<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags</label>
+									<div class="flex gap-2">
+
+
+/root/v-insight/frontend/src/lib/components/MonitorModal.svelte:432:11
+Warn: A11y: A form label must be associated with a control. (svelte)
+									<div>
+										<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Expected Status Codes</label>
+										<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">HTTP status codes considered as "healthy" (e.g., 200, 201, 404)</p>
+
+
+/root/v-insight/frontend/src/lib/components/StatusPageModal.svelte:218:2
+Warn: A11y: Non-interactive element <div> should not be assigned mouse or keyboard event listeners. (svelte)
+{#if isOpen}
+	<div
+		class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+		on:click={handleBackdropClick}
+		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-title"
+		tabindex="-1"
+	>
+		<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-slate-900/5 dark:ring-slate-700">
+			<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/40">
+				<h2 id="modal-title" class="text-lg font-semibold text-slate-900 dark:text-gray-100">
+					{statusPage ? 'Edit Status Page' : 'Create Status Page'}
+				</h2>
+				<button
+					type="button"
+					on:click={closeModal}
+					class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
+					aria-label="Close modal"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
+				{#if errors.submit}
+					<div class="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+						<div class="flex">
+							<div class="flex-shrink-0">
+								<svg class="h-5 w-5 text-red-400 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+									<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+								</svg>
+							</div>
+							<div class="ml-3">
+								<h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+								<div class="mt-2 text-sm text-red-700 dark:text-red-300">
+									<p>{errors.submit}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Name -->
+				<div>
+					<label for="name" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+						Name <span class="text-red-500">*</span>
+					</label>
+					<div class="mt-2">
+						<input
+							type="text"
+							id="name"
+							bind:value={formData.name}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							placeholder="e.g., API Status"
+						/>
+					</div>
+					{#if errors.name}
+						<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+					{/if}
+				</div>
+
+				<!-- Slug -->
+				<div>
+					<label for="slug" class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-200">
+						Slug <span class="text-red-500">*</span>
+					</label>
+					<div class="mt-2">
+						<input
+							type="text"
+							id="slug"
+							bind:value={formData.slug}
+							class="block w-full rounded-md border-0 px-3 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
+							placeholder="e.g., api-status"
+						/>
+					</div>
+					<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+						URL-friendly identifier. Only letters, numbers, hyphens, and underscores allowed.
+					</p>
+					{#if errors.slug}
+						<p class="mt-2 text-sm text-red-600 dark:text-red-400">{errors.slug}</p>
+					{/if}
+				</div>
+
+				<!-- Public Enabled -->
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+					<div class="relative flex gap-x-3">
+						<div class="flex h-6 items-center">
+							<input
+								id="public_enabled"
+								name="public_enabled"
+								type="checkbox"
+								bind:checked={formData.public_enabled}
+								class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
+							/>
+						</div>
+						<div class="text-sm leading-6">
+							<label for="public_enabled" class="font-medium text-slate-900 dark:text-slate-200">
+								Make this status page public
+							</label>
+							<p class="text-slate-500 dark:text-slate-400">
+								When enabled, anyone with the URL can view this status page without authentication.
+							</p>
+						</div>
+					</div>
+				<!-- Monitors -->
+				<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+					<h3 class="text-base font-semibold leading-6 text-slate-900 dark:text-slate-100 mb-4">Monitors</h3>
+					{#if monitors.length === 0}
+						<div class="text-sm text-slate-500 dark:text-slate-400">
+							<p class="mb-2">No monitors available.</p>
+							<p><a href="/user/monitors" class="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline">Create monitors first</a> to associate them with this status page.</p>
+						</div>
+					{:else}
+						<div class="space-y-3 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/50">
+							{#each monitors as monitor}
+								<div class="relative flex items-start">
+									<div class="flex h-6 items-center">
+										<input
+											id="monitor-{monitor.id}"
+											name="monitor-{monitor.id}"
+											type="checkbox"
+											checked={formData.monitor_ids.includes(monitor.id)}
+											on:change={() => toggleMonitor(monitor.id)}
+											class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-600 dark:bg-slate-800"
+										/>
+									</div>
+									<div class="ml-3 text-sm leading-6">
+										<label for="monitor-{monitor.id}" class="font-medium text-slate-900 dark:text-slate-200">
+											{monitor.name}
+										</label>
+										<p class="text-slate-500 dark:text-slate-400">
+											{monitor.url} ({monitor.type})
+											{#if !monitor.enabled}
+												<span class="text-red-500 dark:text-red-400">- Disabled</span>
+											{/if}
+										</p>
+									</div>
+								</div>
+							{/each}
+						</div>
+						<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+							Selected: {formData.monitor_ids.length} monitor{formData.monitor_ids.length !== 1 ? 's' : ''}
+						</p>
+					{/if}
+				</div>
+
+				<!-- Actions -->
+				<div class="mt-6 flex items-center justify-end gap-x-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+					<button
+						type="button"
+						on:click={closeModal}
+						class="text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 hover:text-slate-700 dark:hover:text-slate-400"
+						disabled={isSubmitting}
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? 'Saving...' : statusPage ? 'Update Status Page' : 'Create Status Page'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+/root/v-insight/frontend/src/routes/admin/+page.svelte:314:2
+Error: </div> attempted to close an element that was not open (svelte)
+	</div>
+	</div>
+{/if}
+
+
+/root/v-insight/frontend/src/routes/admin/+page.svelte:314:2
+Error: </div> attempted to close an element that was not open (ts)
+	</div>
+	</div>
+{/if}
+
+
+/root/v-insight/frontend/src/routes/user/maintenance/+page.svelte:490:6
+Warn: A11y: A form label must be associated with a control. (svelte)
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Apply to Monitors
+					</label>
+					<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+
+
+/root/v-insight/frontend/src/routes/user/maintenance/+page.svelte:515:6
+Warn: A11y: A form label must be associated with a control. (svelte)
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Tags
+					</label>
+					<div class="flex gap-2">
+
+
+/root/v-insight/frontend/src/routes/user/maintenance/+page.svelte:408:3
+Warn: A11y: Non-interactive element <div> should not be assigned mouse or keyboard event listeners. (svelte)
+	>
+		<div
+			class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+			role="document"
+		>
+			<div class="p-6 border-b border-slate-200 dark:border-slate-700">
+				<h2 class="text-xl font-semibold text-slate-900 dark:text-white">
+					{editingWindow ? 'Edit Maintenance Window' : 'Schedule Maintenance Window'}
+				</h2>
+			</div>
+
+			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+				<div>
+					<label
+						for="name"
+						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+					>
+						Name *
+					</label>
+					<input
+						type="text"
+						id="name"
+						bind:value={formName}
+						class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="Weekly server maintenance"
+						required
+					/>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label
+							for="startTime"
+							class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+						>
+							Start Time *
+						</label>
+						<input
+							type="datetime-local"
+							id="startTime"
+							bind:value={formStartTime}
+							class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							required
+						/>
+					</div>
+					<div>
+						<label
+							for="endTime"
+							class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+						>
+							End Time *
+						</label>
+						<input
+							type="datetime-local"
+							id="endTime"
+							bind:value={formEndTime}
+							class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							required
+						/>
+					</div>
+				</div>
+
+				<div>
+					<label
+						for="repeatInterval"
+						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+					>
+						Repeat
+					</label>
+					<select
+						id="repeatInterval"
+						bind:value={formRepeatInterval}
+						class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						{#each repeatOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Apply to Monitors
+					</label>
+					<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+						Leave empty to apply to all monitors
+					</p>
+					<div class="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-2 space-y-1">
+						{#each monitors as monitor}
+							<label class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+								<input
+									type="checkbox"
+									checked={formMonitorIds.includes(monitor.id)}
+									on:change={() => toggleMonitor(monitor.id)}
+									class="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+								/>
+								<span class="text-sm text-slate-700 dark:text-slate-300">{monitor.name}</span>
+							</label>
+						{/each}
+						{#if monitors.length === 0}
+							<p class="text-sm text-slate-500 dark:text-slate-400 p-2">No monitors available</p>
+						{/if}
+					</div>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Tags
+					</label>
+					<div class="flex gap-2">
+						<input
+							type="text"
+							bind:value={formTagInput}
+							on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+							class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="Add a tag"
+						/>
+						<button
+							type="button"
+							on:click={addTag}
+							class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+						>
+							Add
+						</button>
+					</div>
+					{#if formTags.length > 0}
+						<div class="mt-2 flex flex-wrap gap-2">
+							{#each formTags as tag}
+								<span
+									class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded flex items-center gap-1"
+								>
+									{tag}
+									<button
+										type="button"
+										on:click={() => removeTag(tag)}
+										class="hover:text-red-600 dark:hover:text-red-400"
+									>
+										×
+									</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<div class="flex justify-end gap-3 pt-4">
+					<button
+						type="button"
+						on:click={closeModal}
+						class="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					>
+						{editingWindow ? 'Update' : 'Create'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+
+/root/v-insight/frontend/src/routes/user/maintenance/+page.svelte:401:2
+Warn: A11y: Non-interactive element <div> should not be assigned mouse or keyboard event listeners. (svelte)
+{#if isModalOpen}
+	<div
+		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+		on:click={closeModal}
+		on:keydown={(e) => e.key === 'Escape' && closeModal()}
+		role="dialog"
+		aria-modal="true"
+	>
+		<div
+			class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+			role="document"
+		>
+			<div class="p-6 border-b border-slate-200 dark:border-slate-700">
+				<h2 class="text-xl font-semibold text-slate-900 dark:text-white">
+					{editingWindow ? 'Edit Maintenance Window' : 'Schedule Maintenance Window'}
+				</h2>
+			</div>
+
+			<form on:submit|preventDefault={handleSubmit} class="p-6 space-y-4">
+				<div>
+					<label
+						for="name"
+						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+					>
+						Name *
+					</label>
+					<input
+						type="text"
+						id="name"
+						bind:value={formName}
+						class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="Weekly server maintenance"
+						required
+					/>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label
+							for="startTime"
+							class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+						>
+							Start Time *
+						</label>
+						<input
+							type="datetime-local"
+							id="startTime"
+							bind:value={formStartTime}
+							class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							required
+						/>
+					</div>
+					<div>
+						<label
+							for="endTime"
+							class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+						>
+							End Time *
+						</label>
+						<input
+							type="datetime-local"
+							id="endTime"
+							bind:value={formEndTime}
+							class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							required
+						/>
+					</div>
+				</div>
+
+				<div>
+					<label
+						for="repeatInterval"
+						class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+					>
+						Repeat
+					</label>
+					<select
+						id="repeatInterval"
+						bind:value={formRepeatInterval}
+						class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					>
+						{#each repeatOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Apply to Monitors
+					</label>
+					<p class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+						Leave empty to apply to all monitors
+					</p>
+					<div class="max-h-40 overflow-y-auto border border-slate-300 dark:border-slate-600 rounded-lg p-2 space-y-1">
+						{#each monitors as monitor}
+							<label class="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer">
+								<input
+									type="checkbox"
+									checked={formMonitorIds.includes(monitor.id)}
+									on:change={() => toggleMonitor(monitor.id)}
+									class="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+								/>
+								<span class="text-sm text-slate-700 dark:text-slate-300">{monitor.name}</span>
+							</label>
+						{/each}
+						{#if monitors.length === 0}
+							<p class="text-sm text-slate-500 dark:text-slate-400 p-2">No monitors available</p>
+						{/if}
+					</div>
+				</div>
+
+				<div>
+					<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+						Tags
+					</label>
+					<div class="flex gap-2">
+						<input
+							type="text"
+							bind:value={formTagInput}
+							on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+							class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="Add a tag"
+						/>
+						<button
+							type="button"
+							on:click={addTag}
+							class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+						>
+							Add
+						</button>
+					</div>
+					{#if formTags.length > 0}
+						<div class="mt-2 flex flex-wrap gap-2">
+							{#each formTags as tag}
+								<span
+									class="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded flex items-center gap-1"
+								>
+									{tag}
+									<button
+										type="button"
+										on:click={() => removeTag(tag)}
+										class="hover:text-red-600 dark:hover:text-red-400"
+									>
+										×
+									</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<div class="flex justify-end gap-3 pt-4">
+					<button
+						type="button"
+						on:click={closeModal}
+						class="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+					>
+						{editingWindow ? 'Update' : 'Create'}
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
+
+
+====================================
+svelte-check found 2 errors and 9 warnings in 6 files

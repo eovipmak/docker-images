@@ -730,7 +730,7 @@ func (h *MonitorHandler) createOrUpdateSSLAlertRule(userID int, monitor *entitie
 	var existingRule *entities.AlertRuleWithChannels
 	for _, rule := range existingRules {
 		// Check if this is an auto-generated SSL rule for this monitor
-		if rule.MonitorID.Valid && rule.MonitorID.String == monitor.ID && 
+		if rule.MonitorID != nil && *rule.MonitorID == monitor.ID && 
 		   rule.TriggerType == "ssl_expiry" && 
 		   strings.HasPrefix(rule.Name, "SSL Expiry Alert - ") {
 			existingRule = rule
@@ -759,7 +759,7 @@ func (h *MonitorHandler) createOrUpdateSSLAlertRule(userID int, monitor *entitie
 		// Create new rule
 		alertRule := &entities.AlertRule{
 			UserID:         userID,
-			MonitorID:      sql.NullString{String: monitor.ID, Valid: true},
+			MonitorID:      &monitor.ID,
 			Name:           ruleName,
 			TriggerType:    "ssl_expiry",
 			ThresholdValue: monitor.SSLAlertDays,
@@ -783,7 +783,7 @@ func (h *MonitorHandler) disableSSLAlertRule(userID int, monitorID string) error
 	}
 
 	for _, rule := range rules {
-		if rule.MonitorID.Valid && rule.MonitorID.String == monitorID && 
+		if rule.MonitorID != nil && *rule.MonitorID == monitorID && 
 		   rule.TriggerType == "ssl_expiry" && 
 		   strings.HasPrefix(rule.Name, "SSL Expiry Alert - ") {
 			// Disable the auto-generated rule

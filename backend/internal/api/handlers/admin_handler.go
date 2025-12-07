@@ -12,17 +12,19 @@ import (
 
 // AdminHandler handles admin-related HTTP requests
 type AdminHandler struct {
-	userRepo      repository.UserRepository
-	monitorRepo   repository.MonitorRepository
-	alertRuleRepo repository.AlertRuleRepository
+	userRepo         repository.UserRepository
+	monitorRepo      repository.MonitorRepository
+	alertRuleRepo    repository.AlertRuleRepository
+	alertChannelRepo repository.AlertChannelRepository
 }
 
 // NewAdminHandler creates a new admin handler
-func NewAdminHandler(userRepo repository.UserRepository, monitorRepo repository.MonitorRepository, alertRuleRepo repository.AlertRuleRepository) *AdminHandler {
+func NewAdminHandler(userRepo repository.UserRepository, monitorRepo repository.MonitorRepository, alertRuleRepo repository.AlertRuleRepository, alertChannelRepo repository.AlertChannelRepository) *AdminHandler {
 	return &AdminHandler{
-		userRepo:      userRepo,
-		monitorRepo:   monitorRepo,
-		alertRuleRepo: alertRuleRepo,
+		userRepo:         userRepo,
+		monitorRepo:      monitorRepo,
+		alertRuleRepo:    alertRuleRepo,
+		alertChannelRepo: alertChannelRepo,
 	}
 }
 
@@ -287,4 +289,118 @@ func (h *AdminHandler) ListAlertRules(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, rules)
+}
+
+// GetAlertRule godoc
+// @Summary Get an alert rule by ID
+// @Description Get details of a specific alert rule (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Alert Rule ID"
+// @Success 200 {object} entities.AlertRule "Alert Rule details"
+// @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Alert Rule not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/alert-rules/{id} [get]
+func (h *AdminHandler) GetAlertRule(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid alert rule ID"})
+		return
+	}
+
+	rule, err := h.alertRuleRepo.GetByIDAdmin(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "alert rule not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, rule)
+}
+
+// ListAlertChannels godoc
+// @Summary List all alert channels
+// @Description Get a list of all alert channels across all users (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} entities.AlertChannel "List of alert channels"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/alert-channels [get]
+func (h *AdminHandler) ListAlertChannels(c *gin.Context) {
+	channels, err := h.alertChannelRepo.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get all alert channels"})
+		return
+	}
+	c.JSON(http.StatusOK, channels)
+}
+
+// GetAlertChannel godoc
+// @Summary Get an alert channel by ID
+// @Description Get details of a specific alert channel (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Alert Channel ID"
+// @Success 200 {object} entities.AlertChannel "Alert Channel details"
+// @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Alert Channel not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/alert-channels/{id} [get]
+func (h *AdminHandler) GetAlertChannel(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid alert channel ID"})
+		return
+	}
+
+	channel, err := h.alertChannelRepo.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "alert channel not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, channel)
+}
+
+// GetMonitor godoc
+// @Summary Get a monitor by ID
+// @Description Get details of a specific monitor (Admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Monitor ID"
+// @Success 200 {object} entities.Monitor "Monitor details"
+// @Failure 400 {object} map[string]string "Invalid ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden"
+// @Failure 404 {object} map[string]string "Monitor not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /admin/monitors/{id} [get]
+func (h *AdminHandler) GetMonitor(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid monitor ID"})
+		return
+	}
+
+	monitor, err := h.monitorRepo.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "monitor not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, monitor)
 }

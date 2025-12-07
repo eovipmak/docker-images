@@ -101,6 +101,26 @@ func (r *alertRuleRepository) GetAll() ([]*entities.AlertRule, error) {
 	return rules, nil
 }
 
+// GetByIDAdmin retrieves an alert rule by its ID ignoring user scope (Admin only)
+func (r *alertRuleRepository) GetByIDAdmin(id string) (*entities.AlertRule, error) {
+	rule := &entities.AlertRule{}
+	query := `
+		SELECT id, user_id, monitor_id, name, trigger_type, threshold_value, enabled, created_at, updated_at
+		FROM alert_rules
+		WHERE id = $1
+	`
+
+	err := r.db.Get(rule, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("alert rule not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to get alert rule: %w", err)
+	}
+
+	return rule, nil
+}
+
 // Update updates an existing alert rule
 func (r *alertRuleRepository) Update(rule *entities.AlertRule) error {
 	query := `

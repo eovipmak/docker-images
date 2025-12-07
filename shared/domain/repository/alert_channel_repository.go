@@ -21,4 +21,7 @@ type AlertChannelRepository interface {
 
 	// Delete deletes an alert channel by its ID
 	Delete(id string) error
+
+	// GetAll retrieves all alert channels across all users (Admin only)
+	GetAll() ([]*entities.AlertChannel, error)
 }
