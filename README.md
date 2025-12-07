@@ -31,6 +31,22 @@ It supports user isolation via `user_id` on all main tables and enforces user-sc
 
 ---
 
+## Screenshots
+
+### Monitors
+![Monitors](images/01-monitors.png)
+
+### Alert Rules
+![Alert Rules](images/02-alert-rules.png)
+
+### Alert Channels
+![Alert Channels](images/03-alert-channels.png)
+
+### Incidents
+![Incidents](images/04-incidents.png)
+
+---
+
 ## Quick start (development)
 
 ```bash
