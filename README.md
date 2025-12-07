@@ -36,6 +36,12 @@ It supports user isolation via `user_id` on all main tables and enforces user-sc
 ### Monitors
 ![Monitors](images/01-monitors.png)
 
+#### Monitor Details
+![Monitor Details](images/01a-monitor-details.png)
+
+#### Create Monitor
+![Create Monitor](images/01b-create-monitor.png)
+
 ### Alert Rules
 ![Alert Rules](images/02-alert-rules.png)
 
