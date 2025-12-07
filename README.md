@@ -33,23 +33,38 @@ It supports user isolation via `user_id` on all main tables and enforces user-sc
 
 ## Screenshots
 
-### Monitors
-![Monitors](images/01-monitors.png)
-
-#### Monitor Details
-![Monitor Details](images/01a-monitor-details.png)
-
-#### Create Monitor
-![Create Monitor](images/01b-create-monitor.png)
-
-### Alert Rules
-![Alert Rules](images/02-alert-rules.png)
-
-### Alert Channels
-![Alert Channels](images/03-alert-channels.png)
-
-### Incidents
-![Incidents](images/04-incidents.png)
+<table>
+  <tr>
+    <td width="50%">
+      <h3>Monitors</h3>
+      <img src="images/01-monitors.png" alt="Monitors">
+    </td>
+    <td width="50%">
+      <h3>Monitor Details</h3>
+      <img src="images/01a-monitor-details.png" alt="Monitor Details">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>Create Monitor</h3>
+      <img src="images/01b-create-monitor.png" alt="Create Monitor">
+    </td>
+    <td>
+      <h3>Alert Rules</h3>
+      <img src="images/02-alert-rules.png" alt="Alert Rules">
+    </td>
+  </tr>
+  <tr>
+     <td>
+      <h3>Alert Channels</h3>
+      <img src="images/03-alert-channels.png" alt="Alert Channels">
+    </td>
+    <td>
+      <h3>Incidents</h3>
+      <img src="images/04-incidents.png" alt="Incidents">
+    </td>
+  </tr>
+</table>
 
 ---
 
