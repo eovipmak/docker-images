@@ -206,7 +206,7 @@ jobs:
 
   # Build & Deploy - matrix strategy for parallel builds
   # Use [build] in commit message to force build and deploy
-  build-and-deploy:
+  build-and-push:
     needs: [changes, test-backend, test-worker, test-shared, test-frontend]
     if: |
       always() &&
@@ -280,9 +280,9 @@ jobs:
 
   # Deploy runs after all builds complete
   deploy:
-    needs: [changes, build-and-deploy]
+    needs: [changes, build-and-push]
     if: |
-      needs.build-and-deploy.result == 'success' &&
+      needs.build-and-push.result == 'success' &&
       (contains(github.event.head_commit.message, '[build]') || needs.changes.outputs.backend == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true')
     runs-on: ubuntu-latest
     steps:
