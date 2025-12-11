@@ -106,7 +106,10 @@
                 <div class="relative" use:clickOutside>
                     <button 
                         on:click={toggleProfile}
-                        class="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border transition-colors
+                        aria-label="Open user menu"
+                        aria-haspopup="true"
+                        aria-expanded={isProfileOpen}
+                        class="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-cyan-500
                                {isAdmin 
                                    ? 'border-red-500 bg-red-50 dark:bg-red-900/20 hover:border-red-400' 
                                    : 'border-gray-200 dark:border-indigo-500/30 bg-gray-50 dark:bg-[#1a1c2e] hover:border-indigo-300 dark:hover:border-cyan-500/50'}"
