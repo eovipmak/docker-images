@@ -100,6 +100,11 @@
 		isModalOpen = true;
 	}
 
+	function clearFilters() {
+		searchQuery = '';
+		selectedTag = '';
+	}
+
 	function handleViewMonitor(event: CustomEvent) {
 		const monitor = event.detail;
 		console.debug('[Monitors page] view monitor', monitor?.id);
@@ -268,6 +273,28 @@
                 <div class="h-12 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse"></div>
             {/each}
         </div>
+	{:else if monitors.length === 0}
+		<!-- Initial Empty State -->
+		<div class="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+			<div class="flex flex-col items-center justify-center">
+				<div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-blue-600 dark:text-blue-400">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+					</svg>
+				</div>
+				<h3 class="text-xl font-semibold text-slate-900 dark:text-white">No monitors yet</h3>
+				<p class="mt-2 text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Start monitoring your websites and services to get notified when they go down.</p>
+				<button
+					on:click={handleAddMonitor}
+					class="mt-6 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+					</svg>
+					Create your first monitor
+				</button>
+			</div>
+		</div>
 	{:else}
 		<!-- Toolbar (search, tag filter & sort) -->
 		<Card className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -351,13 +378,20 @@
 		</div>
 
 		{#if filteredAndSortedMonitors.length === 0}
+			<!-- Filtered Empty State -->
 			<div class="mt-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
 				<div class="flex flex-col items-center justify-center">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
 					</svg>
 					<h3 class="text-lg font-medium text-slate-900 dark:text-white">No monitors found</h3>
-					<p class="mt-1 text-slate-500 dark:text-slate-400">Try adjusting your search or add a new monitor.</p>
+					<p class="mt-1 text-slate-500 dark:text-slate-400">We couldn't find any monitors matching your current filters.</p>
+					<button
+						on:click={clearFilters}
+						class="mt-4 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+					>
+						Clear filters
+					</button>
 				</div>
 			</div>
 		{:else if useTable}
