@@ -310,6 +310,7 @@
 						type="text"
 						bind:value={searchQuery}
 						placeholder="Search monitors..."
+						aria-label="Search monitors"
 						class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg leading-5 bg-white dark:bg-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-slate-900 dark:text-white"
 					/>
 				</div>
@@ -323,7 +324,8 @@
 							</svg>
 						</div>
 						<select 
-							bind:value={selectedTag} 
+							bind:value={selectedTag}
+							aria-label="Filter by tag"
 							class="block w-full pl-9 pr-8 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
 						>
 							<option value="">All tags</option>
@@ -335,7 +337,11 @@
 				{/if}
 			</div>
 			<div class="flex items-center gap-3">
-				<select bind:value={sortField} class="block w-full rounded-lg border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+				<select
+					bind:value={sortField}
+					aria-label="Sort by"
+					class="block w-full rounded-lg border-slate-300 dark:border-slate-600 py-2 pl-3 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+				>
 					<option value="name">Name</option>
 					<option value="status">Status</option>
 				</select>
@@ -343,6 +349,7 @@
 					class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
 					on:click={() => (sortDirection = sortDirection === 'asc' ? 'desc' : 'asc')}
 					title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+					aria-label={sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'}
 				>
 					{#if sortDirection === 'asc'}
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -366,6 +373,7 @@
 						class="inline-flex items-center px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
 						on:click={() => (useTable = !useTable)}
 						title={useTable ? 'Switch to Grid' : 'Switch to Table'}
+						aria-label={useTable ? 'Switch to grid view' : 'Switch to table view'}
 					>
 						{#if useTable}
 							Table
