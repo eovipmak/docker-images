@@ -47,9 +47,9 @@
 		<div class="flex items-center justify-between h-16 sm:h-20">
 			<!-- Logo -->
 			<div class="flex-shrink-0 flex items-center">
-				<a href={homeLink} class="flex items-center gap-2 group">
+				<a href={homeLink} class="flex items-center gap-2 group" aria-label="V-Insight Home">
                     <div class="relative w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600/10 dark:bg-cyan-500/10 group-hover:scale-110 transition-transform duration-300">
-                        <svg class="w-5 h-5 text-indigo-600 dark:text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg aria-hidden="true" class="w-5 h-5 text-indigo-600 dark:text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
@@ -91,12 +91,12 @@
                 >
                     {#if $themeStore}
                         <!-- Moon Icon (Solid) for Dark Mode -->
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clip-rule="evenodd" />
                         </svg>
                     {:else}
                         <!-- Sun Icon (Solid) for Light Mode -->
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
                         </svg>
                     {/if}
@@ -166,15 +166,18 @@
             <div class="-mr-2 flex md:hidden">
                 <button 
                     on:click={toggleMenu}
+                    type="button"
                     class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white"
+                    aria-controls="mobile-menu"
+                    aria-expanded={isMenuOpen}
                 >
-                    <span class="sr-only">Open main menu</span>
+                    <span class="sr-only">{isMenuOpen ? 'Close main menu' : 'Open main menu'}</span>
                     {#if isMenuOpen}
-                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg aria-hidden="true" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     {:else}
-                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg aria-hidden="true" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     {/if}
@@ -185,7 +188,7 @@
 
     <!-- Mobile Menu -->
     {#if isMenuOpen}
-        <div class="md:hidden bg-white dark:bg-[#0f1020] border-b border-gray-200 dark:border-indigo-500/30" transition:slide>
+        <div class="md:hidden bg-white dark:bg-[#0f1020] border-b border-gray-200 dark:border-indigo-500/30" transition:slide id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                 {#each navItems as item}
                     <a
