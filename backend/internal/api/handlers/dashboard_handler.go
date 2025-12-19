@@ -47,11 +47,19 @@ type IncidentWithDetails struct {
 	Monitor  *entities.Monitor  `json:"monitor"`
 }
 
+// MonitorWithSparkline represents a monitor with recent check history for sparkline chart
+type MonitorWithSparkline struct {
+	Monitor      *entities.Monitor       `json:"monitor"`
+	RecentChecks []*entities.MonitorCheck `json:"recent_checks"`
+	Status       string                  `json:"status"` // "up", "down", or "unknown"
+}
+
 // DashboardData represents the full dashboard response
 type DashboardData struct {
 	Stats         DashboardStats            `json:"stats"`
 	RecentChecks  []MonitorCheckWithMonitor `json:"recent_checks"`
 	OpenIncidents []IncidentWithDetails     `json:"open_incidents"`
+	Monitors      []MonitorWithSparkline    `json:"monitors"`
 }
 
 // GetStats godoc
@@ -249,10 +257,36 @@ func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 		stats.OverallUptime = uptime.Percentage
 	}
 
+	// Get all monitors with sparkline data (last 20 checks for each)
+	monitorsWithSparkline := []MonitorWithSparkline{}
+	for _, monitor := range monitors {
+		checks, err := h.monitorRepo.GetChecksByMonitorID(monitor.ID, 20)
+		if err != nil {
+			checks = []*entities.MonitorCheck{}
+		}
+
+		// Determine status based on latest check
+		status := "unknown"
+		if len(checks) > 0 {
+			if checks[0].Success {
+				status = "up"
+			} else {
+				status = "down"
+			}
+		}
+
+		monitorsWithSparkline = append(monitorsWithSparkline, MonitorWithSparkline{
+			Monitor:      monitor,
+			RecentChecks: checks,
+			Status:       status,
+		})
+	}
+
 	dashboardData := DashboardData{
 		Stats:         stats,
 		RecentChecks:  recentChecks,
 		OpenIncidents: openIncidentsList,
+		Monitors:      monitorsWithSparkline,
 	}
 
 	c.JSON(http.StatusOK, dashboardData)
