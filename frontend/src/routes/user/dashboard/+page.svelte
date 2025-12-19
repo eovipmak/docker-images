@@ -244,7 +244,7 @@
 					{:else}
 						{#each monitors as item}
 							{@const sparklineData = getSparklineData(item.recent_checks)}
-							{@const lastCheck = item.recent_checks[0]}
+							{@const lastCheck = item.recent_checks.length > 0 ? item.recent_checks[0] : null}
 							<TableRow>
 								<TableCell class="font-medium">{item.monitor.name}</TableCell>
 								<TableCell class="text-sm text-muted-foreground max-w-xs truncate">

@@ -261,13 +261,13 @@ func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 	monitorsWithSparkline := []MonitorWithSparkline{}
 	for _, monitor := range monitors {
 		checks, err := h.monitorRepo.GetChecksByMonitorID(monitor.ID, 20)
-		if err != nil {
+		if err != nil || checks == nil {
 			checks = []*entities.MonitorCheck{}
 		}
 
 		// Determine status based on latest check
 		status := "unknown"
-		if len(checks) > 0 {
+		if len(checks) > 0 && checks[0] != nil {
 			if checks[0].Success {
 				status = "up"
 			} else {
