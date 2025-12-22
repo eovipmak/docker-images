@@ -1,7 +1,3 @@
-## 2024-05-24 - Show/Hide Password Toggle
-**Learning:** Adding a visibility toggle to password fields significantly improves usability by reducing "blind" typing errors, especially on mobile devices or for users with motor impairments.
-**Action:** Always include a show/hide toggle for password input fields in authentication forms.
-
-## 2025-05-26 - Accessible Custom Dropdowns
-**Learning:** Custom dropdowns often fail accessibility checks because they lack `aria-haspopup` and `aria-expanded` attributes. This leaves screen reader users unaware that a button triggers a menu.
-**Action:** Always add `aria-haspopup="true"` and `aria-expanded` state to menu trigger buttons, and ensure proper focus management.
+## 2025-05-26 - Search Input Clear Button
+**Learning:** Users on mobile devices often struggle to clear long search queries. Adding a visible "Clear" button within the input field (revealed when text is present) significantly improves usability.
+**Action:** Implement the "Search with Clear" pattern for all text filters: use `pr-10` on the input and position an absolute clear button on the right.
