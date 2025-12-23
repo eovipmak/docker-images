@@ -137,7 +137,7 @@
 						/>
 						<button
 							type="button"
-							class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors focus:outline-none"
+							class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-1 focus:ring-offset-dark-900 rounded-md"
 							on:click={() => (showPassword = !showPassword)}
 							aria-label={showPassword ? 'Hide password' : 'Show password'}
 						>
@@ -176,7 +176,7 @@
 						/>
 						<button
 							type="button"
-							class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors focus:outline-none"
+							class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-1 focus:ring-offset-dark-900 rounded-md"
 							on:click={() => (showConfirmPassword = !showConfirmPassword)}
 							aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
 						>
