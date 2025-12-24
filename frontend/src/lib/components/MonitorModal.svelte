@@ -246,6 +246,7 @@
 										bind:value={formData.name}
 										class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-900/50 dark:text-gray-100 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 border"
 										placeholder="My Website"
+										autofocus
 									/>
 									{#if errors.name}
 										<p class="mt-1 text-sm text-red-600">{errors.name}</p>
