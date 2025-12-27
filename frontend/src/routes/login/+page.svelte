@@ -56,7 +56,7 @@
 
 	<div class="max-w-md w-full space-y-8 relative z-10">
 		<div class="text-center">
-            <a href="/" class="mx-auto w-16 h-16 flex items-center justify-center bg-gradient-to-br from-brand-orange to-red-600 rounded-2xl shadow-[0_0_20px_rgba(255,107,0,0.3)] mb-6 transform hover:scale-105 transition-transform duration-300">
+            <a href="/" aria-label="Back to Home" class="mx-auto w-16 h-16 flex items-center justify-center bg-gradient-to-br from-brand-orange to-red-600 rounded-2xl shadow-[0_0_20px_rgba(255,107,0,0.3)] mb-6 transform hover:scale-105 transition-transform duration-300 focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2 focus:ring-offset-dark-950">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8 text-white">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                 </svg>
